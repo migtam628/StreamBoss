@@ -53,6 +53,27 @@ String friendlyError(Object e) {
   return redactSecrets(raw);
 }
 
+/// What the player (libmpv) reported, in words a person can act on. Returns the message and
+/// whether the usual advice (switch the decoder) is relevant: it isn't for network problems.
+({String message, bool decoderAdvice}) friendlyPlayerError(String raw) {
+  final dns = RegExp(r'Failed to resolve hostname ([^\s:]+)|No address associated with hostname|Name or service not known|nodename nor servname')
+      .firstMatch(raw);
+  if (dns != null) {
+    final host = RegExp(r'Failed to resolve hostname ([^\s:]+)').firstMatch(raw)?[1];
+    return (
+      message: "This network can't look up ${host == null ? 'the video server' : "'$host'"}. "
+          'The catalog loaded, but the video itself is served from that other address, and the DNS your connection uses '
+          '(mobile carrier, router, Private DNS or an ad-blocking DNS) is not resolving it. Try Wi-Fi instead of mobile data '
+          '(or the other way round), turn off any ad-blocking or filtering DNS or VPN, or set Private DNS to dns.google or one.one.one.one.',
+      decoderAdvice: false,
+    );
+  }
+  if (RegExp(r'Connection (refused|timed out)|Network is unreachable|No route to host|Failed to open|HTTP error 4\d\d|HTTP error 5\d\d').hasMatch(raw)) {
+    return (message: raw, decoderAdvice: false);
+  }
+  return (message: raw, decoderAdvice: true);
+}
+
 /// Reduces every stream or playlist URL in [s] to scheme://host/…, dropping the path, query
 /// and any user:password@. Xtream stream URLs carry the login in the path, so logs that may be
 /// copied or shared must never contain them.

@@ -522,7 +522,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     );
   }
 
-  Widget _errorBanner() => Center(
+  Widget _errorBanner() {
+    final f = friendlyPlayerError(_error!);
+    return Center(
         child: Container(
           margin: const EdgeInsets.all(32),
           padding: const EdgeInsets.all(20),
@@ -533,13 +535,18 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             const SizedBox(height: 10),
             const Text("This can't be played", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Boss.muted)),
+            Text(f.message, textAlign: TextAlign.center, style: const TextStyle(color: Boss.muted)),
             const SizedBox(height: 8),
-            const Text('Press Back to leave. If this keeps happening, try Settings > Playback > Decoder > Software.',
-                textAlign: TextAlign.center, style: TextStyle(color: Boss.muted, fontSize: 12)),
+            Text(
+                f.decoderAdvice
+                    ? 'Press Back to leave. If this keeps happening, try Settings > Playback > Decoder > Software.'
+                    : 'Press Back to leave.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Boss.muted, fontSize: 12)),
           ]),
         ),
       );
+  }
 
   Widget _statsOverlay() {
     final s = _player.state;
