@@ -82,6 +82,9 @@ Back to go up. Android picture-in-picture is available from the player's control
 - Picture-in-picture on Android (button in the player)
 - Shader library (libmpv user shaders): built-in Sharpen, Vibrance, Night warm, Film grain, plus your own pasted GLSL; toggle live in the player, reorder in Settings
 - Keyboard / D-pad / remote navigation with visible focus rings
+- Phone setup: on the connect screen, "Set up from your phone" shows a QR code and a 4-digit PIN; the phone opens a small
+  page served by the app on your home network and sends the login back, so no typing with a remote. The server runs only
+  while that screen is open, locks after 5 wrong PINs, and nothing leaves the local network (native apps only)
 - TV mode (automatic on Android TV, Google TV and Fire TV; Settings > Appearance > TV mode forces it on or off):
   20% larger text and posters, a bold white focus ring with glow, a side rail, overscan-safe margins,
   the cursor starting on Play, an "Add to My list" button on movie pages (no long-press on a remote),

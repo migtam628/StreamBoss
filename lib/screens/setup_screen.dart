@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
+import '../services/pairing.dart';
 import '../services/provider_url.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../widgets/tv.dart';
+import 'pairing_dialog.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -49,6 +52,22 @@ class _SetupScreenState extends State<SetupScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Boss.muted)),
                       const SizedBox(height: 28),
+                      // Typing a login with a remote is miserable, so offer to take it from a phone.
+                      if (pairingSupported) ...[
+                        FilledButton.tonalIcon(
+                          autofocus: TvScope.of(context),
+                          icon: const Icon(Icons.phone_android),
+                          label: const Padding(padding: EdgeInsets.all(10), child: Text('Set up from your phone')),
+                          onPressed: () async {
+                            final src = await showPairingDialog(context);
+                            if (src != null) s.addSource(src);
+                          },
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('or enter it here', textAlign: TextAlign.center, style: TextStyle(color: Boss.muted)),
+                        ),
+                      ],
                       if (s.error != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),

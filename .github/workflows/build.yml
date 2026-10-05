@@ -57,13 +57,15 @@ jobs:
       - if: matrix.target == 'macos'
         run: dart run tool/patch_macos.dart
       - run: ${{ matrix.cmd }} ${{ inputs.build_args }}
-      # The sandboxed macOS app can't reach the network without this entitlement.
-      - name: Verify macOS network entitlement
+      # The sandboxed macOS app can't reach the network (client) or serve the phone-setup page
+      # (server) without these entitlements.
+      - name: Verify macOS network entitlements
         if: matrix.target == 'macos'
         run: |
           app="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)"
           codesign -d --entitlements :- "$app" 2>/dev/null | tee /tmp/entitlements.txt
           grep -q "com.apple.security.network.client" /tmp/entitlements.txt
+          grep -q "com.apple.security.network.server" /tmp/entitlements.txt
 
       # Package here (not after download-artifact): upload-artifact drops file
       # permissions, which would break the Linux/macOS executables.
