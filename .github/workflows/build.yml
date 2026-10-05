@@ -1,0 +1,47 @@
+name: Build
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - run: flutter create . --project-name streamboss --org com.streamboss --platforms=android,ios,macos,windows,linux,web
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  target: linux,  cmd: "flutter build linux --release" }
+          - { os: ubuntu-latest,  target: web,    cmd: "flutter build web --release" }
+          - { os: ubuntu-latest,  target: android, cmd: "flutter build apk --release" }
+          - { os: windows-latest, target: windows, cmd: "flutter build windows --release" }
+          - { os: macos-latest,   target: macos,  cmd: "flutter build macos --release" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - if: matrix.target == 'android'
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - if: matrix.target == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev mpv libstdc++-12-dev
+      - run: flutter create . --project-name streamboss --org com.streamboss --platforms=${{ matrix.target }}
+      - run: flutter pub get
+      - run: ${{ matrix.cmd }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: streamboss-${{ matrix.target }}
+          path: build/${{ matrix.target == 'android' && 'app/outputs/flutter-apk' || matrix.target }}/**

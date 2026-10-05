@@ -1,0 +1,16 @@
+.dart_tool/
+build/
+.flutter-plugins*
+.packages
+pubspec.lock
+*.iml
+.idea/
+.DS_Store
+# Platform folders are generated with `flutter create` (see README / CI)
+/android/
+/ios/
+/macos/
+/windows/
+/linux/
+/web/
+/roku/*.zip

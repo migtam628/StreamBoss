@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene">
+  <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+  <children>
+    <Rectangle width="1280" height="720" color="0x0B0B12" />
+    <Label id="title" text="STREAMBOSS" translation="[60,30]" color="0xFF3D71" />
+    <Label id="status" text="Loading playlist..." translation="[60,80]" />
+    <LabelList id="list" translation="[60,120]" itemSize="[1100,44]" numRows="12" />
+    <Video id="video" visible="false" translation="[0,0]" width="1280" height="720" />
+    <Task id="loader" />
+  </children>
+</component>
