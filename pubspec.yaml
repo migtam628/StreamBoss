@@ -1,7 +1,7 @@
 name: streamboss
 description: A cross-platform IPTV player for the Xtream or M3U service you already use.
 publish_to: none
-version: 0.2.4+1
+version: 0.2.5+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"

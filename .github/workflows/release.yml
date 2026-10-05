@@ -62,6 +62,7 @@ jobs:
   build:
     needs: meta
     uses: ./.github/workflows/build.yml
+    secrets: inherit   # the Android signing key
     with:
       version: ${{ needs.meta.outputs.version }}
       build_args: ${{ needs.meta.outputs.build_args }}

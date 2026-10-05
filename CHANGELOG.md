@@ -4,6 +4,9 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.2.5 - 2026-10-05
+- Android releases can be signed with a permanent key (repository secrets, setup in README "Android signing"). Before this, every CI run signed with a new throwaway debug key, so a release could not be installed over the previous one ("App not installed"). CI now prints each APK's signing fingerprint, and warns when no key is configured.
+
 ## 0.2.4 - 2026-10-05
 - Playback crash guard. If StreamBoss closes while a video or channel is starting, the next launch says so, shows the last steps the player recorded and turns on Safe playback (software decoding) automatically. Playback is recorded in a small log with stream addresses reduced to the host, so no logins are stored; Settings > About > Playback log shows it and can copy it.
 - The player now shows an error panel when a stream can't be played (it used to spin forever), and ignores a system kill while the app is in the background.

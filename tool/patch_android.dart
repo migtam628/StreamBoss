@@ -11,6 +11,7 @@ void main() {
   var x = f.readAsStringSync();
   _patchMainActivity();
   _copyResources();
+  _patchSigning();
   if (x.contains('LEANBACK_LAUNCHER')) {
     stdout.writeln('Already patched.');
     return;
@@ -127,4 +128,51 @@ void _copyResources() {
     final out = File('${dst.path}/$rel')..parent.createSync(recursive: true);
     f.copySync(out.path);
   }
+}
+
+/// Signs release builds with a permanent key when one is provided through the environment
+/// (STREAMBOSS_KEYSTORE = path to a .jks/.p12, STREAMBOSS_KEYSTORE_PASSWORD, STREAMBOSS_KEY_ALIAS,
+/// optional STREAMBOSS_KEY_PASSWORD). Without it the build falls back to the machine's debug key,
+/// which is regenerated on every fresh CI runner: each release then has a different signature and
+/// Android refuses to install one over another. See README "Android signing".
+void _patchSigning() {
+  final f = File('android/app/build.gradle.kts');
+  if (!f.existsSync()) {
+    stderr.writeln('android/app/build.gradle.kts not found; releases will use the debug key.');
+    return;
+  }
+  var x = f.readAsStringSync();
+  if (x.contains('STREAMBOSS_KEYSTORE')) return;
+
+  const vals = '''
+// Permanent release key from the environment (see tool/patch_android.dart); debug key otherwise.
+val sbKeystore: String? = System.getenv("STREAMBOSS_KEYSTORE")?.takeIf { it.isNotBlank() && file(it).exists() }
+val sbStorePassword: String? = System.getenv("STREAMBOSS_KEYSTORE_PASSWORD")
+
+''';
+  const signing = '''    signingConfigs {
+        if (sbKeystore != null) {
+            create("streamboss") {
+                storeFile = file(sbKeystore)
+                storePassword = sbStorePassword
+                keyAlias = System.getenv("STREAMBOSS_KEY_ALIAS") ?: "streamboss"
+                keyPassword = System.getenv("STREAMBOSS_KEY_PASSWORD") ?: sbStorePassword
+            }
+        }
+    }
+
+''';
+  final release = RegExp(r'signingConfig = signingConfigs\.getByName\("debug"\)');
+  if (!x.contains('android {') || !x.contains('buildTypes {') || !release.hasMatch(x)) {
+    stderr.writeln('Unexpected build.gradle.kts layout; releases will use the debug key.');
+    return;
+  }
+  x = x.replaceFirst('android {', '${vals}android {');
+  x = x.replaceFirst('    buildTypes {', '$signing    buildTypes {');
+  x = x.replaceFirst(
+    release,
+    'signingConfig = if (sbKeystore != null) signingConfigs.getByName("streamboss") else signingConfigs.getByName("debug")',
+  );
+  f.writeAsStringSync(x);
+  stdout.writeln('Patched build.gradle.kts for optional permanent release signing.');
 }
