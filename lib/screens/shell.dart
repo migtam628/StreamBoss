@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
+import '../services/crash_guard.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/tv.dart';
 import 'browse_screen.dart';
+import 'crash_notice.dart';
 import 'guide_screen.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
@@ -28,6 +30,19 @@ class _ShellState extends State<Shell> {
     // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings
     _i = context.read<SettingsState>().startTab.clamp(0, _dests.length - 1);
     _visited.add(_i);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _crashNotice());
+  }
+
+  /// If the last playback session died, say so, and turn on Safe playback when it died while
+  /// starting (hardware decoding or the video output is the usual culprit on some devices).
+  void _crashNotice() {
+    final r = CrashGuard.takeReport();
+    if (r == null || !mounted) return;
+    final st = context.read<SettingsState>();
+    final wasSafe = st.decoder == 'software';
+    final switched = r.duringStartup && !wasSafe;
+    if (switched) st.set('decoder', 'software');
+    showCrashNotice(context, r, switchedToSafe: switched, wasSafeAlready: wasSafe);
   }
 
   static const _dests = [

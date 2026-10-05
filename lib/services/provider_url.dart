@@ -52,3 +52,14 @@ String friendlyError(Object e) {
   }
   return redactSecrets(raw);
 }
+
+/// Reduces every stream or playlist URL in [s] to scheme://host/…, dropping the path, query
+/// and any user:password@. Xtream stream URLs carry the login in the path, so logs that may be
+/// copied or shared must never contain them.
+String redactUrls(String s) => s.replaceAllMapped(
+      RegExp(r'\b(https?|rtmps?|rtsp|udp|rtp|mms)://([^/\s"\x27)<>]*)[^\s"\x27)<>]*', caseSensitive: false),
+      (m) {
+        final host = m[2]!.contains('@') ? m[2]!.substring(m[2]!.lastIndexOf('@') + 1) : m[2]!;
+        return '${m[1]}://$host/…';
+      },
+    );

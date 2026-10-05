@@ -4,6 +4,10 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.2.4 - 2026-10-05
+- Playback crash guard. If StreamBoss closes while a video or channel is starting, the next launch says so, shows the last steps the player recorded and turns on Safe playback (software decoding) automatically. Playback is recorded in a small log with stream addresses reduced to the host, so no logins are stored; Settings > About > Playback log shows it and can copy it.
+- The player now shows an error panel when a stream can't be played (it used to spin forever), and ignores a system kill while the app is in the background.
+
 ## 0.2.3 - 2026-10-05
 - Phone setup: on the connect screen, "Set up from your phone" shows a QR code and a 4-digit PIN. Your phone opens a small page served by the app on your home network and sends the login back, so there is no typing with a TV remote. The server stops when the screen closes or after 10 minutes and locks after 5 wrong PINs. Native apps only.
 - macOS: adds the `network.server` entitlement the phone-setup page needs; CI checks for it.

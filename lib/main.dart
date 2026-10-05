@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'screens/setup_screen.dart';
+import 'services/crash_guard.dart';
 import 'services/device.dart';
 import 'screens/shell.dart';
 import 'state/app_state.dart';
@@ -12,6 +13,7 @@ import 'widgets/tv.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  await CrashGuard.init();
   await DeviceInfo.init();
   SettingsState.detectedTv = DeviceInfo.isTv;
   final settings = SettingsState();

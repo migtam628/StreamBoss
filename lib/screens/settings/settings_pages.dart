@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app_info.dart';
 import '../../models/media.dart';
+import '../../services/crash_guard.dart';
 import '../../services/http_client.dart';
 import '../../services/mpv_props.dart';
 import '../../services/net_config.dart';
@@ -213,7 +214,7 @@ class PlaybackPage extends StatelessWidget {
         ChoiceRow<String>(
           icon: Icons.memory,
           title: 'Decoder',
-          subtitle: 'Hardware is faster and cooler; try Software if video glitches',
+          subtitle: 'Hardware is faster and cooler. Use Software if playback crashes or the picture glitches',
           value: st.decoder,
           options: const [('auto', 'Hardware (recommended)'), ('software', 'Software')],
           onChanged: (v) => st.set('decoder', v),
@@ -682,6 +683,36 @@ class _AboutPageState extends State<AboutPage> {
     }
   }
 
+  void _showPlaybackLog(BuildContext context) {
+    final log = CrashGuard.lastLog();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Playback log'),
+        content: SizedBox(
+          width: 640,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              log.trim().isEmpty ? 'Nothing has been played yet.' : log,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 11, height: 1.35),
+            ),
+          ),
+        ),
+        actions: [
+          if (log.trim().isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: log));
+                if (ctx.mounted) toast(ctx, 'Copied');
+              },
+              child: const Text('Copy'),
+            ),
+          FilledButton(autofocus: true, onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   String _diagnostics(PackageInfo i) {
     final app = context.read<AppState>();
     final st = context.read<SettingsState>();
@@ -725,6 +756,13 @@ class _AboutPageState extends State<AboutPage> {
             subtitle: 'Opens GitHub issues. Tip: copy diagnostics first and paste them in.',
             onTap: () => launchUrl(Uri.parse(kIssuesUrl), mode: LaunchMode.externalApplication),
           ),
+          if (!kIsWeb)
+            ActionRow(
+              icon: Icons.receipt_long_outlined,
+              title: 'Playback log',
+              subtitle: 'What the player did last time, to find out why a video would not play',
+              onTap: () => _showPlaybackLog(context),
+            ),
           ActionRow(
             icon: Icons.content_copy,
             title: 'Copy diagnostics',

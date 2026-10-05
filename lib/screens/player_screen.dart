@@ -7,8 +7,10 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/media.dart';
+import '../services/crash_guard.dart';
 import '../services/mpv_props.dart';
 import '../services/pip.dart';
+import '../services/provider_url.dart';
 import '../services/xtream_client.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
@@ -42,8 +44,9 @@ class PlayerScreen extends StatefulWidget {
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
-  late final Player _player = Player();
+class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver {
+  // Warnings and errors from libmpv go to the playback log (see CrashGuard).
+  late final Player _player = Player(configuration: const PlayerConfiguration(logLevel: MPVLogLevel.warn));
   late final VideoController _controller;
   late final AppState _app = context.read<AppState>();
   late final SettingsState _settings = context.read<SettingsState>();
@@ -65,6 +68,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
   double _rate = 1;
   List<EpgEntry> _epg = const [];
   bool _canPip = false;
+  String? _error;
+  bool _reportedPlaying = false;
 
   List<MediaItem>? get _queue => widget.queue;
   MediaItem get _cur => _queue != null ? _queue![_index] : widget.item;
@@ -75,6 +80,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void initState() {
     super.initState();
     _index = _queue == null ? 0 : _queue!.indexWhere((e) => e.key == widget.item.key).clamp(0, _queue!.length - 1);
+    WidgetsBinding.instance.addObserver(this);
+    CrashGuard.begin('${_live ? 'live' : 'vod'} host=${Uri.tryParse(widget.url)?.host} decoder=${_settings.decoder}');
     _controller = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
@@ -88,10 +95,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     _subs.addAll([
       _player.stream.playing.listen((v) => setState(() => _playing = v)),
+      _player.stream.log.listen((l) => CrashGuard.log('${l.level} ${l.prefix}: ${redactUrls(l.text)}')),
+      _player.stream.error.listen((e) {
+        CrashGuard.log('error ${redactUrls(e)}');
+        if (mounted) setState(() => _error = redactUrls(e));
+      }),
       _player.stream.buffering.listen((v) => setState(() => _buffering = v)),
       _player.stream.duration.listen((v) => setState(() => _dur = v)),
       _player.stream.rate.listen((v) => setState(() => _rate = v)),
-      _player.stream.position.listen((v) => _pos.value = v),
+      _player.stream.position.listen((v) {
+        _pos.value = v;
+        // Time moving means the stream opened and the video path is working; later deaths are not startup failures.
+        if (v > Duration.zero && !_reportedPlaying) {
+          _reportedPlaying = true;
+          CrashGuard.mark('playing');
+          if (_error != null) setState(() => _error = null);
+        }
+      }),
       _player.stream.playlist.listen((p) {
         if (_queue != null && p.index != _index && p.index < _queue!.length) {
           setState(() => _index = p.index);
@@ -111,25 +131,40 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _start() async {
-    await applyBuffer(_player, _settings.bufferSecs);
-    await applyPlaybackPrefs(
-      _player,
-      audioLang: _settings.audioLang,
-      subLang: _settings.subLang,
-      subsOn: _settings.subsOn,
-      userAgent: _settings.userAgent,
-    );
-    await _applyShaders();
-    if (_queue != null) {
-      await _player.open(Playlist(
-        [for (final q in _queue!) Media(q.streamUrl!)],
-        index: _index,
-      ));
-    } else {
-      await _player.open(Media(widget.url, start: widget.startAt));
+    try {
+      await applyBuffer(_player, _settings.bufferSecs);
+      await applyPlaybackPrefs(
+        _player,
+        audioLang: _settings.audioLang,
+        subLang: _settings.subLang,
+        subsOn: _settings.subsOn,
+        userAgent: _settings.userAgent,
+      );
+      await _applyShaders();
+      CrashGuard.mark('props');
+      CrashGuard.mark('open');
+      if (_queue != null) {
+        await _player.open(Playlist(
+          [for (final q in _queue!) Media(q.streamUrl!)],
+          index: _index,
+        ));
+      } else {
+        await _player.open(Media(widget.url, start: widget.startAt));
+      }
+      CrashGuard.mark('opened');
+      if (!_live && _settings.speed != 1) await _player.setRate(_settings.speed);
+      _onChannelChanged();
+    } catch (e) {
+      // Show what went wrong instead of an endless spinner.
+      CrashGuard.log('exception ${redactUrls('$e')}');
+      if (mounted) setState(() => _error = redactUrls('$e'));
     }
-    if (!_live && _settings.speed != 1) await _player.setRate(_settings.speed);
-    _onChannelChanged();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // An app the system ends while it is in the background is not a playback crash.
+    if (state == AppLifecycleState.paused) CrashGuard.mark('background');
   }
 
   Future<void> _applyShaders() => applyShaders(_player, [
@@ -154,6 +189,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    CrashGuard.mark('closing');
     _savePosition(notify: true);
     for (final s in _subs) {
       s.cancel();
@@ -167,6 +204,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     WakelockPlus.disable().catchError((_) {});
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     _player.dispose();
+    CrashGuard.end();
     super.dispose();
   }
 
@@ -466,7 +504,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   padding: EdgeInsets.fromLTRB(24, 0, 24, st.subBottom),
                 ),
               ),
-              if (_buffering) const Center(child: CircularProgressIndicator()),
+              if (_buffering && _error == null) const Center(child: CircularProgressIndicator()),
+              if (_error != null) _errorBanner(),
               if (_stats) _statsOverlay(),
               if (_controls) _overlay(),
             ]),
@@ -475,6 +514,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ),
     );
   }
+
+  Widget _errorBanner() => Center(
+        child: Container(
+          margin: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(20),
+          constraints: const BoxConstraints(maxWidth: 560),
+          decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(14)),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.error_outline, color: Boss.accent, size: 36),
+            const SizedBox(height: 10),
+            const Text("This can't be played", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Boss.muted)),
+            const SizedBox(height: 8),
+            const Text('Press Back to leave. If this keeps happening, try Settings > Playback > Decoder > Software.',
+                textAlign: TextAlign.center, style: TextStyle(color: Boss.muted, fontSize: 12)),
+          ]),
+        ),
+      );
 
   Widget _statsOverlay() {
     final s = _player.state;
