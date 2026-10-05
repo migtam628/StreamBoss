@@ -32,6 +32,8 @@ so web works best with https + CORS-enabled providers.
   - resume position for movies and episodes, per-episode "continue watching"
 - Settings: hardware/software decoder, network buffer presets (low/normal/high),
   subtitle size/color/background with live preview, default speed
+- Picture-in-picture on Android (button in the player)
+- Shader library (libmpv user shaders): built-in Sharpen, Vibrance, Night warm, Film grain, plus your own pasted GLSL; toggle live in the player, reorder in Settings
 - Keyboard / D-pad / remote navigation with visible focus rings
 
 ## Develop
@@ -51,5 +53,5 @@ Linux desktop needs `libmpv-dev libsecret-1-dev` installed.
 ## Status / roadmap
 
 Not done yet: tvOS, Roku feature parity (the Roku channel is a minimal M3U list + player),
-gzipped (.xml.gz) XMLTV guides, picture-in-picture (needs native code), shader management,
+gzipped (.xml.gz) XMLTV guides, iOS picture-in-picture, shader file import,
 intro/outro detection (skip-intro is a fixed +90s jump).

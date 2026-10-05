@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../theme.dart';
+import 'shader_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -79,6 +80,14 @@ class SettingsScreen extends StatelessWidget {
           activeColor: Boss.accent,
           onChanged: (v) => st.update(speed: v),
         ),
+      ),
+
+      ListTile(
+        leading: const Icon(Icons.auto_fix_high),
+        title: const Text('Shaders'),
+        subtitle: Text('${st.activeShaders.length} enabled · sharpen, vibrance, grain, custom GLSL'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ShaderScreen())),
       ),
 
       header('Subtitles'),
@@ -183,6 +192,7 @@ class SettingsScreen extends StatelessWidget {
             final m = jsonDecode(text) as Map<String, dynamic>;
             s.importData(m['app'] as Map<String, dynamic>);
             st.applyMap(m['settings'] as Map<String, dynamic>);
+            st.applyShaderMap(m['settings'] as Map<String, dynamic>);
             messenger.showSnackBar(const SnackBar(content: Text('Backup restored')));
           } catch (_) {
             messenger.showSnackBar(const SnackBar(content: Text('Clipboard does not hold a valid backup')));

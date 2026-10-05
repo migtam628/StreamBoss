@@ -31,6 +31,9 @@ void main() {
     (m) => '${m[0]}\n                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>',
   );
 
+  // Picture-in-picture (the `floating` package needs this on the activity).
+  x = x.replaceFirst('<activity', '<activity\n            android:supportsPictureInPicture="true"');
+
   f.writeAsStringSync(x);
   stdout.writeln('Patched AndroidManifest.xml for TV.');
 }

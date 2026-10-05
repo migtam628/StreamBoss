@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:floating/floating.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -58,6 +60,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Duration _dur = Duration.zero;
   double _rate = 1;
   List<EpgEntry> _epg = const [];
+  final _floating = Floating();
+  bool _canPip = false;
 
   List<MediaItem>? get _queue => widget.queue;
   MediaItem get _cur => _queue != null ? _queue![_index] : widget.item;
@@ -91,6 +95,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
         }
       }),
     ]);
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      _floating.isPipAvailable.then((v) {
+        if (mounted) setState(() => _canPip = v);
+      });
+      _subs.add(_floating.pipStatusStream.listen((st) {
+        if (st == PiPStatus.enabled) _hideControls();
+      }));
+    }
     _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) => _savePosition());
     _start();
     _scheduleHide();
@@ -98,6 +110,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _start() async {
     await applyBuffer(_player, _settings.bufferSecs);
+    await _applyShaders();
     if (_queue != null) {
       await _player.open(Playlist(
         [for (final q in _queue!) Media(q.streamUrl!)],
@@ -109,6 +122,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (!_live && _settings.speed != 1) await _player.setRate(_settings.speed);
     _onChannelChanged();
   }
+
+  Future<void> _applyShaders() => applyShaders(_player, [
+        for (final sh in _settings.activeShaders) MapEntry(sh.id, sh.source),
+      ]);
 
   void _onChannelChanged() {
     _app.markWatched(_cur);
@@ -134,6 +151,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _saveTimer?.cancel();
     _sleepTimer?.cancel();
     _statsTimer?.cancel();
+    _floating.dispose();
     _root.dispose();
     _playBtn.dispose();
     WakelockPlus.disable();
@@ -338,6 +356,52 @@ class _PlayerScreenState extends State<PlayerScreen> {
     ]);
   }
 
+  void _pickShaders() {
+    _hideTimer?.cancel();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Boss.surface,
+      isScrollControlled: true,
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.8),
+      builder: (_) => ListenableBuilder(
+        listenable: _settings,
+        builder: (ctx, _) => SafeArea(
+          child: ListView(shrinkWrap: true, children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Shaders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            ),
+            if (!shadersSupported)
+              const ListTile(title: Text('Not available on web')),
+            for (final sh in _settings.shaders)
+              SwitchListTile(
+                title: Text(sh.name),
+                subtitle: sh.builtin ? Text(sh.description) : null,
+                value: _settings.shaderEnabled.contains(sh.id),
+                activeThumbColor: Boss.accent,
+                onChanged: shadersSupported
+                    ? (v) {
+                        _settings.setShaders(
+                          enabled: v
+                              ? {..._settings.shaderEnabled, sh.id}
+                              : ({..._settings.shaderEnabled}..remove(sh.id)),
+                        );
+                        _applyShaders();
+                      }
+                    : null,
+              ),
+          ]),
+        ),
+      ),
+    ).whenComplete(_scheduleHide);
+  }
+
+  Future<void> _enterPip() async {
+    try {
+      await _floating.enable(const EnableManual());
+    } catch (_) {}
+  }
+
   void _toggleStats() {
     setState(() => _stats = !_stats);
     _statsTimer?.cancel();
@@ -515,7 +579,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 _btn(Icons.audiotrack, 'Audio', _pickAudio),
                 _btn(Icons.subtitles, 'Subtitles', _pickSubtitle),
                 if (!_live) _btn(Icons.speed, 'Speed', _pickSpeed, on: _rate != 1),
+                if (shadersSupported)
+                  _btn(Icons.auto_fix_high, 'Shaders', _pickShaders, on: _settings.shaderEnabled.isNotEmpty),
                 _btn(Icons.bedtime, 'Sleep timer', _pickSleep, on: _sleepAt != null),
+                if (_canPip) _btn(Icons.picture_in_picture_alt, 'Picture-in-picture', _enterPip),
                 _btn(Icons.analytics_outlined, 'Stats', _toggleStats, on: _stats),
               ],
             ),
