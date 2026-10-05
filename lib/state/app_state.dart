@@ -172,7 +172,10 @@ class AppState extends ChangeNotifier {
     return ms == null ? null : Duration(milliseconds: ms);
   }
 
-  void savePosition(MediaItem i, Duration pos, Duration total) {
+  /// Persists the resume position. Pass [notify] on the final save so screens
+  /// underneath the player (e.g. the detail screen's "Resume from") refresh;
+  /// periodic saves stay silent to avoid rebuilding the app every few seconds.
+  void savePosition(MediaItem i, Duration pos, Duration total, {bool notify = false}) {
     if (i.kind == MediaKind.live || total.inSeconds < 60) return;
     // Treat the last 3% as finished.
     if (pos.inMilliseconds > total.inMilliseconds * 0.97) {
@@ -181,6 +184,9 @@ class AppState extends ChangeNotifier {
       positions[i.key] = pos.inMilliseconds;
     }
     _prefs?.setString('positions', jsonEncode(positions));
+    // Deferred: this runs from State.dispose(), where notifying synchronously would
+    // mark widgets dirty while the tree is locked.
+    if (notify) Future.microtask(notifyListeners);
   }
 
   // --- EPG --------------------------------------------------------------

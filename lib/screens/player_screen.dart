@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
@@ -78,7 +79,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
-    WakelockPlus.enable();
+    // Browsers may deny the wake lock (no user activation / policy); that must not surface as an error.
+    WakelockPlus.enable().catchError((_) {});
 
     _subs.addAll([
       _player.stream.playing.listen((v) => setState(() => _playing = v)),
@@ -133,13 +135,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
   }
 
-  void _savePosition() {
-    if (!_live) _app.savePosition(widget.item, _player.state.position, _player.state.duration);
+  void _savePosition({bool notify = false}) {
+    if (!_live) {
+      _app.savePosition(widget.item, _player.state.position, _player.state.duration, notify: notify);
+    }
   }
 
   @override
   void dispose() {
-    _savePosition();
+    _savePosition(notify: true);
     for (final s in _subs) {
       s.cancel();
     }
@@ -149,7 +153,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _statsTimer?.cancel();
     _root.dispose();
     _playBtn.dispose();
-    WakelockPlus.disable();
+    WakelockPlus.disable().catchError((_) {});
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     _player.dispose();
     super.dispose();
@@ -456,8 +460,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final s = _player.state;
     final text = [
       'Video   ${s.width ?? '?'}x${s.height ?? '?'}',
-      'Buffer  ${s.buffer.inSeconds}s (target ${_settings.bufferSecs}s)',
-      'Decoder ${_settings.decoder}',
+      'Buffer  ${s.buffer.inSeconds}s${kIsWeb ? '' : ' (target ${_settings.bufferSecs}s)'}',
+      if (!kIsWeb) 'Decoder ${_settings.decoder}',
       'Speed   ${_rate}x',
       'Pos     ${_fmt(s.position)} / ${_fmt(s.duration)}',
     ].join('\n');

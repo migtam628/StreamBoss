@@ -17,6 +17,12 @@ no content. Inspired by apps like Lumen, with its own UI.
 Note: browsers block mixed-content (http) streams and most IPTV servers lack CORS headers,
 so web works best with https + CORS-enabled providers.
 
+Web playback uses the browser's own decoders (hls.js is bundled for HLS), so what plays depends on
+the browser; decoder, network-buffer and shader settings are hidden on web because they only affect
+the native libmpv player. Web was exercised end to end in headless Chromium (M3U source, playback,
+seek, pause, speed, resume, channel zapping, search, settings). That Chromium has no H.264, so the
+test used VP9/WebM streams; the H.264 demo streams need a normal browser.
+
 ## Features
 
 - Xtream Codes and M3U sources, multiple saved sources, offline demo mode

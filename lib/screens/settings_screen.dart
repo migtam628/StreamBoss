@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +44,8 @@ class SettingsScreen extends StatelessWidget {
       ),
 
       header('Playback'),
-      ListTile(
+      // Native player only (libmpv); the browser decides on web.
+      if (!kIsWeb) ListTile(
         leading: const Icon(Icons.memory),
         title: const Text('Decoder'),
         trailing: SegmentedButton<String>(
@@ -55,7 +57,8 @@ class SettingsScreen extends StatelessWidget {
           onSelectionChanged: (v) => st.update(decoder: v.first),
         ),
       ),
-      ListTile(
+      // Native player only (libmpv); the browser decides on web.
+      if (!kIsWeb) ListTile(
         leading: const Icon(Icons.network_check),
         title: const Text('Network buffer'),
         subtitle: const Text('Higher = fewer stalls on weak connections, slower channel start'),
@@ -82,7 +85,8 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
 
-      ListTile(
+      // Native player only (libmpv); the browser decides on web.
+      if (!kIsWeb) ListTile(
         leading: const Icon(Icons.auto_fix_high),
         title: const Text('Shaders'),
         subtitle: Text('${st.activeShaders.length} enabled · sharpen, vibrance, grain, custom GLSL'),
