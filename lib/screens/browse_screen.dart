@@ -1,22 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../layouts/common.dart';
+import '../layouts/control_view.dart';
+import '../layouts/spotlight_view.dart';
+import '../layouts/ui_layout.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
-import '../theme.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
 
-class BrowseScreen extends StatefulWidget {
+/// Live, Movies and Series. What it looks like depends on Settings > Appearance > Layout.
+class BrowseScreen extends StatelessWidget {
   final MediaKind kind;
   final Catalog catalog;
   const BrowseScreen({super.key, required this.kind, required this.catalog});
 
   @override
-  State<BrowseScreen> createState() => _BrowseScreenState();
+  Widget build(BuildContext context) {
+    switch (context.select<SettingsState, UiLayout>((s) => s.layout)) {
+      case UiLayout.marquee:
+        return _MarqueeBrowse(kind: kind, catalog: catalog);
+      case UiLayout.control:
+        return ControlView(kind: kind, catalog: catalog);
+      case UiLayout.spotlight:
+        final cats = catalog.categoriesFor(kind);
+        final all = catalog.itemsFor(kind);
+        return SpotlightView(sections: [
+          ('All', all),
+          for (final c in cats)
+            (c.name, all.where((i) => i.categoryId == c.id).toList()),
+        ]);
+    }
+  }
 }
 
-class _BrowseScreenState extends State<BrowseScreen> {
+/// Category chips over a poster grid.
+class _MarqueeBrowse extends StatefulWidget {
+  final MediaKind kind;
+  final Catalog catalog;
+  const _MarqueeBrowse({required this.kind, required this.catalog});
+
+  @override
+  State<_MarqueeBrowse> createState() => _MarqueeBrowseState();
+}
+
+class _MarqueeBrowseState extends State<_MarqueeBrowse> {
   String? _cat;
 
   @override
@@ -25,26 +54,21 @@ class _BrowseScreenState extends State<BrowseScreen> {
     final size = context.watch<SettingsState>().posterScale;
     final cats = widget.catalog.categoriesFor(widget.kind);
     final all = widget.catalog.itemsFor(widget.kind);
-    final items = _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
+    final items =
+        _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
     final live = widget.kind == MediaKind.live;
 
     if (all.isEmpty) {
-      return const Center(
-          child: Text('Nothing here yet.', style: TextStyle(color: Boss.muted)));
+      return Center(
+          child: Text('Nothing here yet.',
+              style: TextStyle(color: LayoutPalette.of(context).muted)));
     }
 
     return Column(children: [
-      SizedBox(
-        height: 56,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          children: [
-            _chip('All', _cat == null, () => setState(() => _cat = null)),
-            for (final c in cats)
-              _chip(c.name, _cat == c.id, () => setState(() => _cat = c.id)),
-          ],
-        ),
+      ChipRow(
+        labels: ['All', for (final c in cats) c.name],
+        selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
+        onSelect: (i) => setState(() => _cat = i == 0 ? null : cats[i - 1].id),
       ),
       Expanded(
         child: GridView.builder(
@@ -69,14 +93,4 @@ class _BrowseScreenState extends State<BrowseScreen> {
       ),
     ]);
   }
-
-  Widget _chip(String label, bool sel, VoidCallback onTap) => Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: ChoiceChip(
-          label: Text(label),
-          selected: sel,
-          onSelected: (_) => onTap(),
-          selectedColor: Boss.accent,
-        ),
-      );
 }

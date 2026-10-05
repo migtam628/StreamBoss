@@ -56,7 +56,8 @@ void main() {
     expect(find.text('CURRENT SOURCE'), findsNothing);
     await t.tap(find.text('Appearance'));
     await t.pumpAndSettle();
-    expect(find.text('Text size'), findsOneWidget);
+    expect(find.text('LAYOUT'), findsOneWidget);
+    expect(find.text('Marquee'), findsOneWidget);
   });
 
   testWidgets('about page shows the app version', (t) async {

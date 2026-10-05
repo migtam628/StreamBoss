@@ -1,0 +1,135 @@
+import 'package:flutter/material.dart';
+import '../widgets/tv.dart';
+import 'ui_layout.dart';
+
+/// A tappable, focusable surface whose look is up to [builder]. Gives the focus ring every
+/// control needs on a TV: white and bold there, accent-colored elsewhere.
+class FocusSurface extends StatefulWidget {
+  final Widget Function(BuildContext context, bool focused) builder;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final ValueChanged<bool>? onFocus;
+  final double radius;
+  final bool autofocus;
+  final String? semanticLabel;
+  const FocusSurface({
+    super.key,
+    required this.builder,
+    required this.onTap,
+    this.onLongPress,
+    this.onFocus,
+    this.radius = 12,
+    this.autofocus = false,
+    this.semanticLabel,
+  });
+
+  @override
+  State<FocusSurface> createState() => _FocusSurfaceState();
+}
+
+class _FocusSurfaceState extends State<FocusSurface> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    final tv = TvScope.of(context);
+    Widget w = AnimatedContainer(
+      duration: const Duration(milliseconds: 100),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.radius),
+        border: Border.all(
+            color:
+                _focused ? (tv ? Colors.white : p.accent) : Colors.transparent,
+            width: 3),
+        boxShadow: tv && _focused
+            ? [
+                BoxShadow(
+                    color: p.accent.withValues(alpha: 0.35), blurRadius: 18)
+              ]
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+            widget.radius - 2 < 0 ? 0 : widget.radius - 2),
+        child: InkWell(
+          autofocus: widget.autofocus,
+          onFocusChange: (f) {
+            setState(() => _focused = f);
+            widget.onFocus?.call(f);
+          },
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          child: widget.builder(context, _focused),
+        ),
+      ),
+    );
+    if (widget.semanticLabel != null) {
+      w = Semantics(label: widget.semanticLabel, button: true, child: w);
+    }
+    return w;
+  }
+}
+
+/// Small uppercase label above a group of content.
+class Eyebrow extends StatelessWidget {
+  final String text;
+  final Color? color;
+  const Eyebrow(this.text, {super.key, this.color});
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text.toUpperCase(),
+        style: TextStyle(
+            color: color ?? LayoutPalette.of(context).accent2,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.6),
+      );
+}
+
+/// A horizontally scrolling row of choice chips, focusable on a TV.
+class ChipRow extends StatelessWidget {
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onSelect;
+  final EdgeInsetsGeometry padding;
+  const ChipRow(
+      {super.key,
+      required this.labels,
+      required this.selected,
+      required this.onSelect,
+      this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8)});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    return SizedBox(
+      height: 56,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: padding,
+        itemCount: labels.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) => FocusSurface(
+          radius: 22,
+          semanticLabel: labels[i],
+          onTap: () => onSelect(i),
+          builder: (_, __) => Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            color:
+                i == selected ? p.accent : Colors.white.withValues(alpha: 0.10),
+            child: Text(labels[i],
+                style: TextStyle(
+                    color: i == selected && p.accent.computeLuminance() > 0.5
+                        ? Colors.black
+                        : (i == selected ? Colors.white : p.text),
+                    fontWeight:
+                        i == selected ? FontWeight.w700 : FontWeight.w500)),
+          ),
+        ),
+      ),
+    );
+  }
+}

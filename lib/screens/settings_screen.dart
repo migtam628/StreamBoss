@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../layouts/ui_layout.dart';
 import '../theme.dart';
 import 'settings/settings_pages.dart';
 
@@ -36,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         } else {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => Scaffold(
-              appBar: AppBar(title: Text(sec.title), backgroundColor: Boss.bg),
+              appBar: AppBar(title: Text(sec.title), backgroundColor: LayoutPalette.of(context).bg),
               body: sec.builder(context),
             ),
           ));

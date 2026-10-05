@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'layouts/ui_layout.dart';
 
 class Boss {
   static const bg = Color(0xFF0B0B12);
@@ -11,8 +12,9 @@ class Boss {
 
   /// [tv] switches on the 10-foot styling: a bold white focus outline on every control (a
   /// remote has no pointer, so focus is the only cursor) and a larger navigation rail.
-  static ThemeData theme({bool tv = false}) {
+  static ThemeData theme({bool tv = false, UiLayout layout = UiLayout.marquee}) {
     final base = ThemeData.dark(useMaterial3: true);
+    final p = LayoutPalette.forLayout(layout);
 
     // Buttons get a white outline while focused so the selection is visible from the couch.
     WidgetStateProperty<BorderSide?>? focusSide([BorderSide unfocused = BorderSide.none]) => tv
@@ -21,20 +23,28 @@ class Boss {
         : null;
 
     return base.copyWith(
-      scaffoldBackgroundColor: bg,
-      focusColor: accent.withValues(alpha: 0.28),
-      hoverColor: accent.withValues(alpha: 0.10),
-      colorScheme: const ColorScheme.dark(
-        primary: accent,
-        secondary: accent2,
-        surface: surface,
+      scaffoldBackgroundColor: p.bg,
+      extensions: [p],
+      focusColor: p.accent.withValues(alpha: 0.28),
+      hoverColor: p.accent.withValues(alpha: 0.10),
+      colorScheme: ColorScheme.dark(
+        primary: p.accent,
+        secondary: p.accent2,
+        surface: p.surface,
       ),
-      textTheme: base.textTheme.apply(bodyColor: text, displayColor: text),
+      textTheme: base.textTheme.apply(bodyColor: p.text, displayColor: p.text),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface,
-        indicatorColor: accent.withValues(alpha: 0.25),
+        backgroundColor: p.surface,
+        indicatorColor: p.accent.withValues(alpha: 0.25),
       ),
-      filledButtonTheme: FilledButtonThemeData(style: ButtonStyle(side: focusSide())),
+      // Buttons are bigger on a TV: they are read and pressed from across the room.
+      filledButtonTheme: FilledButtonThemeData(
+          style: ButtonStyle(
+        side: focusSide(),
+        textStyle: tv ? const WidgetStatePropertyAll(TextStyle(fontSize: 18, fontWeight: FontWeight.w700)) : null,
+        padding: tv ? const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 26, vertical: 14)) : null,
+        minimumSize: tv ? const WidgetStatePropertyAll(Size(0, 52)) : null,
+      )),
       outlinedButtonTheme: OutlinedButtonThemeData(style: ButtonStyle(side: focusSide(const BorderSide(color: Colors.white38)))),
       textButtonTheme: TextButtonThemeData(style: ButtonStyle(side: focusSide())),
       iconButtonTheme: IconButtonThemeData(style: ButtonStyle(side: focusSide())),
@@ -46,16 +56,16 @@ class Boss {
             : null,
       ),
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: tv ? Colors.transparent : surface,
+        backgroundColor: tv ? Colors.transparent : p.surface,
         unselectedIconTheme: tv ? const IconThemeData(size: 30, color: Color(0xFFD0D0DC)) : null,
         minWidth: tv ? 96 : null,
-        indicatorColor: accent.withValues(alpha: 0.25),
-        selectedIconTheme: IconThemeData(color: accent, size: tv ? 30 : null),
-        selectedLabelTextStyle: const TextStyle(color: accent),
+        indicatorColor: p.accent.withValues(alpha: 0.25),
+        selectedIconTheme: IconThemeData(color: p.accent, size: tv ? 30 : null),
+        selectedLabelTextStyle: TextStyle(color: p.accent),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceHi,
+        fillColor: p.surfaceHi,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

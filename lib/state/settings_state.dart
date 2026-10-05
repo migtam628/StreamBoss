@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../layouts/ui_layout.dart';
 import '../services/net_config.dart';
 import '../services/shaders.dart';
 
@@ -33,6 +34,8 @@ class SettingsState extends ChangeNotifier {
     'posterSize': 1.0,
     'startTab': 0,
     'tvMode': 'auto', // auto | on | off
+    'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
+    'layout': 'marquee', // marquee | control | spotlight
     // library & guide
     'hideAdult': false,
     'sortAz': false,
@@ -46,7 +49,7 @@ class SettingsState extends ChangeNotifier {
   static const secretKeys = {'tmdbKey'};
 
   /// Describes this device rather than the user's taste, so backups don't carry it over.
-  static const deviceKeys = {'tvMode', 'videoOutput'};
+  static const deviceKeys = {'tvMode', 'tvWidth', 'layout', 'videoOutput'};
 
   /// Set at startup from [DeviceInfo]; tests set it directly.
   static bool detectedTv = false;
@@ -95,9 +98,15 @@ class SettingsState extends ChangeNotifier {
     return videoOutput == 'surface' || (videoOutput == 'auto' && isTv);
   }
 
-  /// Text and poster scales as applied: the user's choice, plus 20% in TV mode.
-  double get textScale => uiScale * (isTv ? 1.2 : 1);
-  double get posterScale => posterSize * (isTv ? 1.2 : 1);
+  /// Width in logical pixels of the canvas the TV layout is drawn on (see TvCanvas). A smaller
+  /// number zooms in, a larger one zooms out.
+  int get tvWidth => _g('tvWidth');
+
+  UiLayout get layout => UiLayout.fromKey(_g<String>('layout'));
+
+  /// Text and poster scales as applied. TV mode no longer adds to them: the TV canvas sets the size.
+  double get textScale => uiScale;
+  double get posterScale => posterSize;
   bool get hideAdult => _g('hideAdult');
   bool get sortAz => _g('sortAz');
   bool get use24h => _g('use24h');

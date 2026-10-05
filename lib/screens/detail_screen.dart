@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../layouts/ui_layout.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
@@ -23,7 +24,7 @@ class DetailScreen extends StatelessWidget {
     String stamp(Duration d) => '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 
     return Scaffold(
-      appBar: AppBar(backgroundColor: Boss.bg, actions: [
+      appBar: AppBar(backgroundColor: LayoutPalette.of(context).bg, actions: [
         IconButton(
           icon: Icon(s.isFavorite(item) ? Icons.favorite : Icons.favorite_border,
               color: Boss.accent),

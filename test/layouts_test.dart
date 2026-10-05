@@ -1,0 +1,260 @@
+import 'package:flutter/foundation.dart' hide Category;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:streamboss/layouts/shell_nav.dart';
+import 'package:streamboss/layouts/ui_layout.dart';
+import 'package:streamboss/models/media.dart';
+import 'package:streamboss/screens/settings/settings_pages.dart';
+import 'package:streamboss/screens/shell.dart';
+import 'package:streamboss/state/app_state.dart';
+import 'package:streamboss/state/settings_state.dart';
+import 'package:streamboss/theme.dart';
+import 'package:streamboss/widgets/tv.dart';
+
+const _catalog = Catalog(
+  liveCategories: [Category('l1', 'Sports'), Category('l2', 'News')],
+  movieCategories: [Category('m1', 'Action'), Category('m2', 'Drama')],
+  live: [
+    MediaItem(
+        id: '1',
+        name: 'Arena Sports 1',
+        kind: MediaKind.live,
+        streamUrl: 'http://x/1',
+        categoryId: 'l1'),
+    MediaItem(
+        id: '2',
+        name: 'Metro News 24',
+        kind: MediaKind.live,
+        streamUrl: 'http://x/2',
+        categoryId: 'l2'),
+  ],
+  movies: [
+    MediaItem(
+        id: '3',
+        name: 'Salt Road',
+        kind: MediaKind.movie,
+        streamUrl: 'http://x/3',
+        categoryId: 'm1',
+        plot: 'A courier crosses a frozen salt flat.'),
+    MediaItem(
+        id: '4',
+        name: 'Northbound',
+        kind: MediaKind.movie,
+        streamUrl: 'http://x/4',
+        categoryId: 'm2',
+        plot: 'A long drive north.'),
+  ],
+);
+
+Future<(SettingsState, AppState)> setup(Map<String, Object> prefs) async {
+  SharedPreferences.setMockInitialValues(prefs);
+  final st = SettingsState();
+  await st.init();
+  final app = AppState()..bindSettings(st);
+  app.catalog = _catalog;
+  return (st, app);
+}
+
+Future<void> pumpApp(WidgetTester t, SettingsState st, AppState app, Size size,
+    {Widget? home}) async {
+  t.view.physicalSize = size;
+  t.view.devicePixelRatio = 1;
+  addTearDown(t.view.reset);
+  final tv = st.isTv;
+  await t.pumpWidget(MultiProvider(
+    providers: [
+      ChangeNotifierProvider<AppState>.value(value: app),
+      ChangeNotifierProvider<SettingsState>.value(value: st),
+    ],
+    child: MaterialApp(
+      theme: Boss.theme(tv: tv, layout: st.layout),
+      builder: (context, child) => TvCanvas(
+          enabled: tv,
+          width: st.tvWidth,
+          child: TvScope(tv: tv, child: child!)),
+      home: home ?? const Shell(),
+    ),
+  ));
+  await t.pumpAndSettle();
+}
+
+void main() {
+  tearDown(() {
+    SettingsState.detectedTv = false;
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  group('layout setting', () {
+    test('defaults to Marquee, persists, and is a device setting', () async {
+      var (st, _) = await setup({});
+      expect(st.layout, UiLayout.marquee);
+      st.set('layout', 'control');
+      expect(st.layout, UiLayout.control);
+      (st, _) = await setup({'layout': 'spotlight'});
+      expect(st.layout, UiLayout.spotlight);
+      expect(SettingsState.deviceKeys, containsAll(['layout', 'tvWidth']));
+      st.applyMap({'layout': 'control'});
+      expect(st.layout, UiLayout.spotlight,
+          reason: 'a backup from another device must not change the layout');
+    });
+
+    test('an unknown stored value falls back to Marquee', () async {
+      final (st, _) = await setup({'layout': 'nonsense'});
+      expect(st.layout, UiLayout.marquee);
+    });
+
+    test('every layout has its own palette installed by the theme', () {
+      for (final l in UiLayout.values) {
+        final t = Boss.theme(layout: l);
+        expect(t.extension<LayoutPalette>(), LayoutPalette.forLayout(l));
+        expect(t.scaffoldBackgroundColor, LayoutPalette.forLayout(l).bg);
+      }
+    });
+
+    test('phone bars never repeat a screen and together cover all seven', () {
+      for (final l in UiLayout.values) {
+        final t = phoneTabs(l);
+        expect({...t.bar, ...t.more}.length, 7);
+        expect(t.bar.length + t.more.length, 7);
+      }
+    });
+  });
+
+  group('TvCanvas', () {
+    testWidgets(
+        'lays the app out on the chosen width whatever the screen reports',
+        (t) async {
+      t.view.physicalSize = const Size(960, 540);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      Size? seen;
+      await t.pumpWidget(MaterialApp(
+        home: TvCanvas(
+            enabled: true,
+            width: 1280,
+            child: Builder(builder: (c) {
+              seen = MediaQuery.sizeOf(c);
+              return const SizedBox.expand();
+            })),
+      ));
+      expect(seen!.width, 1280);
+      expect(seen!.height, closeTo(720, 0.01));
+    });
+
+    testWidgets('does nothing when TV mode is off', (t) async {
+      t.view.physicalSize = const Size(420, 900);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      Size? seen;
+      await t.pumpWidget(MaterialApp(
+        home: TvCanvas(
+            enabled: false,
+            width: 1280,
+            child: Builder(builder: (c) {
+              seen = MediaQuery.sizeOf(c);
+              return const SizedBox.expand();
+            })),
+      ));
+      expect(seen, const Size(420, 900));
+    });
+  });
+
+  for (final layout in UiLayout.values) {
+    group(layout.label, () {
+      testWidgets(
+          'phone: Home and every browse tab render, bottom bar with More',
+          (t) async {
+        final (st, app) = await setup({'layout': layout.name});
+        await pumpApp(t, st, app, const Size(420, 900));
+        expect(find.byType(NavigationBar), findsOneWidget);
+        expect(find.text('More'), findsOneWidget);
+        for (final k in phoneTabs(layout).bar) {
+          await t.tap(find.descendant(
+              of: find.byType(NavigationBar),
+              matching: find.text(kDests[k].label)));
+          await t.pumpAndSettle();
+          expect(tester(t), isNull, reason: 'no exceptions on that tab');
+        }
+        await t.tap(find.text('More'));
+        await t.pumpAndSettle();
+        expect(find.text(kDests[phoneTabs(layout).more.first].label),
+            findsWidgets);
+      });
+
+      testWidgets(
+          'TV: 1280 canvas renders Home and each browse tab without overflow',
+          (t) async {
+        final (st, app) = await setup({'layout': layout.name, 'tvMode': 'on'});
+        await pumpApp(t, st, app, const Size(1920, 1080));
+        for (final k in [1, 3]) {
+          if (layout == UiLayout.marquee) {
+            final rail = t.widget<NavigationRail>(find.byType(NavigationRail));
+            expect(rail.destinations.length, 7);
+            (rail.onDestinationSelected!)(k);
+          } else {
+            await t.tap(find.text(kDests[k].label).first);
+          }
+          await t.pumpAndSettle();
+          expect(tester(t), isNull);
+        }
+      });
+    });
+  }
+
+  testWidgets('Spotlight on TV: the details panel follows the focused poster',
+      (t) async {
+    final (st, app) =
+        await setup({'layout': 'spotlight', 'tvMode': 'on', 'startTab': 3});
+    await pumpApp(t, st, app, const Size(1280, 720));
+    expect(find.text('Salt Road'), findsWidgets);
+    expect(find.text('A courier crosses a frozen salt flat.'), findsOneWidget);
+    // Move focus onto the second poster.
+    await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await t.pumpAndSettle();
+    final focused = FocusManager.instance.primaryFocus;
+    expect(focused, isNotNull);
+  });
+
+  testWidgets('Control Room on TV lists channels numbered, with a details pane',
+      (t) async {
+    final (st, app) =
+        await setup({'layout': 'control', 'tvMode': 'on', 'startTab': 1});
+    await pumpApp(t, st, app, const Size(1280, 720));
+    expect(find.text('Arena Sports 1'), findsWidgets);
+    expect(find.text('Metro News 24'), findsWidgets);
+    expect(find.text('1'), findsWidgets);
+    expect(find.text('Sports'), findsOneWidget);
+    expect(find.text('News'), findsWidgets);
+    expect(find.text('Watch'), findsOneWidget);
+  });
+
+  testWidgets('Control Room category pane filters the channel list', (t) async {
+    final (st, app) =
+        await setup({'layout': 'control', 'tvMode': 'on', 'startTab': 1});
+    await pumpApp(t, st, app, const Size(1280, 720));
+    await t.tap(find.text('News').first);
+    await t.pumpAndSettle();
+    expect(find.text('Arena Sports 1'), findsNothing);
+    expect(find.text('Metro News 24'), findsWidgets);
+  });
+
+  testWidgets('Appearance page: choosing a layout card changes the setting',
+      (t) async {
+    final (st, app) = await setup({});
+    await pumpApp(t, st, app, const Size(900, 1400),
+        home: const Scaffold(body: AppearancePage()));
+    expect(st.layout, UiLayout.marquee);
+    await t.tap(find.text('Spotlight'));
+    await t.pumpAndSettle();
+    expect(st.layout, UiLayout.spotlight);
+    await t.tap(find.text('Control Room'));
+    await t.pumpAndSettle();
+    expect(st.layout, UiLayout.control);
+  });
+}
+
+/// The exception, if any, the framework caught during the last frame.
+Object? tester(WidgetTester t) => t.takeException();

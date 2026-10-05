@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '../layouts/ui_layout.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
-import '../theme.dart';
 import '../widgets/tmdb_header.dart';
 import '../widgets/tv.dart';
 import 'player_screen.dart';
@@ -16,7 +16,7 @@ class SeriesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.read<AppState>();
     return Scaffold(
-      appBar: AppBar(title: Text(series.name), backgroundColor: Boss.bg),
+      appBar: AppBar(title: Text(series.name), backgroundColor: LayoutPalette.of(context).bg),
       body: FutureBuilder<List<Episode>>(
         future: s.episodes(series),
         builder: (context, snap) {

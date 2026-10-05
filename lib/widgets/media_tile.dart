@@ -3,12 +3,15 @@ import '../models/media.dart';
 import '../theme.dart';
 import 'focus_card.dart';
 import 'net_image.dart';
+import 'tv.dart';
 
 class MediaTile extends StatelessWidget {
   final MediaItem item;
   final bool favorite;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final ValueChanged<bool>? onFocus;
+  final bool autofocus;
 
   const MediaTile({
     super.key,
@@ -16,14 +19,19 @@ class MediaTile extends StatelessWidget {
     required this.onTap,
     this.favorite = false,
     this.onLongPress,
+    this.onFocus,
+    this.autofocus = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final landscape = item.kind == MediaKind.live;
+    final tv = TvScope.of(context);
     return FocusCard(
       onTap: onTap,
       onLongPress: onLongPress,
+      onFocus: onFocus,
+      autofocus: autofocus,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -50,7 +58,7 @@ class MediaTile extends StatelessWidget {
               child: Text(item.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontSize: tv ? 15 : 12, fontWeight: FontWeight.w600)),
             ),
           ),
           if (favorite)

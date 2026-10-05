@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
+import '../../layouts/layout_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -347,6 +348,8 @@ class AppearancePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final st = context.watch<SettingsState>();
     return ListView(children: [
+      const SettingsHeader('Layout'),
+      const LayoutPicker(),
       const SettingsHeader('Size'),
       ChoiceRow<double>(
         icon: Icons.text_fields,
@@ -368,11 +371,20 @@ class AppearancePage extends StatelessWidget {
       ChoiceRow<String>(
         icon: Icons.tv,
         title: 'TV mode',
-        subtitle: 'Bigger text and posters, a bold focus outline, safe screen margins and Back-to-Home. '
+        subtitle: 'A fixed-size screen layout, a bold focus outline, safe screen margins and Back-to-Home. '
             '${SettingsState.detectedTv ? 'This device was detected as a TV.' : 'Auto turns on for Android TV, Google TV and Fire TV.'}',
         value: st.tvMode,
         options: const [('auto', 'Auto'), ('on', 'On'), ('off', 'Off')],
         onChanged: (v) => st.set('tvMode', v),
+      ),
+      ChoiceRow<int>(
+        icon: Icons.zoom_out_map,
+        title: 'TV zoom',
+        subtitle: 'How much fits on the TV screen. Smaller sizes show more; use Larger if text is hard to read from the couch. '
+            'Applies in TV mode',
+        value: st.tvWidth,
+        options: const [(1120, 'Larger'), (1280, 'Standard'), (1440, 'Smaller'), (1600, 'Smallest')],
+        onChanged: (v) => st.set('tvWidth', v),
       ),
       const SettingsHeader('Startup'),
       ChoiceRow<int>(

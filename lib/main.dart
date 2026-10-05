@@ -42,12 +42,16 @@ class StreamBossApp extends StatelessWidget {
     return MaterialApp(
       title: 'StreamBoss',
       debugShowCheckedModeBanner: false,
-      theme: Boss.theme(tv: tv),
-      builder: (context, child) => TvScope(
-        tv: tv,
-        child: MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
-          child: child ?? const SizedBox.shrink(),
+      theme: Boss.theme(tv: tv, layout: st.layout),
+      builder: (context, child) => TvCanvas(
+        enabled: tv,
+        width: st.tvWidth,
+        child: TvScope(
+          tv: tv,
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ),
       home: s.active == null || s.error != null || s.loading

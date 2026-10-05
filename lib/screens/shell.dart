@@ -4,6 +4,8 @@ import '../models/media.dart';
 import '../services/crash_guard.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../layouts/shell_nav.dart';
+import '../layouts/ui_layout.dart';
 import '../widgets/tv.dart';
 import 'browse_screen.dart';
 import 'crash_notice.dart';
@@ -28,7 +30,7 @@ class _ShellState extends State<Shell> {
   void initState() {
     super.initState();
     // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings
-    _i = context.read<SettingsState>().startTab.clamp(0, _dests.length - 1);
+    _i = context.read<SettingsState>().startTab.clamp(0, kDests.length - 1);
     _visited.add(_i);
     WidgetsBinding.instance.addPostFrameCallback((_) => _crashNotice());
   }
@@ -54,19 +56,10 @@ class _ShellState extends State<Shell> {
     showCrashNotice(context, r, switchedTo: switchedTo, wasSafeAlready: wasSafe);
   }
 
-  static const _dests = [
-    (Icons.home_outlined, Icons.home, 'Home'),
-    (Icons.live_tv_outlined, Icons.live_tv, 'Live'),
-    (Icons.view_list_outlined, Icons.view_list, 'Guide'),
-    (Icons.movie_outlined, Icons.movie, 'Movies'),
-    (Icons.tv_outlined, Icons.tv, 'Series'),
-    (Icons.search, Icons.search, 'Search'),
-    (Icons.settings_outlined, Icons.settings, 'Settings'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final layout = context.select<SettingsState, UiLayout>((st) => st.layout);
     final pages = [
       const HomeScreen(),
       BrowseScreen(kind: MediaKind.live, catalog: s.shown),
@@ -91,43 +84,64 @@ class _ShellState extends State<Shell> {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) setState(() => _i = 0);
           },
-          child: child,
+          child: ShellNav(index: _i, select: select, child: child),
         );
 
-    void select(int v) => setState(() {
-          _i = v;
-          _visited.add(v);
-        });
-
     if (wide) {
+      final Widget chrome;
+      if (layout == UiLayout.marquee) {
+        chrome = Row(children: [
+          NavigationRail(
+            selectedIndex: _i,
+            onDestinationSelected: select,
+            labelType: tv ? NavigationRailLabelType.selected : NavigationRailLabelType.all,
+            destinations: [
+              for (final d in kDests)
+                NavigationRailDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selectedIcon), label: Text(d.label)),
+            ],
+          ),
+          Expanded(child: body),
+        ]);
+      } else {
+        chrome = Column(children: [
+          TopNav(layout: layout, index: _i, onSelect: select),
+          Expanded(child: body),
+        ]);
+      }
       return guard(Scaffold(
-        body: TvSafe(
-          child: Row(children: [
-            NavigationRail(
-              selectedIndex: _i,
-              onDestinationSelected: select,
-              labelType: NavigationRailLabelType.all,
-              destinations: [
-                for (final d in _dests)
-                  NavigationRailDestination(icon: Icon(d.$1), selectedIcon: Icon(d.$2), label: Text(d.$3)),
-              ],
-            ),
-            Expanded(child: body),
-          ]),
-        ),
+        body: _Backdrop(layout: layout, child: TvSafe(child: chrome)),
       ));
     }
-    return Scaffold(
-      body: SafeArea(child: body),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _i,
-        onDestinationSelected: select,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          for (final d in _dests)
-            NavigationDestination(
-                icon: Icon(d.$1), selectedIcon: Icon(d.$2), label: d.$3),
-        ],
+    return guard(Scaffold(
+      body: _Backdrop(layout: layout, child: SafeArea(child: body)),
+      bottomNavigationBar: PhoneNav(layout: layout, index: _i, onSelect: select),
+    ));
+  }
+
+  void select(int v) => setState(() {
+        _i = v;
+        _visited.add(v);
+      });
+}
+
+/// Spotlight sits on soft colored glows; the other layouts use the plain background.
+class _Backdrop extends StatelessWidget {
+  final UiLayout layout;
+  final Widget child;
+  const _Backdrop({required this.layout, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (layout != UiLayout.spotlight) return child;
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(center: Alignment(-0.7, -0.6), radius: 1.1, colors: [Color(0x557D6DFF), Color(0x00140C1D)]),
+      ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(center: Alignment(1, 1), radius: 0.9, colors: [Color(0x40FF3D71), Color(0x00140C1D)]),
+        ),
+        child: child,
       ),
     );
   }

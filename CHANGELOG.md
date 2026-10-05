@@ -4,6 +4,14 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b1 - 2026-10-05
+- Three selectable layouts, in Settings > Appearance > Layout: Marquee, Control Room and Spotlight, each with its own navigation, Home and browse screens, colors and a phone version. The choice is kept per device and is not part of backups. This is a beta: tell me what feels wrong on your TV and phone.
+  - Marquee: a featured title with Play focused, a slim icon rail on TV and a bottom bar on phones.
+  - Control Room: a top bar with a clock; Live shows categories, a numbered channel list with what is on now and how far through it is, and a details pane for the highlighted channel or title.
+  - Spotlight: one navigation pill, a poster wall with chips, and a panel with the details of the title you are on; on a phone a search pill and a resume bar.
+- TV mode is zoomed out. The TV layout is drawn on a fixed 1280 px wide canvas and scaled to the screen, so it looks the same on every TV instead of zoomed in on some. The extra 20% text and posters TV mode used to add is gone. Settings > Appearance > TV zoom changes how much fits (Larger, Standard, Smaller, Smallest). Buttons are bigger on TV.
+- Phones get a bottom bar of four screens plus a More sheet (Series, Search and Settings, or whichever your layout puts there).
+
 ## 0.2.6 - 2026-10-05
 - Smoother video on Fire TV and Android TV, and a fix for movies closing the app. The player used to copy every decoded frame through the GPU, which a TV stick can't keep up with for movies (4K frames need a lot of memory), and it made live TV laggy. On a TV the video now goes straight from the hardware decoder to the screen ("Hardware surface"). Settings > Playback > Video output lets you switch back to Compatible (GPU), which is also what the app falls back to by itself if playback closes while starting. The surface output can't draw embedded subtitles or shaders.
 - When a video can't start because the network can't look up the server that hosts it (common: the catalog loads but movies come from a different address that a carrier or filtering DNS blocks), the player now says so and what to try, instead of suggesting a different decoder.

@@ -38,15 +38,14 @@ void main() {
       expect(st.isTv, true);
     });
 
-    test('TV adds 20% to text and poster scale on top of the user choice', () async {
+    test('TV mode no longer scales text or posters: the TV canvas sets the size', () async {
       final st = await settings();
       st.set('uiScale', 1.15);
       st.set('posterSize', 1.25);
+      st.set('tvMode', 'on');
       expect(st.textScale, 1.15);
       expect(st.posterScale, 1.25);
-      st.set('tvMode', 'on');
-      expect(st.textScale, closeTo(1.38, 1e-9));
-      expect(st.posterScale, closeTo(1.5, 1e-9));
+      expect(st.tvWidth, 1280);
     });
 
     test('is reported in diagnostics but not restored from a backup', () async {

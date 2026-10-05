@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../layouts/ui_layout.dart';
 import 'package:provider/provider.dart';
 import '../services/mpv_props.dart';
 import '../services/shaders.dart';
@@ -15,7 +16,7 @@ class ShaderScreen extends StatelessWidget {
     final list = st.shaders;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Shaders'), backgroundColor: Boss.bg),
+      appBar: AppBar(title: const Text('Shaders'), backgroundColor: LayoutPalette.of(context).bg),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Boss.accent,
         icon: const Icon(Icons.add),
