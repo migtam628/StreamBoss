@@ -10,6 +10,7 @@ void main() {
   }
   var x = f.readAsStringSync();
   _patchMainActivity();
+  _copyResources();
   if (x.contains('LEANBACK_LAUNCHER')) {
     stdout.writeln('Already patched.');
     return;
@@ -24,7 +25,8 @@ void main() {
   x = x.replaceFirstMapped(RegExp(r'<manifest[^>]*>'), (m) => '${m[0]}\n$features');
 
   // Many IPTV servers are plain http.
-  x = x.replaceFirst('<application', '<application\n        android:usesCleartextTraffic="true"\n        android:banner="@mipmap/ic_launcher"');
+  x = x.replaceFirst('<application', '<application\n        android:usesCleartextTraffic="true"\n        android:banner="@drawable/banner"');
+  x = x.replaceFirst(RegExp(r'android:label="[^"]*"'), 'android:label="StreamBoss"');
 
   // Add the TV launcher category next to the normal one.
   x = x.replaceFirstMapped(
@@ -105,3 +107,16 @@ class MainActivity : FlutterActivity() {
     }
 }
 ''';
+
+/// Branded launcher icons and the 320x180 Android TV / Fire TV banner
+/// (tool/android_res mirrors android/app/src/main/res).
+void _copyResources() {
+  final src = Directory('tool/android_res');
+  final dst = Directory('android/app/src/main/res');
+  if (!src.existsSync() || !dst.existsSync()) return;
+  for (final f in src.listSync(recursive: true).whereType<File>()) {
+    final rel = f.path.substring(src.path.length + 1);
+    final out = File('${dst.path}/$rel')..parent.createSync(recursive: true);
+    f.copySync(out.path);
+  }
+}

@@ -23,6 +23,25 @@ the native libmpv player. Web was exercised end to end in headless Chromium (M3U
 seek, pause, speed, resume, channel zapping, search, settings). That Chromium has no H.264, so the
 test used VP9/WebM streams; the H.264 demo streams need a normal browser.
 
+## Install on Android, Android TV, Google TV and Fire TV
+
+The CI run attaches three APKs (`android` artifact); pick the one that matches the device:
+
+| APK | Devices |
+|---|---|
+| `app-arm64-v8a-release.apk` | most phones and newer TV boxes / Fire TV 4K Max |
+| `app-armeabi-v7a-release.apk` | older phones, older Fire TV Sticks and TV boxes |
+| `app-x86_64-release.apk` | emulators, Chromebooks |
+
+```sh
+adb connect <tv-ip>:5555        # TV / Fire TV: enable ADB debugging first (skip for a USB phone)
+adb install -r app-arm64-v8a-release.apk
+```
+
+The APKs are signed with the debug key, which is fine for sideloading but not for the Play Store.
+On a TV the app appears in the apps row with its own banner; use the D-pad to navigate, OK to select,
+Back to go up. Android picture-in-picture is available from the player's controls.
+
 ## Features
 
 - Xtream Codes and M3U sources, multiple saved sources, offline demo mode
