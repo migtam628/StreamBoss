@@ -12,6 +12,7 @@ class SettingsState extends ChangeNotifier {
   static const Map<String, Object> defaults = {
     // playback
     'decoder': 'auto', // auto | software (native only)
+    'videoOutput': 'auto', // auto | surface | compat (Android only, see [surfaceOutput])
     'bufferSecs': 20, // low 5 / normal 20 / high 60 (native only)
     'speed': 1.0,
     'autoResume': true,
@@ -45,7 +46,7 @@ class SettingsState extends ChangeNotifier {
   static const secretKeys = {'tmdbKey'};
 
   /// Describes this device rather than the user's taste, so backups don't carry it over.
-  static const deviceKeys = {'tvMode'};
+  static const deviceKeys = {'tvMode', 'videoOutput'};
 
   /// Set at startup from [DeviceInfo]; tests set it directly.
   static bool detectedTv = false;
@@ -81,6 +82,18 @@ class SettingsState extends ChangeNotifier {
 
   /// TV ("10-foot") mode: on when forced, or when auto and a TV was detected.
   bool get isTv => tvMode == 'on' || (tvMode == 'auto' && detectedTv);
+
+  String get videoOutput => _g('videoOutput');
+
+  /// Android only: hand video straight from the hardware decoder to the screen (libmpv's
+  /// `mediacodec_embed`) instead of copying every frame through the GPU. Much lighter for movies
+  /// on a Fire TV or Android TV box, but libmpv then can't draw embedded subtitles or shaders.
+  /// Automatic means on for TVs. Software decoding always uses the GPU path.
+  bool get surfaceOutput {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
+    if (decoder == 'software') return false;
+    return videoOutput == 'surface' || (videoOutput == 'auto' && isTv);
+  }
 
   /// Text and poster scales as applied: the user's choice, plus 20% in TV mode.
   double get textScale => uiScale * (isTv ? 1.2 : 1);

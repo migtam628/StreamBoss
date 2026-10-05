@@ -4,14 +4,18 @@ import '../services/crash_report.dart';
 import '../theme.dart';
 
 /// Tells the user the last playback session ended abnormally, and shows the end of its log
-/// (readable on a TV, copyable elsewhere). [switchedToSafe] says safe playback was just turned on.
-Future<void> showCrashNotice(BuildContext context, CrashReport r, {required bool switchedToSafe, required bool wasSafeAlready}) {
+/// (readable on a TV, copyable elsewhere). [switchedTo] says which safer setting was just turned on:
+/// `compat` (standard video output) or `software` (software decoding).
+Future<void> showCrashNotice(BuildContext context, CrashReport r, {String? switchedTo, required bool wasSafeAlready}) {
   final String what;
   if (r.duringStartup) {
-    what = switchedToSafe
-        ? 'StreamBoss closed while starting playback, so Safe playback is now on: software decoding, which is slower but works on more devices. '
-            'You can change it in Settings > Playback > Decoder.'
-        : wasSafeAlready
+    what = switchedTo == 'compat'
+        ? 'StreamBoss closed while starting playback, so the video output is now Compatible (it was the TV hardware surface). '
+            'Try again; you can change it in Settings > Playback > Video output.'
+        : switchedTo == 'software'
+            ? 'StreamBoss closed while starting playback, so Safe playback is now on: software decoding, which is slower but works on more devices. '
+                'You can change it in Settings > Playback > Decoder.'
+            : wasSafeAlready
             ? 'StreamBoss closed while starting playback, even with software decoding.'
             : 'StreamBoss closed while starting playback.';
   } else {

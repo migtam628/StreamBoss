@@ -46,10 +46,12 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver {
   // Warnings and errors from libmpv go to the playback log (see CrashGuard).
-  late final Player _player = Player(configuration: const PlayerConfiguration(logLevel: MPVLogLevel.warn));
+  late final SettingsState _settings = context.read<SettingsState>();
+  // TV boxes have little memory: a smaller demuxer buffer (libmpv default here is 32 MB forward + 32 MB back).
+  late final Player _player = Player(
+      configuration: PlayerConfiguration(logLevel: MPVLogLevel.warn, bufferSize: _settings.isTv ? 16 * 1024 * 1024 : 32 * 1024 * 1024));
   late final VideoController _controller;
   late final AppState _app = context.read<AppState>();
-  late final SettingsState _settings = context.read<SettingsState>();
 
   final _root = FocusNode(debugLabel: 'player-root');
   final _playBtn = FocusNode(debugLabel: 'player-play');
@@ -81,11 +83,15 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     super.initState();
     _index = _queue == null ? 0 : _queue!.indexWhere((e) => e.key == widget.item.key).clamp(0, _queue!.length - 1);
     WidgetsBinding.instance.addObserver(this);
-    CrashGuard.begin('${_live ? 'live' : 'vod'} host=${Uri.tryParse(widget.url)?.host} decoder=${_settings.decoder}');
+    final surface = _settings.surfaceOutput;
+    CrashGuard.begin('${_live ? 'live' : 'vod'} host=${Uri.tryParse(widget.url)?.host} '
+        'decoder=${_settings.decoder} output=${surface ? 'surface' : 'gpu'}');
     _controller = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
         enableHardwareAcceleration: _settings.decoder != 'software',
+        vo: surface ? 'mediacodec_embed' : null,
+        hwdec: surface ? 'mediacodec' : null,
       ),
     );
     SystemChrome.setPreferredOrientations(
@@ -167,7 +173,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (state == AppLifecycleState.paused) CrashGuard.mark('background');
   }
 
-  Future<void> _applyShaders() => applyShaders(_player, [
+  // Shaders run in libmpv's GPU renderer, which the surface output bypasses.
+  Future<void> _applyShaders() => _settings.surfaceOutput ? Future.value() : applyShaders(_player, [
         for (final sh in _settings.activeShaders) MapEntry(sh.id, sh.source),
       ]);
 

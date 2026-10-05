@@ -4,6 +4,11 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.2.6 - 2026-10-05
+- Smoother video on Fire TV and Android TV, and a fix for movies closing the app. The player used to copy every decoded frame through the GPU, which a TV stick can't keep up with for movies (4K frames need a lot of memory), and it made live TV laggy. On a TV the video now goes straight from the hardware decoder to the screen ("Hardware surface"). Settings > Playback > Video output lets you switch back to Compatible (GPU), which is also what the app falls back to by itself if playback closes while starting. The surface output can't draw embedded subtitles or shaders.
+- The player's memory buffer is smaller on TVs (16 MB instead of 32 MB each way).
+- If playback closes while starting, the app now steps down one level at a time: first the standard video output, then software decoding (it used to jump straight to software, which made live TV slow after a crash).
+
 ## 0.2.5 - 2026-10-05
 - Android releases can be signed with a permanent key (repository secrets, setup in README "Android signing"). Before this, every CI run signed with a new throwaway debug key, so a release could not be installed over the previous one ("App not installed"). CI now prints each APK's signing fingerprint, and warns when no key is configured.
 

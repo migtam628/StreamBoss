@@ -33,16 +33,25 @@ class _ShellState extends State<Shell> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _crashNotice());
   }
 
-  /// If the last playback session died, say so, and turn on Safe playback when it died while
-  /// starting (hardware decoding or the video output is the usual culprit on some devices).
+  /// If the last playback session died, say so, and step down to a safer way of playing when it
+  /// died while starting: first the standard GPU video output (the TV hardware-surface output is the
+  /// newest path), then software decoding. The video output or the decoder is the usual culprit.
   void _crashNotice() {
     final r = CrashGuard.takeReport();
     if (r == null || !mounted) return;
     final st = context.read<SettingsState>();
     final wasSafe = st.decoder == 'software';
-    final switched = r.duringStartup && !wasSafe;
-    if (switched) st.set('decoder', 'software');
-    showCrashNotice(context, r, switchedToSafe: switched, wasSafeAlready: wasSafe);
+    String? switchedTo;
+    if (r.duringStartup) {
+      if (st.surfaceOutput) {
+        st.set('videoOutput', 'compat');
+        switchedTo = 'compat';
+      } else if (!wasSafe) {
+        st.set('decoder', 'software');
+        switchedTo = 'software';
+      }
+    }
+    showCrashNotice(context, r, switchedTo: switchedTo, wasSafeAlready: wasSafe);
   }
 
   static const _dests = [

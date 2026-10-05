@@ -219,6 +219,16 @@ class PlaybackPage extends StatelessWidget {
           options: const [('auto', 'Hardware (recommended)'), ('software', 'Software')],
           onChanged: (v) => st.set('decoder', v),
         ),
+        if (defaultTargetPlatform == TargetPlatform.android)
+          ChoiceRow<String>(
+            icon: Icons.tv,
+            title: 'Video output',
+            subtitle: 'Hardware surface is smoothest for movies on Fire TV and Android TV, but cannot draw embedded subtitles or shaders. '
+                'Compatible goes through the GPU. Automatic uses the surface on TVs',
+            value: st.videoOutput,
+            options: const [('auto', 'Automatic'), ('surface', 'Hardware surface'), ('compat', 'Compatible')],
+            onChanged: (v) => st.set('videoOutput', v),
+          ),
         ChoiceRow<int>(
           icon: Icons.network_check,
           title: 'Network buffer',

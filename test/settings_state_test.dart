@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streamboss/services/net_config.dart';
@@ -22,7 +23,8 @@ void main() {
   });
 
   test('values persist across instances, including legacy keys', () async {
-    SharedPreferences.setMockInitialValues({'subBg': false, 'decoder': 'software', 'speed': 1.5});
+    SharedPreferences.setMockInitialValues(
+        {'subBg': false, 'decoder': 'software', 'speed': 1.5});
     final a = SettingsState();
     await a.init();
     expect(a.subBackground, false);
@@ -83,5 +85,47 @@ void main() {
     expect(fmtTime(DateTime(2024, 1, 1, 18, 5), use24h: false), '6:05 PM');
     expect(fmtTime(DateTime(2024, 1, 1, 0, 0), use24h: false), '12:00 AM');
     expect(fmtTime(DateTime(2024, 1, 1, 12, 30), use24h: false), '12:30 PM');
+  });
+
+  group('surfaceOutput (Android TV hardware surface)', () {
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+      SettingsState.detectedTv = false;
+    });
+
+    Future<SettingsState> make() async {
+      final s = SettingsState();
+      await s.init();
+      return s;
+    }
+
+    test('automatic: on for an Android TV, off for phones and other platforms',
+        () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      SettingsState.detectedTv = true;
+      expect((await make()).surfaceOutput, true);
+      SettingsState.detectedTv = false;
+      expect((await make()).surfaceOutput, false);
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      SettingsState.detectedTv = true;
+      expect((await make()).surfaceOutput, false);
+    });
+
+    test('explicit choices win, but software decoding never uses the surface',
+        () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      SettingsState.detectedTv = true;
+      final s = await make();
+      s.set('videoOutput', 'compat');
+      expect(s.surfaceOutput, false);
+      s.set('videoOutput', 'surface');
+      expect(s.surfaceOutput, true);
+      s.set('decoder', 'software');
+      expect(s.surfaceOutput, false);
+    });
+
+    test('is a device setting, not part of a backup', () {
+      expect(SettingsState.deviceKeys, contains('videoOutput'));
+    });
   });
 }
