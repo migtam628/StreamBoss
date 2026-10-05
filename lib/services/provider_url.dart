@@ -19,13 +19,16 @@ ProviderLogin? parseProviderLink(String raw) {
   final user = u.queryParameters['username'];
   final pass = u.queryParameters['password'];
   if (user == null || user.isEmpty || pass == null || pass.isEmpty) return null;
-  return ProviderLogin('${u.scheme}://${u.host}${u.hasPort ? ':${u.port}' : ''}', user, pass);
+  return ProviderLogin(
+      '${u.scheme}://${u.host}${u.hasPort ? ':${u.port}' : ''}', user, pass);
 }
 
-final _secret = RegExp(r'(username|password)=[^&\s)\x27"]+', caseSensitive: false);
+final _secret =
+    RegExp(r'(username|password)=[^&\s)\x27"]+', caseSensitive: false);
 
 /// Never show credentials in error text (they would end up in screenshots and logs).
-String redactSecrets(String s) => s.replaceAllMapped(_secret, (m) => '${m[1]}=***');
+String redactSecrets(String s) =>
+    s.replaceAllMapped(_secret, (m) => '${m[1]}=***');
 
 /// Turns low-level exceptions into something a person can act on.
 String friendlyError(Object e) {
@@ -34,7 +37,17 @@ String friendlyError(Object e) {
   if (host != null) {
     return "Couldn't look up '$host'. Check the address and your internet connection.";
   }
-  if (raw.contains('Connection refused') || raw.contains('Connection timed out') || raw.contains('TimeoutException')) {
+  // errno 51/50 = network unreachable/down, 65 = no route to host (macOS); 101/113 on Linux/Android.
+  if (RegExp(r'errno = (51|50|65|101|113)\b').hasMatch(raw) ||
+      raw.contains('Network is unreachable') ||
+      raw.contains('No route to host')) {
+    final at = RegExp(r'address = ([^,)]+)').firstMatch(raw)?[1];
+    return "This device can't reach ${at == null ? 'the server' : "'$at'"}. Check that you are online and that a VPN, "
+        "firewall or content filter isn't blocking StreamBoss, then try again.";
+  }
+  if (raw.contains('Connection refused') ||
+      raw.contains('Connection timed out') ||
+      raw.contains('TimeoutException')) {
     return "The server didn't answer. Check the address, port and your connection.";
   }
   return redactSecrets(raw);
