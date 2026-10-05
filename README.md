@@ -37,6 +37,9 @@ the Roku channel zip, and `SHA256SUMS.txt`. Release notes are generated from mer
 To rehearse without publishing, run **Actions > Release > Run workflow** with "publish" unchecked:
 it builds and packages everything and attaches the files to the run.
 
+macOS: because the app is unsigned, Gatekeeper blocks the first launch. Right-click the app > Open, or run
+`xattr -dr com.apple.quarantine StreamBoss.app` once.
+
 Notes: builds are not code-signed. Android APKs use the debug key, macOS may need right-click > Open,
 and Windows may show a SmartScreen prompt. tvOS is not shipped as a release asset because it needs
 Apple signing; build it from `tvos/` (see its README).
@@ -86,6 +89,7 @@ Platform folders are generated, not committed:
 
 ```sh
 flutter create . --project-name streamboss --org com.streamboss
+dart run tool/patch_macos.dart     # macOS: network entitlement (the sandboxed app can't connect without it)
 dart run tool/patch_android.dart   # Android TV / Google TV / Fire TV manifest (leanback launcher, INTERNET, cleartext http)
 flutter pub get
 flutter run -d <device>

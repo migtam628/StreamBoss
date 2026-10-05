@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
+import '../services/provider_url.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 
@@ -102,13 +103,30 @@ class _SetupScreenState extends State<SetupScreen> {
                       ],
                       const SizedBox(height: 20),
                       FilledButton(
-                        onPressed: () => s.addSource(Source(
-                          name: _name.text.trim().isEmpty ? 'Source' : _name.text.trim(),
-                          type: _type,
-                          url: _url.text.trim(),
-                          username: _user.text.trim(),
-                          password: _pass.text,
-                        )),
+                        onPressed: () {
+                          var url = _url.text.trim();
+                          var user = _user.text.trim();
+                          var pass = _pass.text;
+                          // A pasted get.php?username=..&password=.. link works in the Xtream form.
+                          if (_type == SourceType.xtream) {
+                            final login = parseProviderLink(url);
+                            if (login != null) {
+                              url = login.server;
+                              if (user.isEmpty) user = login.username;
+                              if (pass.isEmpty) pass = login.password;
+                              _url.text = url;
+                              _user.text = user;
+                              _pass.text = pass;
+                            }
+                          }
+                          s.addSource(Source(
+                            name: _name.text.trim().isEmpty ? 'Source' : _name.text.trim(),
+                            type: _type,
+                            url: url,
+                            username: user,
+                            password: pass,
+                          ));
+                        },
                         child: const Padding(
                           padding: EdgeInsets.all(12),
                           child: Text('Connect'),

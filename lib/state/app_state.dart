@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
 import '../services/demo_catalog.dart';
 import '../services/m3u_parser.dart';
+import '../services/provider_url.dart';
 import '../services/xmltv.dart';
 import '../services/xtream_client.dart';
 import 'package:http/http.dart' as http;
@@ -22,7 +23,9 @@ class AppState extends ChangeNotifier {
   final List<MediaItem> recents = [];
 
   XtreamClient? _xtream;
-  final _secure = const FlutterSecureStorage();
+  // macOS: the data-protection keychain needs signing entitlements an unsigned build lacks,
+  // so use the regular keychain there.
+  final _secure = const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
   final Map<String, int> positions = {}; // media key -> ms
 
   bool get ready => active != null && !loading && error == null;
@@ -127,7 +130,7 @@ class AppState extends ChangeNotifier {
       guide = XmltvData.empty;
       await _prefs?.setString('active', s.name);
     } catch (e) {
-      error = e.toString().replaceFirst('Exception: ', '');
+      error = friendlyError(e);
       catalog = const Catalog();
     }
     loading = false;
