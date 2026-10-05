@@ -17,6 +17,8 @@ class Shell extends StatefulWidget {
 
 class _ShellState extends State<Shell> {
   int _i = 0;
+  // Tabs are built on first visit only, so e.g. the guide isn't downloaded at login.
+  final _visited = <int>{0};
 
   static const _dests = [
     (Icons.home_outlined, Icons.home, 'Home'),
@@ -41,14 +43,22 @@ class _ShellState extends State<Shell> {
       const SettingsScreen(),
     ];
     final wide = MediaQuery.sizeOf(context).width >= 800;
-    final body = IndexedStack(index: _i, children: pages);
+    final body = IndexedStack(
+      index: _i,
+      children: [
+        for (var k = 0; k < pages.length; k++) _visited.contains(k) ? pages[k] : const SizedBox.shrink(),
+      ],
+    );
 
     if (wide) {
       return Scaffold(
         body: Row(children: [
           NavigationRail(
             selectedIndex: _i,
-            onDestinationSelected: (v) => setState(() => _i = v),
+            onDestinationSelected: (v) => setState(() {
+          _i = v;
+          _visited.add(v);
+        }),
             labelType: NavigationRailLabelType.all,
             destinations: [
               for (final d in _dests)
@@ -64,7 +74,10 @@ class _ShellState extends State<Shell> {
       body: SafeArea(child: body),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _i,
-        onDestinationSelected: (v) => setState(() => _i = v),
+        onDestinationSelected: (v) => setState(() {
+          _i = v;
+          _visited.add(v);
+        }),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           for (final d in _dests)

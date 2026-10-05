@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/media.dart';
 import '../theme.dart';
 import 'focus_card.dart';
+import 'net_image.dart';
 
 class MediaTile extends StatelessWidget {
   final MediaItem item;
@@ -31,12 +31,8 @@ class MediaTile extends StatelessWidget {
             color: Boss.surfaceHi,
             child: item.poster == null
                 ? _fallback()
-                : CachedNetworkImage(
-                    imageUrl: item.poster!,
-                    fit: landscape ? BoxFit.contain : BoxFit.cover,
-                    errorWidget: (_, __, ___) => _fallback(),
-                    placeholder: (_, __) => const SizedBox.shrink(),
-                  ),
+                : NetImage(item.poster!,
+                    fit: landscape ? BoxFit.contain : BoxFit.cover, fallback: _fallback),
           ),
           Positioned(
             left: 0,

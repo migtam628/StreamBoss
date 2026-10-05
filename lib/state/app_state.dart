@@ -6,6 +6,7 @@ import '../models/media.dart';
 import '../services/demo_catalog.dart';
 import '../services/m3u_parser.dart';
 import '../services/provider_url.dart';
+import '../services/tmdb.dart';
 import '../services/xmltv.dart';
 import '../services/xtream_client.dart';
 import 'package:http/http.dart' as http;
@@ -116,10 +117,28 @@ class AppState extends ChangeNotifier {
           catalog = demoCatalog();
           _xtream = null;
         case SourceType.m3u:
-          final res = await http.get(Uri.parse(s.url)).timeout(const Duration(seconds: 60));
-          if (res.statusCode != 200) throw Exception('Playlist returned ${res.statusCode}');
-          catalog = parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true));
-          _xtream = null;
+          {
+            _xtream = null;
+            // A provider's get.php?username=..&password=.. link is the Xtream panel in disguise.
+            // Its API gives proper movies, series, posters and guide data, so prefer it and
+            // fall back to the plain playlist when the panel doesn't answer.
+            final login = parseProviderLink(s.url);
+            if (login != null && Uri.tryParse(s.url)?.path.endsWith('get.php') == true) {
+              try {
+                final api = XtreamClient(login.server, login.username, login.password);
+                await api.authenticate();
+                catalog = await api.loadCatalog();
+                _xtream = api;
+              } catch (_) {
+                _xtream = null;
+              }
+            }
+            if (_xtream == null) {
+              final res = await http.get(Uri.parse(s.url)).timeout(const Duration(seconds: 60));
+              if (res.statusCode != 200) throw Exception('Playlist returned ${res.statusCode}');
+              catalog = parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true));
+            }
+          }
         case SourceType.xtream:
           final c = XtreamClient(s.url, s.username, s.password);
           await c.authenticate();
@@ -143,6 +162,17 @@ class AppState extends ChangeNotifier {
     catalog = const Catalog();
     _prefs?.remove('active');
     notifyListeners();
+  }
+
+  /// Provider-side details for the movie / series page (null without an Xtream source).
+  Future<TmdbInfo?> providerInfo(MediaItem i) async {
+    final c = _xtream;
+    if (c == null || i.kind == MediaKind.live || i.id.startsWith('ep')) return null;
+    try {
+      return i.kind == MediaKind.series ? await c.seriesInfo(i.id) : await c.vodInfo(i.id);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<Episode>> episodes(MediaItem series) async =>

@@ -23,6 +23,23 @@ class TmdbInfo {
   });
 }
 
+/// Combines two sources field by field: values from [a] win, [b] fills the gaps.
+TmdbInfo? mergeInfo(TmdbInfo? a, TmdbInfo? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  String? nz(String? v) => (v == null || v.trim().isEmpty) ? null : v;
+  return TmdbInfo(
+    overview: nz(a.overview) ?? nz(b.overview),
+    rating: a.rating ?? b.rating,
+    year: a.year ?? b.year,
+    backdrop: a.backdrop ?? b.backdrop,
+    poster: a.poster ?? b.poster,
+    runtimeMin: a.runtimeMin ?? b.runtimeMin,
+    cast: a.cast.isNotEmpty ? a.cast : b.cast,
+    trailerKey: a.trailerKey ?? b.trailerKey,
+  );
+}
+
 /// Strips quality tags, years and brackets that providers add to titles.
 String cleanTitle(String raw) {
   var t = raw.replaceAll(RegExp(r'[\[\(\{][^\]\)\}]*[\]\)\}]'), ' ');

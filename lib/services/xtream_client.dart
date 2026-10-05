@@ -1,14 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/media.dart';
+import 'tmdb.dart';
 
 class XtreamClient {
   final String base;
   final String user;
   final String pass;
+  final http.Client _http;
 
-  XtreamClient(String server, this.user, this.pass)
-      : base = server.trim().replaceAll(RegExp(r'/+$'), '');
+  XtreamClient(String server, this.user, this.pass, {http.Client? client})
+      : base = server.trim().replaceAll(RegExp(r'/+$'), ''),
+        _http = client ?? http.Client();
 
   Uri _api(String action, [Map<String, String> extra = const {}]) =>
       Uri.parse('$base/player_api.php').replace(queryParameters: {
@@ -22,7 +25,7 @@ class XtreamClient {
       .replace(queryParameters: {'username': user, 'password': pass});
 
   Future<dynamic> _get(String action, [Map<String, String> extra = const {}]) async {
-    final res = await http.get(_api(action, extra)).timeout(const Duration(seconds: 30));
+    final res = await _http.get(_api(action, extra)).timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
       throw Exception('Server returned ${res.statusCode}');
     }
@@ -102,6 +105,68 @@ class XtreamClient {
       movies: movies,
       series: series,
     );
+  }
+
+  /// Plot, cast, backdrop etc. straight from the provider (no TMDB key needed).
+  Future<TmdbInfo?> vodInfo(String vodId) async =>
+      parseInfo(await _get('get_vod_info', {'vod_id': vodId}));
+
+  Future<TmdbInfo?> seriesInfo(String seriesId) async =>
+      parseInfo(await _get('get_series_info', {'series_id': seriesId}));
+
+  static String? _str(dynamic v) {
+    final t = v?.toString().trim();
+    return (t == null || t.isEmpty || t == 'null') ? null : t;
+  }
+
+  /// Panels disagree on shapes (strings vs numbers, lists vs strings, ids vs URLs),
+  /// so everything here is defensive. Returns null when there is nothing useful.
+  static TmdbInfo? parseInfo(dynamic j) {
+    final info = j is Map ? j['info'] : null;
+    if (info is! Map) return null;
+
+    final bp = info['backdrop_path'];
+    final backdrop = _str(bp is List && bp.isNotEmpty ? bp.first : bp);
+    final poster = _str(info['movie_image']) ?? _str(info['cover_big']) ?? _str(info['cover']);
+
+    var rating = double.tryParse(_str(info['rating']) ?? '');
+    if (rating != null && rating <= 0) rating = null;
+
+    final year = RegExp(r'(19|20)\d{2}')
+        .firstMatch(_str(info['releasedate'] ?? info['releaseDate'] ?? info['year']) ?? '')?[0];
+
+    final secs = int.tryParse(_str(info['duration_secs']) ?? '');
+    final runtime = secs != null && secs > 0
+        ? (secs / 60).round()
+        : int.tryParse(_str(info['episode_run_time']) ?? '');
+
+    final cast = (_str(info['cast']) ?? _str(info['actors']) ?? '')
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .take(8)
+        .toList();
+
+    var trailer = _str(info['youtube_trailer']);
+    if (trailer != null && trailer.contains('/')) {
+      final u = Uri.tryParse(trailer);
+      trailer = u?.queryParameters['v'] ?? (u != null && u.pathSegments.isNotEmpty ? u.pathSegments.last : null);
+    }
+
+    final overview = _str(info['plot']) ?? _str(info['description']);
+    final out = TmdbInfo(
+      overview: overview,
+      rating: rating,
+      year: year,
+      backdrop: backdrop,
+      poster: poster,
+      runtimeMin: runtime,
+      cast: cast,
+      trailerKey: trailer,
+    );
+    final empty = overview == null && rating == null && year == null && backdrop == null &&
+        poster == null && runtime == null && cast.isEmpty && trailer == null;
+    return empty ? null : out;
   }
 
   Future<List<Episode>> episodes(String seriesId) async {

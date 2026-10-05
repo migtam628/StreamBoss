@@ -510,7 +510,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
           Padding(
             padding: const EdgeInsets.all(8),
             child: Row(children: [
-              _btn(Icons.arrow_back, 'Back', () => Navigator.of(context).maybePop()),
+              // pop(), not maybePop(): maybePop is intercepted by PopScope to hide the controls first.
+              _btn(Icons.arrow_back, 'Back', () => Navigator.of(context).pop()),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
