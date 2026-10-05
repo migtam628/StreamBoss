@@ -688,7 +688,7 @@ class _AboutPageState extends State<AboutPage> {
     final lib = app.catalog;
     final settings = st.toMap()..remove('shaderCustom');
     return [
-      'StreamBoss ${i.version} (build ${i.buildNumber})',
+      'StreamBoss ${appVersion(i.version)} (build ${i.buildNumber})',
       'Platform: ${kIsWeb ? 'web' : defaultTargetPlatform.name}',
       'Source: ${app.active?.type.name ?? 'none'}${app.usingXtreamApi ? ' (Xtream API)' : ''}',
       'Library: ${lib.live.length} channels, ${lib.movies.length} movies, ${lib.series.length} series',
@@ -703,10 +703,10 @@ class _AboutPageState extends State<AboutPage> {
       future: _info,
       builder: (context, snap) {
         final i = snap.data;
-        final version = i?.version ?? '…';
+        final version = i == null ? '…' : appVersion(i.version);
         return ListView(children: [
           const SettingsHeader('StreamBoss'),
-          InfoRow('Version', i == null ? '…' : '${i.version} (build ${i.buildNumber})'),
+          InfoRow('Version', i == null ? '…' : '$version (build ${i.buildNumber})'),
           ActionRow(
             icon: _checking ? Icons.hourglass_top : Icons.system_update_alt,
             title: 'Check for updates',

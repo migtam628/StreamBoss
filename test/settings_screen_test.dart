@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:streamboss/app_info.dart';
 import 'package:streamboss/screens/settings_screen.dart';
 import 'package:streamboss/state/app_state.dart';
 import 'package:streamboss/state/settings_state.dart';
@@ -62,7 +63,7 @@ void main() {
     await pump(t, const Size(1200, 900));
     await t.tap(find.text('About'));
     await t.pumpAndSettle();
-    expect(find.text('1.2.3 (build 4)'), findsOneWidget);
+    expect(find.text('${appVersion('1.2.3')} (build 4)'), findsOneWidget);
   });
 
   testWidgets('reset all settings restores defaults after confirming', (t) async {

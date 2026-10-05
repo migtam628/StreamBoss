@@ -23,17 +23,35 @@ the native libmpv player. Web was exercised end to end in headless Chromium (M3U
 seek, pause, speed, resume, channel zapping, search, settings). That Chromium has no H.264, so the
 test used VP9/WebM streams; the H.264 demo streams need a normal browser.
 
+## Versioning
+
+Every feature or fix gets its own version, so a build can always be traced to what it contains.
+
+| Tag | Meaning |
+|---|---|
+| `v0.2.3` | a release: each new feature or fix bumps the patch (`0.2.3` -> `0.2.4`); a bigger milestone bumps the minor (`0.3.0`) |
+| `v0.3.0b2` | beta build 2 on the way to `v0.3.0` (`v0.3.0-rc1` also works); published as a **pre-release** |
+
+Order is `0.3.0b1` < `0.3.0b2` < `0.3.0-rc1` < `0.3.0` < `0.3.1b1`. For each version:
+
+1. In the same commit as the feature, set `version:` in `pubspec.yaml` (`0.2.4+1`) and add a
+   `## 0.2.4 - YYYY-MM-DD` section to `CHANGELOG.md`. A unit test fails if the two disagree or the changelog
+   is out of order, and the release workflow refuses a tag that has no changelog section.
+2. Tag that commit (below). The section becomes the release notes, the tag becomes the version shown in
+   **Settings > About**, and **Check for updates** compares against it. Stable builds are only offered stable
+   releases; beta builds are also offered newer betas.
+
 ## Releases
 
 Tagged versions are published automatically to the repo's **Releases** page by
 `.github/workflows/release.yml`:
 
 ```sh
-git tag v0.2.0 && git push origin v0.2.0      # use v0.2.0-rc1 for a pre-release
+git tag v0.2.3 && git push origin v0.2.3      # or v0.3.0b2 for a beta
 ```
 
 Each release attaches Android APKs (per CPU type), Windows, Linux and macOS archives, the web build,
-the Roku channel zip, and `SHA256SUMS.txt`. Release notes are generated from merged PRs/commits.
+the Roku channel zip, and `SHA256SUMS.txt`. The notes are that version's `CHANGELOG.md` section.
 To rehearse without publishing, run **Actions > Release > Run workflow** with "publish" unchecked:
 it builds and packages everything and attaches the files to the run.
 

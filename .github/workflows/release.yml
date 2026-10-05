@@ -1,7 +1,10 @@
 name: Release
 
-# Publish: push a tag like v0.2.0 (or v0.2.0-rc1 for a pre-release).
-#   git tag v0.2.0 && git push origin v0.2.0
+# Publish: push a tag. Every feature gets its own version (see CHANGELOG.md):
+#   v0.2.3        a release (a new feature or fix bumps the patch, bigger milestones the minor)
+#   v0.3.0b2      a beta build on the way to v0.3.0 (also v0.3.0-rc1); published as a pre-release
+#   git tag v0.2.3 && git push origin v0.2.3
+# The tag must have a "## <version>" section in CHANGELOG.md, which becomes the release notes.
 # Dry run: Actions > Release > Run workflow, leave "publish" unchecked. It builds and
 # packages everything and attaches the files to the run, but creates no release.
 on:
@@ -10,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Tag / version to build, e.g. v0.2.0
+        description: Tag / version to build, e.g. v0.2.3 or v0.3.0b2
         required: true
         default: v0.0.0-dryrun
       publish:
@@ -31,21 +34,26 @@ jobs:
       prerelease: ${{ steps.v.outputs.prerelease }}
       publish: ${{ steps.v.outputs.publish }}
     steps:
+      - uses: actions/checkout@v4
       - id: v
         shell: bash
         run: |
           TAG="${{ github.event_name == 'push' && github.ref_name || inputs.tag }}"
-          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "Tag '$TAG' must look like v1.2.3 or v1.2.3-rc1"; exit 1
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(b[0-9]+|-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag '$TAG' must look like v1.2.3, v1.2.3b4 or v1.2.3-rc1"; exit 1
           fi
           VERSION="${TAG#v}"
-          BASE="${VERSION%%-*}"    # flutter wants plain x.y.z for the app version
-          PRE=false; [[ "$VERSION" == *-* ]] && PRE=true
+          BASE="$(echo "$VERSION" | grep -Eo '^[0-9]+\.[0-9]+\.[0-9]+')"   # platforms want plain x.y.z
+          PRE=false; [[ "$VERSION" != "$BASE" ]] && PRE=true
           PUBLISH=true; [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.publish }}" != "true" ]] && PUBLISH=false
+          if [[ "$PUBLISH" == "true" ]] && ! grep -Eq "^## \[?${VERSION//./\\.}\]?( |$)" CHANGELOG.md; then
+            echo "CHANGELOG.md has no '## $VERSION' section. Add one (it becomes the release notes), commit, then re-tag."; exit 1
+          fi
           {
             echo "tag=$TAG"
             echo "version=$VERSION"
-            echo "build_args=--build-name=$BASE --build-number=${{ github.run_number }}"
+            # The full version (with any b3 / -rc1) is shown in About and used by the update check.
+            echo "build_args=--build-name=$BASE --build-number=${{ github.run_number }} --dart-define=APP_VERSION=$VERSION"
             echo "prerelease=$PRE"
             echo "publish=$PUBLISH"
           } >> "$GITHUB_OUTPUT"
@@ -62,6 +70,7 @@ jobs:
     needs: [meta, build]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -87,7 +96,24 @@ jobs:
           TAG: ${{ needs.meta.outputs.tag }}
           PRERELEASE: ${{ needs.meta.outputs.prerelease }}
         run: |
-          flags=(--title "StreamBoss $TAG" --generate-notes --verify-tag)
+          VERSION="${TAG#v}"
+          # Release notes = this version's CHANGELOG.md section (falls back to generated notes).
+          python3 - "$VERSION" > notes.md <<'PY'
+          import re, sys
+          v = sys.argv[1]
+          out, on = [], False
+          for line in open("CHANGELOG.md", encoding="utf-8"):
+              if line.startswith("## "):
+                  if on:
+                      break
+                  on = re.match(r"## \[?" + re.escape(v) + r"\]?( |$)", line) is not None
+                  continue
+              if on:
+                  out.append(line)
+          print("".join(out).strip())
+          PY
+          flags=(--title "StreamBoss $TAG" --verify-tag)
+          if [ -s notes.md ]; then flags+=(--notes-file notes.md); else flags+=(--generate-notes); fi
           [ "$PRERELEASE" = "true" ] && flags+=(--prerelease)
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" artifacts/* --clobber -R "${{ github.repository }}"
