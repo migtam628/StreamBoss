@@ -9,7 +9,7 @@ void main() {
     exit(1);
   }
   var x = f.readAsStringSync();
-  _patchGradleProperties();
+  _patchMainActivity();
   if (x.contains('LEANBACK_LAUNCHER')) {
     stdout.writeln('Already patched.');
     return;
@@ -32,19 +32,76 @@ void main() {
     (m) => '${m[0]}\n                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>',
   );
 
-  // Picture-in-picture (the `floating` package needs this on the activity).
+  // Picture-in-picture needs this flag on the activity.
   x = x.replaceFirst('<activity', '<activity\n            android:supportsPictureInPicture="true"');
 
   f.writeAsStringSync(x);
   stdout.writeln('Patched AndroidManifest.xml for TV.');
 }
 
-/// The `floating` (PiP) plugin compiles Java for JVM 11 but Kotlin for 1.8, which
-/// Gradle rejects by default. Downgrade that check to a warning.
-void _patchGradleProperties() {
-  final f = File('android/gradle.properties');
-  const key = 'kotlin.jvm.target.validation.mode';
-  final text = f.existsSync() ? f.readAsStringSync() : '';
-  if (text.contains(key)) return;
-  f.writeAsStringSync('${text.isEmpty || text.endsWith('\n') ? text : '$text\n'}$key=warning\n');
+/// Replaces the generated MainActivity with one exposing picture-in-picture
+/// over the `com.streamboss/pip` method channel (see lib/services/pip.dart).
+void _patchMainActivity() {
+  final root = Directory('android/app/src/main/kotlin');
+  final files = root.existsSync()
+      ? root.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('MainActivity.kt')).toList()
+      : <File>[];
+  if (files.isEmpty) {
+    stderr.writeln('MainActivity.kt not found; PiP will be unavailable.');
+    return;
+  }
+  final f = files.first;
+  final pkg = RegExp(r'^package\s+([\w.]+)', multiLine: true).firstMatch(f.readAsStringSync())?[1];
+  if (pkg == null) {
+    stderr.writeln('Could not read package from MainActivity.kt.');
+    return;
+  }
+  f.writeAsStringSync(_mainActivity(pkg));
 }
+
+String _mainActivity(String pkg) => '''
+package $pkg
+
+import android.app.PictureInPictureParams
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.os.Build
+import android.util.Rational
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
+
+class MainActivity : FlutterActivity() {
+    private var pipChannel: MethodChannel? = null
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.streamboss/pip")
+        pipChannel = channel
+        channel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "available" -> result.success(
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                        packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+                )
+                "enter" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val params = PictureInPictureParams.Builder()
+                            .setAspectRatio(Rational(16, 9))
+                            .build()
+                        result.success(enterPictureInPictureMode(params))
+                    } else {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        pipChannel?.invokeMethod("changed", isInPictureInPictureMode)
+    }
+}
+''';

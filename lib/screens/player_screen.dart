@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:floating/floating.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -9,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/media.dart';
 import '../services/mpv_props.dart';
+import '../services/pip.dart';
 import '../services/xtream_client.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
@@ -60,7 +59,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Duration _dur = Duration.zero;
   double _rate = 1;
   List<EpgEntry> _epg = const [];
-  final _floating = Floating();
   bool _canPip = false;
 
   List<MediaItem>? get _queue => widget.queue;
@@ -95,14 +93,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
         }
       }),
     ]);
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      _floating.isPipAvailable.then((v) {
-        if (mounted) setState(() => _canPip = v);
-      });
-      _subs.add(_floating.pipStatusStream.listen((st) {
-        if (st == PiPStatus.enabled) _hideControls();
-      }));
-    }
+    Pip.available.then((v) {
+      if (mounted) setState(() => _canPip = v);
+    });
+    _subs.add(Pip.changes.listen((inPip) {
+      if (inPip) _hideControls();
+    }));
     _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) => _savePosition());
     _start();
     _scheduleHide();
@@ -151,7 +147,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _saveTimer?.cancel();
     _sleepTimer?.cancel();
     _statsTimer?.cancel();
-    _floating.dispose();
     _root.dispose();
     _playBtn.dispose();
     WakelockPlus.disable();
@@ -397,9 +392,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _enterPip() async {
-    try {
-      await _floating.enable(const EnableManual());
-    } catch (_) {}
+    await Pip.enter();
   }
 
   void _toggleStats() {
