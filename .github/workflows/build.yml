@@ -48,3 +48,39 @@ jobs:
         with:
           name: streamboss-${{ matrix.target }}
           path: build/${{ matrix.target == 'android' && 'app/outputs/flutter-apk' || matrix.target }}/**
+
+  roku:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: roku
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i -g brighterscript brs-node
+      - run: bsc --project bsconfig.json --copyToStaging=false --createPackage=false
+      - run: brs-cli components/lib/Common.brs tests/common.test.brs | tee /tmp/roku-test.txt && grep -q "ALL PASSED" /tmp/roku-test.txt
+      - run: zip -r ../streamboss-roku.zip manifest source components images
+      - uses: actions/upload-artifact@v4
+        with: { name: streamboss-roku, path: streamboss-roku.zip }
+
+  tvos-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tvos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with: { swift-version: "6.0" }
+      - run: swift test
+
+  tvos-app:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: cd tvos && xcodegen generate
+      - run: cd tvos && xcodebuild -project StreamBoss.xcodeproj -scheme StreamBoss -destination 'generic/platform=tvOS Simulator' CODE_SIGNING_ALLOWED=NO build
+

@@ -15,3 +15,7 @@ pubspec.lock
 /web/
 /roku/*.zip
 .metadata
+# tvOS / Roku build output
+/tvos/.build/
+/tvos/*.xcodeproj/
+/roku/build/

@@ -23,7 +23,7 @@ Catalog parseM3u(String body) {
       if (u != null && u.isNotEmpty) epgUrl = u;
     } else if (line.startsWith('#EXTINF')) {
       attrs = {for (final m in attr.allMatches(line)) m.group(1)!: m.group(2)!};
-      final comma = line.lastIndexOf(',');
+      final comma = _titleComma(line);
       name = comma >= 0 ? line.substring(comma + 1).trim() : '';
       if (name.isEmpty) name = attrs['tvg-name'] ?? 'Channel ${n + 1}';
     } else if (!line.startsWith('#')) {
@@ -55,4 +55,18 @@ Catalog parseM3u(String body) {
     liveCategories: [for (final c in groups.values) if (liveCats.contains(c.id)) c],
     movieCategories: [for (final c in groups.values) if (movieCats.contains(c.id)) c],
   );
+}
+
+/// Index of the first comma outside quotes (the title follows it), or -1.
+int _titleComma(String line) {
+  var inQuote = false;
+  for (var i = 0; i < line.length; i++) {
+    final c = line[i];
+    if (c == '"') {
+      inQuote = !inQuote;
+    } else if (c == ',' && !inQuote) {
+      return i;
+    }
+  }
+  return -1;
 }

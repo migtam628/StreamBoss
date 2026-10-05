@@ -11,6 +11,7 @@ no content. Inspired by apps like Lumen, with its own UI.
 | Android, Android TV, Google TV, Fire TV | Flutter Android (D-pad focus supported) |
 | iOS | Flutter iOS |
 | Web | Flutter web (see note) |
+| Apple TV (tvOS) | Separate native SwiftUI app in [`tvos/`](tvos/) (Flutter doesn't support tvOS) |
 | Roku | Separate native channel in [`roku/`](roku/) (Roku can't run Flutter) |
 
 Note: browsers block mixed-content (http) streams and most IPTV servers lack CORS headers,
@@ -52,6 +53,6 @@ Linux desktop needs `libmpv-dev libsecret-1-dev` installed.
 
 ## Status / roadmap
 
-Not done yet: tvOS, Roku feature parity (the Roku channel is a minimal M3U list + player),
+Not done yet: tvOS and Roku are leaner than the Flutter app (no TMDB, EPG or shaders; see their READMEs),
 gzipped (.xml.gz) XMLTV guides, iOS picture-in-picture, shader file import,
 intro/outro detection (skip-intro is a fixed +90s jump).
