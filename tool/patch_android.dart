@@ -9,6 +9,7 @@ void main() {
     exit(1);
   }
   var x = f.readAsStringSync();
+  _patchGradleProperties();
   if (x.contains('LEANBACK_LAUNCHER')) {
     stdout.writeln('Already patched.');
     return;
@@ -36,4 +37,14 @@ void main() {
 
   f.writeAsStringSync(x);
   stdout.writeln('Patched AndroidManifest.xml for TV.');
+}
+
+/// The `floating` (PiP) plugin compiles Java for JVM 11 but Kotlin for 1.8, which
+/// Gradle rejects by default. Downgrade that check to a warning.
+void _patchGradleProperties() {
+  final f = File('android/gradle.properties');
+  const key = 'kotlin.jvm.target.validation.mode';
+  final text = f.existsSync() ? f.readAsStringSync() : '';
+  if (text.contains(key)) return;
+  f.writeAsStringSync('${text.isEmpty || text.endsWith('\n') ? text : '$text\n'}$key=warning\n');
 }
