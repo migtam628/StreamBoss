@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
 import '../services/demo_catalog.dart';
 import '../services/m3u_parser.dart';
+import '../services/xmltv.dart';
 import '../services/xtream_client.dart';
 import 'package:http/http.dart' as http;
 
@@ -122,6 +123,8 @@ class AppState extends ChangeNotifier {
           catalog = await c.loadCatalog();
           _xtream = c;
       }
+      _guideLoaded = false;
+      guide = XmltvData.empty;
       await _prefs?.setString('active', s.name);
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
@@ -212,5 +215,50 @@ class AppState extends ChangeNotifier {
     _prefs?.setStringList('recents', [for (final e in recents) jsonEncode(e.toJson())]);
     _saveSources();
     notifyListeners();
+  }
+
+  // --- XMLTV guide --------------------------------------------------------
+
+  XmltvData guide = XmltvData.empty;
+  bool guideLoading = false;
+  String? guideError;
+  bool _guideLoaded = false;
+
+  Uri? get _guideUri =>
+      _xtream?.xmltvUri ?? (catalog.epgUrl == null ? null : Uri.tryParse(catalog.epgUrl!));
+
+  bool get hasGuideSource => _guideUri != null;
+
+  /// Loads and parses the XMLTV guide once per library load (8h window).
+  Future<void> loadGuide({bool force = false}) async {
+    final uri = _guideUri;
+    if (uri == null || guideLoading || (_guideLoaded && !force)) return;
+    guideLoading = true;
+    guideError = null;
+    notifyListeners();
+    try {
+      final res = await http.get(uri).timeout(const Duration(seconds: 90));
+      if (res.statusCode != 200) throw Exception('Guide returned ${res.statusCode}');
+      final body = utf8.decode(res.bodyBytes, allowMalformed: true);
+      final now = DateTime.now();
+      guide = await compute(parseXmltvJob, <Object>[
+        body,
+        now.subtract(const Duration(hours: 1)).millisecondsSinceEpoch,
+        now.add(const Duration(hours: 8)).millisecondsSinceEpoch,
+      ]);
+      _guideLoaded = true;
+    } catch (e) {
+      guideError = e.toString().replaceFirst('Exception: ', '');
+    }
+    guideLoading = false;
+    notifyListeners();
+  }
+
+  /// Programmes for a channel, matched by tvg-id, then by channel name.
+  List<Programme> programmesFor(MediaItem ch) {
+    final byId = ch.epgId == null ? null : guide.programmes[ch.epgId!.toLowerCase()];
+    if (byId != null) return byId;
+    final id = guide.nameToId[ch.name.trim().toLowerCase()];
+    return id == null ? const [] : (guide.programmes[id] ?? const []);
   }
 }

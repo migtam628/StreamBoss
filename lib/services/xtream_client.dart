@@ -18,6 +18,9 @@ class XtreamClient {
         ...extra,
       });
 
+  Uri get xmltvUri => Uri.parse('$base/xmltv.php')
+      .replace(queryParameters: {'username': user, 'password': pass});
+
   Future<dynamic> _get(String action, [Map<String, String> extra = const {}]) async {
     final res = await http.get(_api(action, extra)).timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
@@ -63,6 +66,7 @@ class XtreamClient {
           streamUrl: '$base/live/$user/$pass/${c['stream_id']}.m3u8',
           poster: s(c['stream_icon']),
           categoryId: '${c['category_id']}',
+          epgId: s(c['epg_channel_id']),
         ),
     ];
     final movies = [

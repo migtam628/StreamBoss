@@ -1,0 +1,33 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:streamboss/services/m3u_parser.dart';
+import 'package:streamboss/services/xmltv.dart';
+
+void main() {
+  test('parses XMLTV times with offsets', () {
+    expect(parseXmltvTime('20240131183000 +0100'), DateTime.utc(2024, 1, 31, 17, 30));
+    expect(parseXmltvTime('20240131183000 -0500'), DateTime.utc(2024, 1, 31, 23, 30));
+    expect(parseXmltvTime('20240131183000'), DateTime.utc(2024, 1, 31, 18, 30));
+    expect(parseXmltvTime('garbage'), isNull);
+  });
+
+  test('keeps only programmes inside the window, sorted, with name fallback', () {
+    const xml = '''<?xml version="1.0"?>
+<tv>
+  <channel id="News.One"><display-name>News One</display-name></channel>
+  <programme start="20240101100000 +0000" stop="20240101110000 +0000" channel="News.One"><title>Late</title></programme>
+  <programme start="20240101090000 +0000" stop="20240101100000 +0000" channel="News.One"><title>Early</title></programme>
+  <programme start="20240101010000 +0000" stop="20240101020000 +0000" channel="News.One"><title>Too old</title></programme>
+</tv>''';
+    final d = parseXmltv(xml,
+        from: DateTime.utc(2024, 1, 1, 8), to: DateTime.utc(2024, 1, 1, 16));
+    expect(d.programmes['news.one']!.map((p) => p.title), ['Early', 'Late']);
+    expect(d.nameToId['news one'], 'news.one');
+  });
+
+  test('m3u header url-tvg and tvg-id are captured', () {
+    final c = parseM3u('#EXTM3U url-tvg="http://x/guide.xml,http://y/other.xml"\n'
+        '#EXTINF:-1 tvg-id="a.b" group-title="G",Chan\nhttp://h/1.m3u8\n');
+    expect(c.epgUrl, 'http://x/guide.xml');
+    expect(c.live.single.epgId, 'a.b');
+  });
+}

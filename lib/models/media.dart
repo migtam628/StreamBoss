@@ -15,6 +15,7 @@ class MediaItem {
   final String categoryId;
   final String? rating;
   final String? plot;
+  final String? epgId; // XMLTV channel id (tvg-id / epg_channel_id)
 
   const MediaItem({
     required this.id,
@@ -25,6 +26,7 @@ class MediaItem {
     this.categoryId = '',
     this.rating,
     this.plot,
+    this.epgId,
   });
 
   String get key => '${kind.name}:$id';
@@ -38,6 +40,7 @@ class MediaItem {
         'cat': categoryId,
         'rating': rating,
         'plot': plot,
+        'epg': epgId,
       };
 
   factory MediaItem.fromJson(Map<String, dynamic> j) => MediaItem(
@@ -49,6 +52,7 @@ class MediaItem {
         categoryId: (j['cat'] as String?) ?? '',
         rating: j['rating'] as String?,
         plot: j['plot'] as String?,
+        epgId: j['epg'] as String?,
       );
 }
 
@@ -64,6 +68,7 @@ class Episode {
 class Catalog {
   final List<Category> liveCategories, movieCategories, seriesCategories;
   final List<MediaItem> live, movies, series;
+  final String? epgUrl; // XMLTV url advertised by the playlist (M3U url-tvg)
   const Catalog({
     this.liveCategories = const [],
     this.movieCategories = const [],
@@ -71,6 +76,7 @@ class Catalog {
     this.live = const [],
     this.movies = const [],
     this.series = const [],
+    this.epgUrl,
   });
 
   List<Category> categoriesFor(MediaKind k) => switch (k) {
