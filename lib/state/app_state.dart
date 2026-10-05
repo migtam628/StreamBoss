@@ -10,8 +10,8 @@ import '../services/net_config.dart';
 import '../services/provider_url.dart';
 import '../services/tmdb.dart';
 import '../services/xmltv.dart';
+import '../services/http_client.dart';
 import '../services/xtream_client.dart';
-import 'package:http/http.dart' as http;
 import 'settings_state.dart';
 
 class AppState extends ChangeNotifier {
@@ -175,7 +175,7 @@ class AppState extends ChangeNotifier {
               }
             }
             if (_xtream == null) {
-              final res = await http.get(Uri.parse(s.url), headers: NetConfig.headers).timeout(const Duration(seconds: 60));
+              final res = await appHttp.get(Uri.parse(s.url), headers: NetConfig.headers).timeout(const Duration(seconds: 60));
               if (res.statusCode != 200) throw Exception('Playlist returned ${res.statusCode}');
               catalog = parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true));
             }
@@ -337,7 +337,7 @@ class AppState extends ChangeNotifier {
     guideError = null;
     notifyListeners();
     try {
-      final res = await http.get(uri, headers: NetConfig.headers).timeout(const Duration(seconds: 90));
+      final res = await appHttp.get(uri, headers: NetConfig.headers).timeout(const Duration(seconds: 90));
       if (res.statusCode != 200) throw Exception('Guide returned ${res.statusCode}');
       final body = utf8.decode(res.bodyBytes, allowMalformed: true);
       final now = DateTime.now();

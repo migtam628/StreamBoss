@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app_info.dart';
 import '../../models/media.dart';
+import '../../services/http_client.dart';
 import '../../services/mpv_props.dart';
 import '../../services/net_config.dart';
 import '../../services/update_check.dart';
@@ -438,6 +439,45 @@ class NetworkPage extends StatelessWidget {
     if (v != null) st.set('tmdbKey', v);
   }
 
+  Future<void> _test(BuildContext context) async {
+    final src = context.read<AppState>().active;
+    final uri = src == null ? null : Uri.tryParse(src.url);
+    if (uri == null || uri.host.isEmpty) {
+      toast(context, 'Add a source first');
+      return;
+    }
+    final report = diagnoseConnection(uri, appHttp);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Connection test'),
+        content: SizedBox(
+          width: 520,
+          child: FutureBuilder<String>(
+            future: report,
+            builder: (_, snap) => !snap.hasData
+                ? const Row(children: [
+                    SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    SizedBox(width: 12),
+                    Text('Testing…'),
+                  ])
+                : SelectableText(snap.data!, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: await report));
+              if (ctx.mounted) toast(ctx, 'Copied');
+            },
+            child: const Text('Copy'),
+          ),
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final st = context.watch<SettingsState>();
@@ -465,6 +505,14 @@ class NetworkPage extends StatelessWidget {
       ),
       if (ua.isNotEmpty && !kIsWeb)
         ListTile(dense: true, title: Text(ua, style: const TextStyle(color: Boss.muted, fontSize: 12))),
+      ActionRow(
+        icon: Icons.network_check,
+        title: 'Test connection',
+        subtitle: kIsWeb
+            ? 'Not available in the browser.'
+            : 'Checks DNS, IPv4 and IPv6 and an HTTP request to your provider. No logins are shown.',
+        onTap: kIsWeb ? null : () => _test(context),
+      ),
       const SettingsHeader('Movie & series details'),
       ListTile(
         leading: const Icon(Icons.movie_filter),

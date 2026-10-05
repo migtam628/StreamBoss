@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/media.dart';
+import 'http_client.dart';
 import 'net_config.dart';
 import 'tmdb.dart';
 
@@ -12,7 +13,7 @@ class XtreamClient {
 
   XtreamClient(String server, this.user, this.pass, {http.Client? client})
       : base = server.trim().replaceAll(RegExp(r'/+$'), ''),
-        _http = client ?? http.Client();
+        _http = client ?? appHttp;
 
   Uri _api(String action, [Map<String, String> extra = const {}]) =>
       Uri.parse('$base/player_api.php').replace(queryParameters: {
