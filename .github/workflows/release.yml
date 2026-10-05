@@ -1,0 +1,96 @@
+name: Release
+
+# Publish: push a tag like v0.2.0 (or v0.2.0-rc1 for a pre-release).
+#   git tag v0.2.0 && git push origin v0.2.0
+# Dry run: Actions > Release > Run workflow, leave "publish" unchecked. It builds and
+# packages everything and attaches the files to the run, but creates no release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag / version to build, e.g. v0.2.0
+        required: true
+        default: v0.0.0-dryrun
+      publish:
+        description: Publish a GitHub Release (otherwise dry run)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # create the release and upload assets
+
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      version: ${{ steps.v.outputs.version }}
+      build_args: ${{ steps.v.outputs.build_args }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - id: v
+        shell: bash
+        run: |
+          TAG="${{ github.event_name == 'push' && github.ref_name || inputs.tag }}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag '$TAG' must look like v1.2.3 or v1.2.3-rc1"; exit 1
+          fi
+          VERSION="${TAG#v}"
+          BASE="${VERSION%%-*}"    # flutter wants plain x.y.z for the app version
+          PRE=false; [[ "$VERSION" == *-* ]] && PRE=true
+          PUBLISH=true; [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.publish }}" != "true" ]] && PUBLISH=false
+          {
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+            echo "build_args=--build-name=$BASE --build-number=${{ github.run_number }}"
+            echo "prerelease=$PRE"
+            echo "publish=$PUBLISH"
+          } >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG version=$VERSION prerelease=$PRE publish=$PUBLISH"
+
+  build:
+    needs: meta
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.meta.outputs.version }}
+      build_args: ${{ needs.meta.outputs.build_args }}
+
+  publish:
+    needs: [meta, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: streamboss-*
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          ls -la artifacts
+          cd artifacts && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Dry run summary
+        if: needs.meta.outputs.publish != 'true'
+        run: |
+          echo "Dry run for ${{ needs.meta.outputs.tag }} - nothing published." | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: needs.meta.outputs.publish != 'true'
+        with:
+          name: release-preview-${{ needs.meta.outputs.version }}
+          path: artifacts/*
+      - name: Create GitHub Release
+        if: needs.meta.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.meta.outputs.tag }}
+          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+        run: |
+          flags=(--title "StreamBoss $TAG" --generate-notes --verify-tag)
+          [ "$PRERELEASE" = "true" ] && flags+=(--prerelease)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" artifacts/* --clobber -R "${{ github.repository }}"
+          else
+            gh release create "$TAG" artifacts/* "${flags[@]}" -R "${{ github.repository }}"
+          fi

@@ -4,6 +4,17 @@ on:
     branches: [main, "claude/**"]
   pull_request:
   workflow_dispatch:
+  # Reused by release.yml so releases ship exactly what CI builds.
+  workflow_call:
+    inputs:
+      version:
+        description: Version used in archive names (e.g. 0.1.0)
+        type: string
+        default: dev
+      build_args:
+        description: Extra flags for flutter build (e.g. --build-name=0.1.0 --build-number=12)
+        type: string
+        default: ""
 
 jobs:
   test:
@@ -43,11 +54,48 @@ jobs:
       - run: flutter pub get
       - if: matrix.target == 'android'
         run: dart run tool/patch_android.dart
-      - run: ${{ matrix.cmd }}
+      - run: ${{ matrix.cmd }} ${{ inputs.build_args }}
+
+      # Package here (not after download-artifact): upload-artifact drops file
+      # permissions, which would break the Linux/macOS executables.
+      - name: Package
+        if: matrix.target != 'windows'
+        shell: bash
+        run: |
+          VER="${{ inputs.version || 'dev' }}"
+          mkdir -p dist
+          case "${{ matrix.target }}" in
+            android)
+              for f in build/app/outputs/flutter-apk/app-*-release.apk; do
+                abi="$(basename "$f" -release.apk)"; abi="${abi#app-}"
+                cp "$f" "dist/StreamBoss-$VER-android-$abi.apk"
+              done ;;
+            linux)
+              bundle="$(find build/linux -type d -name bundle | head -1)"
+              tar -C "$bundle" -czf "dist/StreamBoss-$VER-linux-x64.tar.gz" . ;;
+            macos)
+              app="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)"
+              ditto -c -k --sequesterRsrc --keepParent "$app" "dist/StreamBoss-$VER-macos.zip" ;;
+            web)
+              (cd build/web && zip -qr "../../dist/StreamBoss-$VER-web.zip" .) ;;
+          esac
+          ls -la dist
+      - name: Package (windows)
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          $ver = '${{ inputs.version || 'dev' }}'
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $rel = Get-ChildItem build/windows -Recurse -Directory -Filter Release |
+            Where-Object { Test-Path (Join-Path $_.FullName 'streamboss.exe') } | Select-Object -First 1
+          if (-not $rel) { throw 'Release folder with streamboss.exe not found' }
+          Compress-Archive -Path (Join-Path $rel.FullName '*') -DestinationPath "dist/StreamBoss-$ver-windows-x64.zip"
+          Get-ChildItem dist
       - uses: actions/upload-artifact@v4
         with:
           name: streamboss-${{ matrix.target }}
-          path: build/${{ matrix.target == 'android' && 'app/outputs/flutter-apk' || matrix.target }}/**
+          path: dist/*
+          if-no-files-found: error
 
   roku:
     runs-on: ubuntu-latest
@@ -61,9 +109,9 @@ jobs:
       - run: npm i -g brighterscript brs-node
       - run: bsc --project bsconfig.json --copyToStaging=false --createPackage=false
       - run: brs-cli components/lib/Common.brs tests/common.test.brs | tee /tmp/roku-test.txt && grep -q "ALL PASSED" /tmp/roku-test.txt
-      - run: zip -r ../streamboss-roku.zip manifest source components images
+      - run: zip -r "../StreamBoss-${{ inputs.version || 'dev' }}-roku.zip" manifest source components images
       - uses: actions/upload-artifact@v4
-        with: { name: streamboss-roku, path: streamboss-roku.zip }
+        with: { name: streamboss-roku, path: StreamBoss-*-roku.zip, if-no-files-found: error }
 
   tvos-core:
     runs-on: ubuntu-latest

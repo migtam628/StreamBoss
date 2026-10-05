@@ -23,6 +23,24 @@ the native libmpv player. Web was exercised end to end in headless Chromium (M3U
 seek, pause, speed, resume, channel zapping, search, settings). That Chromium has no H.264, so the
 test used VP9/WebM streams; the H.264 demo streams need a normal browser.
 
+## Releases
+
+Tagged versions are published automatically to the repo's **Releases** page by
+`.github/workflows/release.yml`:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0      # use v0.2.0-rc1 for a pre-release
+```
+
+Each release attaches Android APKs (per CPU type), Windows, Linux and macOS archives, the web build,
+the Roku channel zip, and `SHA256SUMS.txt`. Release notes are generated from merged PRs/commits.
+To rehearse without publishing, run **Actions > Release > Run workflow** with "publish" unchecked:
+it builds and packages everything and attaches the files to the run.
+
+Notes: builds are not code-signed. Android APKs use the debug key, macOS may need right-click > Open,
+and Windows may show a SmartScreen prompt. tvOS is not shipped as a release asset because it needs
+Apple signing; build it from `tvos/` (see its README).
+
 ## Install on Android, Android TV, Google TV and Fire TV
 
 The CI run attaches three APKs (`android` artifact); pick the one that matches the device:
