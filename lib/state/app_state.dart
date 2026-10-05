@@ -78,7 +78,7 @@ class AppState extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> _saveSources() => _prefs!.setStringList('sources', [
+  Future<void> _saveSources() async => _prefs?.setStringList('sources', [
         for (final e in sources) jsonEncode((e.toJson()..['pass'] = '')),
       ]);
 
