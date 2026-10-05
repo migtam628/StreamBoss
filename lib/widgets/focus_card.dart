@@ -9,6 +9,7 @@ class FocusCard extends StatefulWidget {
   final VoidCallback? onLongPress;
   final double radius;
   final bool autofocus;
+  final ValueChanged<bool>? onFocus;
 
   const FocusCard({
     super.key,
@@ -17,6 +18,7 @@ class FocusCard extends StatefulWidget {
     this.onLongPress,
     this.radius = 14,
     this.autofocus = false,
+    this.onFocus,
   });
 
   @override
@@ -42,7 +44,10 @@ class _FocusCardState extends State<FocusCard> {
           borderRadius: BorderRadius.circular(widget.radius),
           child: InkWell(
             autofocus: widget.autofocus,
-            onFocusChange: (f) => setState(() => _focused = f),
+            onFocusChange: (f) {
+              setState(() => _focused = f);
+              widget.onFocus?.call(f);
+            },
             onTap: widget.onTap,
             onLongPress: widget.onLongPress,
             child: widget.child,

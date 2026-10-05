@@ -1,15 +1,33 @@
 # StreamBoss for Roku
 
-Roku does not run Flutter, so this is a small native SceneGraph/BrightScript channel
-that plays an M3U playlist you provide.
+Roku does not run Flutter, so this is a native SceneGraph / BrightScript channel.
+It is a player only: you supply your own Xtream or M3U provider.
 
-1. Edit `PLAYLIST_URL()` in `components/MainScene.brs`.
-2. Add real icon/splash PNGs to `images/` (`icon_hd.png` 290x218, `icon_sd.png` 246x140, `splash_hd.png` 1280x720).
-3. Enable developer mode on the Roku (Home x3, Up x2, Right, Left, Right, Left, Right), then zip and sideload:
+## Features
+- Xtream Codes or M3U playlist, entered with the on-screen keyboard (stored in the channel registry)
+- Tabs: Live, Movies, Series (episodes), My List, Search, Settings, with category columns
+- `*` (Options button) adds/removes My List entries
+- Resume position for movies/episodes; Up/Down zap channels while watching live TV
+- Demo mode with public test streams
 
+## Limits (compared with the Flutter app)
+- No TMDB metadata, EPG guide, subtitle styling or shaders
+- Roku's registry caps a channel at 32 KB, so My List holds 40 items and resume history 80
+- Roku plays HLS, MP4 and (some) MKV/TS; formats it can't decode will show a playback error
+
+## Develop
 ```sh
-cd roku && zip -r ../streamboss-roku.zip manifest source components images
+npm i -g brighterscript brs-node
+bsc --project bsconfig.json --copyToStaging=false --createPackage=false     # compile + lint
+brs-cli components/lib/Common.brs tests/common.test.brs                      # logic tests
+```
+The UI itself has not been exercised on a real device or emulator yet.
+
+## Sideload
+Enable developer mode on the Roku (Home x3, Up x2, Right, Left, Right, Left, Right), then:
+```sh
+zip -r ../streamboss-roku.zip manifest source components images
 # upload the zip at http://<roku-ip> (user: rokudev)
 ```
-
-Publishing to the Roku Channel Store requires a Roku developer account and certification.
+The icon/splash PNGs in `images/` are plain placeholders; replace them before publishing.
+Publishing to the Channel Store needs a Roku developer account and certification.

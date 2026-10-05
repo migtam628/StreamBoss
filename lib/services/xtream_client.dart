@@ -18,6 +18,9 @@ class XtreamClient {
         ...extra,
       });
 
+  Uri get xmltvUri => Uri.parse('$base/xmltv.php')
+      .replace(queryParameters: {'username': user, 'password': pass});
+
   Future<dynamic> _get(String action, [Map<String, String> extra = const {}]) async {
     final res = await http.get(_api(action, extra)).timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
@@ -63,6 +66,7 @@ class XtreamClient {
           streamUrl: '$base/live/$user/$pass/${c['stream_id']}.m3u8',
           poster: s(c['stream_icon']),
           categoryId: '${c['category_id']}',
+          epgId: s(c['epg_channel_id']),
         ),
     ];
     final movies = [
@@ -120,5 +124,39 @@ class XtreamClient {
     }
     out.sort((a, b) => a.season != b.season ? a.season - b.season : a.number - b.number);
     return out;
+  }
+
+  /// Now / next programme for a live stream (Xtream short EPG).
+  Future<List<EpgEntry>> shortEpg(String streamId) async {
+    final j = await _get('get_short_epg', {'stream_id': streamId, 'limit': '3'});
+    String dec(dynamic v) {
+      try {
+        return utf8.decode(base64.decode('$v'));
+      } catch (_) {
+        return '$v';
+      }
+    }
+
+    return [
+      for (final e in ((j is Map ? j['epg_listings'] : null) as List? ?? const []))
+        EpgEntry(
+          dec(e['title']),
+          DateTime.fromMillisecondsSinceEpoch(
+              (int.tryParse('${e['start_timestamp']}') ?? 0) * 1000),
+          DateTime.fromMillisecondsSinceEpoch(
+              (int.tryParse('${e['stop_timestamp']}') ?? 0) * 1000),
+        ),
+    ];
+  }
+}
+
+class EpgEntry {
+  final String title;
+  final DateTime start, end;
+  const EpgEntry(this.title, this.start, this.end);
+
+  bool get isNow {
+    final n = DateTime.now();
+    return !n.isBefore(start) && n.isBefore(end);
   }
 }

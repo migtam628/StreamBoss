@@ -11,17 +11,73 @@ no content. Inspired by apps like Lumen, with its own UI.
 | Android, Android TV, Google TV, Fire TV | Flutter Android (D-pad focus supported) |
 | iOS | Flutter iOS |
 | Web | Flutter web (see note) |
+| Apple TV (tvOS) | Separate native SwiftUI app in [`tvos/`](tvos/) (Flutter doesn't support tvOS) |
 | Roku | Separate native channel in [`roku/`](roku/) (Roku can't run Flutter) |
 
 Note: browsers block mixed-content (http) streams and most IPTV servers lack CORS headers,
 so web works best with https + CORS-enabled providers.
 
+Web playback uses the browser's own decoders (hls.js is bundled for HLS), so what plays depends on
+the browser; decoder, network-buffer and shader settings are hidden on web because they only affect
+the native libmpv player. Web was exercised end to end in headless Chromium (M3U source, playback,
+seek, pause, speed, resume, channel zapping, search, settings). That Chromium has no H.264, so the
+test used VP9/WebM streams; the H.264 demo streams need a normal browser.
+
+## Releases
+
+Tagged versions are published automatically to the repo's **Releases** page by
+`.github/workflows/release.yml`:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0      # use v0.2.0-rc1 for a pre-release
+```
+
+Each release attaches Android APKs (per CPU type), Windows, Linux and macOS archives, the web build,
+the Roku channel zip, and `SHA256SUMS.txt`. Release notes are generated from merged PRs/commits.
+To rehearse without publishing, run **Actions > Release > Run workflow** with "publish" unchecked:
+it builds and packages everything and attaches the files to the run.
+
+Notes: builds are not code-signed. Android APKs use the debug key, macOS may need right-click > Open,
+and Windows may show a SmartScreen prompt. tvOS is not shipped as a release asset because it needs
+Apple signing; build it from `tvos/` (see its README).
+
+## Install on Android, Android TV, Google TV and Fire TV
+
+The CI run attaches three APKs (`android` artifact); pick the one that matches the device:
+
+| APK | Devices |
+|---|---|
+| `app-arm64-v8a-release.apk` | most phones and newer TV boxes / Fire TV 4K Max |
+| `app-armeabi-v7a-release.apk` | older phones, older Fire TV Sticks and TV boxes |
+| `app-x86_64-release.apk` | emulators, Chromebooks |
+
+```sh
+adb connect <tv-ip>:5555        # TV / Fire TV: enable ADB debugging first (skip for a USB phone)
+adb install -r app-arm64-v8a-release.apk
+```
+
+The APKs are signed with the debug key, which is fine for sideloading but not for the Play Store.
+On a TV the app appears in the apps row with its own banner; use the D-pad to navigate, OK to select,
+Back to go up. Android picture-in-picture is available from the player's controls.
+
 ## Features
 
 - Xtream Codes and M3U sources, multiple saved sources, offline demo mode
+- Passwords stored in the platform keystore (flutter_secure_storage), not in plain prefs
 - Live TV, Movies, Series (with episodes), categories, search
 - Home shelves: Continue watching, My List (long-press / hold select to favorite)
-- Playback via media_kit (libmpv): MKV, TS, HLS, MP4
+- TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
+- Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header; D-pad friendly) with a now/next list fallback
+- Backup / restore (clipboard JSON; passwords are never included)
+- Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
+  - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel
+  - controls visible: arrows move between buttons, Back hides them
+  - audio and subtitle track pickers, speed, sleep timer, skip-intro (+90s), stats overlay
+  - resume position for movies and episodes, per-episode "continue watching"
+- Settings: hardware/software decoder, network buffer presets (low/normal/high),
+  subtitle size/color/background with live preview, default speed
+- Picture-in-picture on Android (button in the player)
+- Shader library (libmpv user shaders): built-in Sharpen, Vibrance, Night warm, Film grain, plus your own pasted GLSL; toggle live in the player, reorder in Settings
 - Keyboard / D-pad / remote navigation with visible focus rings
 
 ## Develop
@@ -30,19 +86,16 @@ Platform folders are generated, not committed:
 
 ```sh
 flutter create . --project-name streamboss --org com.streamboss
+dart run tool/patch_android.dart   # Android TV / Google TV / Fire TV manifest (leanback launcher, INTERNET, cleartext http)
 flutter pub get
 flutter run -d <device>
 flutter test
 ```
 
-Android TV / Fire TV: add `<uses-feature android:name="android.software.leanback" android:required="false"/>`,
-`<uses-feature android:name="android.hardware.touchscreen" android:required="false"/>` and a
-`android.intent.category.LEANBACK_LAUNCHER` intent filter to `android/app/src/main/AndroidManifest.xml`.
-Android/Fire TV also need the INTERNET permission in release builds (flutter create adds it for debug only).
+Linux desktop needs `libmpv-dev libsecret-1-dev` installed.
 
 ## Status / roadmap
 
-This is a first scaffold, written without a Flutter SDK available, so it has **not been compiled or run yet**.
-CI (`.github/workflows/build.yml`) will be the first real check. Next: TMDB metadata, subtitle/audio track
-picker, channel zapping, EPG, secure credential storage (credentials are currently in shared_preferences),
-tvOS, Roku parity.
+Not done yet: tvOS and Roku are leaner than the Flutter app (no TMDB, EPG or shaders; see their READMEs),
+gzipped (.xml.gz) XMLTV guides, iOS picture-in-picture, shader file import,
+intro/outro detection (skip-intro is a fixed +90s jump).

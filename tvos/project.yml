@@ -1,0 +1,41 @@
+# Generate the Xcode project with: xcodegen generate   (https://github.com/yonaskolb/XcodeGen)
+name: StreamBoss
+options:
+  bundleIdPrefix: com.streamboss
+  deploymentTarget:
+    tvOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+targets:
+  StreamBoss:
+    type: application
+    platform: tvOS
+    sources: [Core, App]
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: StreamBoss
+        UILaunchScreen: {}
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true   # many IPTV servers are plain http
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.streamboss.tv
+  StreamBossTests:
+    type: bundle.unit-test
+    platform: tvOS
+    sources: [Tests]
+    dependencies:
+      - target: StreamBoss
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.streamboss.tv.tests
+schemes:
+  StreamBoss:
+    build:
+      targets:
+        StreamBoss: all
+    test:
+      targets: [StreamBossTests]

@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
 import '../services/demo_catalog.dart';
 import '../services/m3u_parser.dart';
+import '../services/xmltv.dart';
 import '../services/xtream_client.dart';
 import 'package:http/http.dart' as http;
 
@@ -20,16 +22,29 @@ class AppState extends ChangeNotifier {
   final List<MediaItem> recents = [];
 
   XtreamClient? _xtream;
+  final _secure = const FlutterSecureStorage();
+  final Map<String, int> positions = {}; // media key -> ms
 
   bool get ready => active != null && !loading && error == null;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
-    sources = [
-      for (final s in (p.getStringList('sources') ?? const []))
-        Source.fromJson(jsonDecode(s) as Map<String, dynamic>),
-    ];
+    sources = [];
+    for (final raw in (p.getStringList('sources') ?? const [])) {
+      final src = Source.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      sources.add(Source(
+        name: src.name,
+        type: src.type,
+        url: src.url,
+        username: src.username,
+        password: await _readSecret(src.name) ?? '',
+      ));
+    }
+    final pos = p.getString('positions');
+    if (pos != null) {
+      positions.addAll((jsonDecode(pos) as Map<String, dynamic>).map((k, v) => MapEntry(k, v as int)));
+    }
     favorites.addAll(p.getStringList('favorites') ?? const []);
     recents.addAll([
       for (final s in (p.getStringList('recents') ?? const []))
@@ -47,17 +62,38 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Passwords live in the platform keystore, never in shared_preferences.
+  Future<String?> _readSecret(String name) async {
+    try {
+      return await _secure.read(key: 'pass:$name');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _writeSecret(String name, String? value) async {
+    try {
+      value == null || value.isEmpty
+          ? await _secure.delete(key: 'pass:$name')
+          : await _secure.write(key: 'pass:$name', value: value);
+    } catch (_) {}
+  }
+
+  Future<void> _saveSources() async => _prefs?.setStringList('sources', [
+        for (final e in sources) jsonEncode((e.toJson()..['pass'] = '')),
+      ]);
+
   Future<void> addSource(Source s) async {
     sources = [...sources.where((e) => e.name != s.name), s];
-    await _prefs?.setStringList(
-        'sources', [for (final e in sources) jsonEncode(e.toJson())]);
+    await _writeSecret(s.name, s.password);
+    await _saveSources();
     await activate(s);
   }
 
   Future<void> removeSource(Source s) async {
     sources = sources.where((e) => e.name != s.name).toList();
-    await _prefs?.setStringList(
-        'sources', [for (final e in sources) jsonEncode(e.toJson())]);
+    await _writeSecret(s.name, null);
+    await _saveSources();
     if (active?.name == s.name) {
       active = null;
       catalog = const Catalog();
@@ -87,6 +123,8 @@ class AppState extends ChangeNotifier {
           catalog = await c.loadCatalog();
           _xtream = c;
       }
+      _guideLoaded = false;
+      guide = XmltvData.empty;
       await _prefs?.setString('active', s.name);
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
@@ -125,5 +163,108 @@ class AppState extends ChangeNotifier {
     _prefs?.setStringList(
         'recents', [for (final e in recents) jsonEncode(e.toJson())]);
     notifyListeners();
+  }
+
+  // --- Resume positions -------------------------------------------------
+
+  Duration? resumeFor(MediaItem i) {
+    final ms = positions[i.key];
+    return ms == null ? null : Duration(milliseconds: ms);
+  }
+
+  /// Persists the resume position. Pass [notify] on the final save so screens
+  /// underneath the player (e.g. the detail screen's "Resume from") refresh;
+  /// periodic saves stay silent to avoid rebuilding the app every few seconds.
+  void savePosition(MediaItem i, Duration pos, Duration total, {bool notify = false}) {
+    if (i.kind == MediaKind.live || total.inSeconds < 60) return;
+    // Treat the last 3% as finished.
+    if (pos.inMilliseconds > total.inMilliseconds * 0.97) {
+      positions.remove(i.key);
+    } else if (pos.inSeconds > 10) {
+      positions[i.key] = pos.inMilliseconds;
+    }
+    _prefs?.setString('positions', jsonEncode(positions));
+    // Deferred: this runs from State.dispose(), where notifying synchronously would
+    // mark widgets dirty while the tree is locked.
+    if (notify) Future.microtask(notifyListeners);
+  }
+
+  // --- EPG --------------------------------------------------------------
+
+  Future<List<EpgEntry>> epg(MediaItem live) async =>
+      _xtream == null ? const [] : _xtream!.shortEpg(live.id);
+
+  // --- Backup / restore ---------------------------------------------------
+
+  /// Sources (without passwords), favorites, resume positions, recents.
+  Map<String, dynamic> exportData() => {
+        'sources': [for (final e in sources) e.toJson()..['pass'] = ''],
+        'favorites': favorites.toList(),
+        'positions': positions,
+        'recents': [for (final r in recents) r.toJson()],
+      };
+
+  void importData(Map<String, dynamic> m) {
+    for (final j in (m['sources'] as List? ?? const [])) {
+      final src = Source.fromJson(j as Map<String, dynamic>);
+      if (!sources.any((e) => e.name == src.name)) sources.add(src);
+    }
+    favorites.addAll([for (final f in (m['favorites'] as List? ?? const [])) '$f']);
+    positions.addAll((m['positions'] as Map? ?? const {}).map((k, v) => MapEntry('$k', (v as num).toInt())));
+    final have = recents.map((e) => e.key).toSet();
+    for (final j in (m['recents'] as List? ?? const [])) {
+      final it = MediaItem.fromJson(j as Map<String, dynamic>);
+      if (have.add(it.key)) recents.add(it);
+    }
+    _prefs?.setStringList('favorites', favorites.toList());
+    _prefs?.setString('positions', jsonEncode(positions));
+    _prefs?.setStringList('recents', [for (final e in recents) jsonEncode(e.toJson())]);
+    _saveSources();
+    notifyListeners();
+  }
+
+  // --- XMLTV guide --------------------------------------------------------
+
+  XmltvData guide = XmltvData.empty;
+  bool guideLoading = false;
+  String? guideError;
+  bool _guideLoaded = false;
+
+  Uri? get _guideUri =>
+      _xtream?.xmltvUri ?? (catalog.epgUrl == null ? null : Uri.tryParse(catalog.epgUrl!));
+
+  bool get hasGuideSource => _guideUri != null;
+
+  /// Loads and parses the XMLTV guide once per library load (8h window).
+  Future<void> loadGuide({bool force = false}) async {
+    final uri = _guideUri;
+    if (uri == null || guideLoading || (_guideLoaded && !force)) return;
+    guideLoading = true;
+    guideError = null;
+    notifyListeners();
+    try {
+      final res = await http.get(uri).timeout(const Duration(seconds: 90));
+      if (res.statusCode != 200) throw Exception('Guide returned ${res.statusCode}');
+      final body = utf8.decode(res.bodyBytes, allowMalformed: true);
+      final now = DateTime.now();
+      guide = await compute(parseXmltvJob, <Object>[
+        body,
+        now.subtract(const Duration(hours: 1)).millisecondsSinceEpoch,
+        now.add(const Duration(hours: 8)).millisecondsSinceEpoch,
+      ]);
+      _guideLoaded = true;
+    } catch (e) {
+      guideError = e.toString().replaceFirst('Exception: ', '');
+    }
+    guideLoading = false;
+    notifyListeners();
+  }
+
+  /// Programmes for a channel, matched by tvg-id, then by channel name.
+  List<Programme> programmesFor(MediaItem ch) {
+    final byId = ch.epgId == null ? null : guide.programmes[ch.epgId!.toLowerCase()];
+    if (byId != null) return byId;
+    final id = guide.nameToId[ch.name.trim().toLowerCase()];
+    return id == null ? const [] : (guide.programmes[id] ?? const []);
   }
 }

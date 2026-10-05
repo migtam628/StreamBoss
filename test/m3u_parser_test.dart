@@ -18,4 +18,10 @@ http://host/movie/u/p/9.mp4
     expect(c.liveCategories.map((e) => e.id), ['News']);
     expect(c.movieCategories.map((e) => e.id), ['Films']);
   });
+
+  test('titles containing commas are kept whole', () {
+    final c = parseM3u('#EXTINF:-1 group-title="Films, HD",Some, Movie\nhttp://h/movie/u/p/9.mkv\n');
+    expect(c.movies.single.name, 'Some, Movie');
+    expect(c.movies.single.categoryId, 'Films, HD');
+  });
 }
