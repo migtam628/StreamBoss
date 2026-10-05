@@ -86,6 +86,14 @@ class MainActivity : FlutterActivity() {
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                         packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
                 )
+                "isTv" -> {
+                    val ui = getSystemService(android.content.Context.UI_MODE_SERVICE) as android.app.UiModeManager
+                    result.success(
+                        ui.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
+                            packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) ||
+                            packageManager.hasSystemFeature("amazon.hardware.fire_tv")
+                    )
+                }
                 "enter" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val params = PictureInPictureParams.Builder()

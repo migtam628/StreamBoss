@@ -5,6 +5,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/media_tile.dart';
+import '../widgets/tv.dart';
 import 'open_item.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -35,10 +36,11 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item == null) return const SizedBox.shrink();
+    final tv = TvScope.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      padding: const EdgeInsets.all(24),
-      height: 200,
+      padding: EdgeInsets.all(tv ? 32 : 24),
+      height: tv ? 240 : 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
@@ -53,11 +55,16 @@ class _Hero extends StatelessWidget {
           Text(item!.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+              style: TextStyle(fontSize: tv ? 34 : 26, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
           FilledButton.icon(
-            style: FilledButton.styleFrom(
-                backgroundColor: Colors.white, foregroundColor: Colors.black),
+            // A remote has no pointer, so land the cursor on the main action.
+            autofocus: tv,
+            style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black).copyWith(
+              // White on white would hide the TV focus outline, so this button uses a dark one.
+              side: WidgetStateProperty.resolveWith(
+                  (s) => s.contains(WidgetState.focused) ? const BorderSide(color: Colors.black, width: 4) : null),
+            ),
             onPressed: () => openItem(context, item!),
             icon: const Icon(Icons.play_arrow),
             label: const Text('Play'),
@@ -77,23 +84,24 @@ class _Shelf extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
     final s = context.read<AppState>();
-    final size = context.watch<SettingsState>().posterSize;
+    final size = context.watch<SettingsState>().posterScale;
+    final tv = TvScope.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          child: Text(title, style: TextStyle(fontSize: tv ? 22 : 18, fontWeight: FontWeight.w700)),
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 190 * size,
+          // Extra height on TV leaves room for the focused card's lift and glow.
+          height: 190 * size + (tv ? 24 : 0),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: tv ? 30 : 16, vertical: tv ? 14 : 6),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, __) => SizedBox(width: tv ? 26 : 12),
             itemBuilder: (_, i) {
               final it = items[i];
               return AspectRatio(

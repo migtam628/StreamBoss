@@ -353,6 +353,16 @@ class AppearancePage extends StatelessWidget {
         options: const [(0.85, 'Compact'), (1.0, 'Normal'), (1.25, 'Large')],
         onChanged: (v) => st.set('posterSize', v),
       ),
+      const SettingsHeader('TV'),
+      ChoiceRow<String>(
+        icon: Icons.tv,
+        title: 'TV mode',
+        subtitle: 'Bigger text and posters, a bold focus outline, safe screen margins and Back-to-Home. '
+            '${SettingsState.detectedTv ? 'This device was detected as a TV.' : 'Auto turns on for Android TV, Google TV and Fire TV.'}',
+        value: st.tvMode,
+        options: const [('auto', 'Auto'), ('on', 'On'), ('off', 'Off')],
+        onChanged: (v) => st.set('tvMode', v),
+      ),
       const SettingsHeader('Startup'),
       ChoiceRow<int>(
         icon: Icons.home_outlined,

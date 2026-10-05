@@ -5,6 +5,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/tmdb_header.dart';
+import '../widgets/tv.dart';
 import 'player_screen.dart';
 
 class DetailScreen extends StatelessWidget {
@@ -14,6 +15,7 @@ class DetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final tv = TvScope.of(context);
     final auto = context.watch<SettingsState>().autoResume;
     final resume = s.resumeFor(item);
     void play({Duration? at}) => Navigator.of(context).push(MaterialPageRoute(
@@ -29,7 +31,8 @@ class DetailScreen extends StatelessWidget {
           onPressed: () => s.toggleFavorite(item),
         ),
       ]),
-      body: ListView(children: [
+      body: TvSafe(
+        child: ListView(children: [
         TmdbHeader(item: item),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -68,9 +71,17 @@ class DetailScreen extends StatelessWidget {
                 child: Text('Resume from ${stamp(resume)}'),
               ),
             ],
+            // The app-bar heart is awkward with a remote, so TV gets a button beside Play.
+            if (tv)
+              OutlinedButton.icon(
+                onPressed: () => s.toggleFavorite(item),
+                icon: Icon(s.isFavorite(item) ? Icons.favorite : Icons.favorite_border),
+                label: Text(s.isFavorite(item) ? 'In My list' : 'Add to My list'),
+              ),
           ]),
         ),
       ]),
+      ),
     );
   }
 }

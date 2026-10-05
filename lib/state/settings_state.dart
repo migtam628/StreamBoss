@@ -31,6 +31,7 @@ class SettingsState extends ChangeNotifier {
     'uiScale': 1.0,
     'posterSize': 1.0,
     'startTab': 0,
+    'tvMode': 'auto', // auto | on | off
     // library & guide
     'hideAdult': false,
     'sortAz': false,
@@ -42,6 +43,12 @@ class SettingsState extends ChangeNotifier {
 
   /// Keys that must never leave the device (backups, diagnostics).
   static const secretKeys = {'tmdbKey'};
+
+  /// Describes this device rather than the user's taste, so backups don't carry it over.
+  static const deviceKeys = {'tvMode'};
+
+  /// Set at startup from [DeviceInfo]; tests set it directly.
+  static bool detectedTv = false;
 
   final Map<String, Object> _v = {...defaults};
 
@@ -70,6 +77,14 @@ class SettingsState extends ChangeNotifier {
   double get uiScale => _g('uiScale');
   double get posterSize => _g('posterSize');
   int get startTab => _g('startTab');
+  String get tvMode => _g('tvMode');
+
+  /// TV ("10-foot") mode: on when forced, or when auto and a TV was detected.
+  bool get isTv => tvMode == 'on' || (tvMode == 'auto' && detectedTv);
+
+  /// Text and poster scales as applied: the user's choice, plus 20% in TV mode.
+  double get textScale => uiScale * (isTv ? 1.2 : 1);
+  double get posterScale => posterSize * (isTv ? 1.2 : 1);
   bool get hideAdult => _g('hideAdult');
   bool get sortAz => _g('sortAz');
   bool get use24h => _g('use24h');
@@ -189,7 +204,7 @@ class SettingsState extends ChangeNotifier {
   void applyMap(Map<String, dynamic> m) {
     for (final e in m.entries) {
       final v = e.value;
-      if (v == null || secretKeys.contains(e.key)) continue;
+      if (v == null || secretKeys.contains(e.key) || deviceKeys.contains(e.key)) continue;
       final c = _coerce(e.key, v as Object);
       if (c != null) set(e.key, c, notify: false);
     }

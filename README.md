@@ -68,7 +68,7 @@ Back to go up. Android picture-in-picture is available from the player's control
 - Xtream Codes and M3U sources, multiple saved sources, offline demo mode
 - Passwords stored in the platform keystore (flutter_secure_storage), not in plain prefs
 - Live TV, Movies, Series (with episodes), categories, search
-- Home shelves: Continue watching, My List (long-press / hold select to favorite)
+- Home shelves: Continue watching, My List (long-press to favorite; on TV use the button on the movie page)
 - TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
 - Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header; D-pad friendly) with a now/next list fallback
 - Backup / restore (clipboard JSON; passwords are never included)
@@ -82,6 +82,10 @@ Back to go up. Android picture-in-picture is available from the player's control
 - Picture-in-picture on Android (button in the player)
 - Shader library (libmpv user shaders): built-in Sharpen, Vibrance, Night warm, Film grain, plus your own pasted GLSL; toggle live in the player, reorder in Settings
 - Keyboard / D-pad / remote navigation with visible focus rings
+- TV mode (automatic on Android TV, Google TV and Fire TV; Settings > Appearance > TV mode forces it on or off):
+  20% larger text and posters, a bold white focus ring with glow, a side rail, overscan-safe margins,
+  the cursor starting on Play, an "Add to My list" button on movie pages (no long-press on a remote),
+  and Back returning to Home before it leaves the app
 
 ## Develop
 

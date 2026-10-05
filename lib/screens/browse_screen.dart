@@ -22,7 +22,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final size = context.watch<SettingsState>().posterSize;
+    final size = context.watch<SettingsState>().posterScale;
     final cats = widget.catalog.categoriesFor(widget.kind);
     final all = widget.catalog.itemsFor(widget.kind);
     final items = _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();

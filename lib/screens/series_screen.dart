@@ -5,6 +5,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/tmdb_header.dart';
+import '../widgets/tv.dart';
 import 'player_screen.dart';
 
 class SeriesScreen extends StatelessWidget {
@@ -26,10 +27,13 @@ class SeriesScreen extends StatelessWidget {
             return Center(child: Text('Could not load episodes: ${snap.error}'));
           }
           final eps = snap.data ?? [];
-          return ListView(children: [
+          final tv = TvScope.of(context);
+          return TvSafe(
+            child: ListView(children: [
             TmdbHeader(item: series),
             for (final e in eps)
               ListTile(
+                autofocus: tv && e == eps.first,
                 leading: const Icon(Icons.play_circle_outline),
                 title: Text('S${e.season} · E${e.number}  ${e.title}'),
                 onTap: () {
@@ -52,7 +56,8 @@ class SeriesScreen extends StatelessWidget {
                   ));
                 },
               ),
-          ]);
+          ]),
+          );
         },
       ),
     );

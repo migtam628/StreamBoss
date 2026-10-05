@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../widgets/tv.dart';
 import 'browse_screen.dart';
 import 'guide_screen.dart';
 import 'home_screen.dart';
@@ -51,7 +52,8 @@ class _ShellState extends State<Shell> {
       const SearchScreen(),
       const SettingsScreen(),
     ];
-    final wide = MediaQuery.sizeOf(context).width >= 800;
+    final tv = TvScope.of(context);
+    final wide = tv || MediaQuery.sizeOf(context).width >= 800;
     final body = IndexedStack(
       index: _i,
       children: [
@@ -59,34 +61,43 @@ class _ShellState extends State<Shell> {
       ],
     );
 
-    if (wide) {
-      return Scaffold(
-        body: Row(children: [
-          NavigationRail(
-            selectedIndex: _i,
-            onDestinationSelected: (v) => setState(() {
+    // On a TV, Back from any tab returns to Home first; only Home lets Back leave the app.
+    Widget guard(Widget child) => PopScope(
+          canPop: !tv || _i == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) setState(() => _i = 0);
+          },
+          child: child,
+        );
+
+    void select(int v) => setState(() {
           _i = v;
           _visited.add(v);
-        }),
-            labelType: NavigationRailLabelType.all,
-            destinations: [
-              for (final d in _dests)
-                NavigationRailDestination(
-                    icon: Icon(d.$1), selectedIcon: Icon(d.$2), label: Text(d.$3)),
-            ],
-          ),
-          Expanded(child: body),
-        ]),
-      );
+        });
+
+    if (wide) {
+      return guard(Scaffold(
+        body: TvSafe(
+          child: Row(children: [
+            NavigationRail(
+              selectedIndex: _i,
+              onDestinationSelected: select,
+              labelType: NavigationRailLabelType.all,
+              destinations: [
+                for (final d in _dests)
+                  NavigationRailDestination(icon: Icon(d.$1), selectedIcon: Icon(d.$2), label: Text(d.$3)),
+              ],
+            ),
+            Expanded(child: body),
+          ]),
+        ),
+      ));
     }
     return Scaffold(
       body: SafeArea(child: body),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _i,
-        onDestinationSelected: (v) => setState(() {
-          _i = v;
-          _visited.add(v);
-        }),
+        onDestinationSelected: select,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           for (final d in _dests)

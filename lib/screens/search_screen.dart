@@ -18,7 +18,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final size = context.watch<SettingsState>().posterSize;
+    final size = context.watch<SettingsState>().posterScale;
     final q = _q.toLowerCase();
     final results = q.length < 2
         ? const []
