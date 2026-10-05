@@ -21,11 +21,11 @@ class Boss {
       textTheme: base.textTheme.apply(bodyColor: text, displayColor: text),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface,
-        indicatorColor: accent.withOpacity(0.25),
+        indicatorColor: accent.withValues(alpha: 0.25),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: surface,
-        indicatorColor: accent.withOpacity(0.25),
+        indicatorColor: accent.withValues(alpha: 0.25),
         selectedIconTheme: const IconThemeData(color: accent),
         selectedLabelTextStyle: const TextStyle(color: accent),
       ),

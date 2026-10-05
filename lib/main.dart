@@ -4,14 +4,23 @@ import 'package:provider/provider.dart';
 import 'screens/setup_screen.dart';
 import 'screens/shell.dart';
 import 'state/app_state.dart';
+import 'state/settings_state.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  final settings = SettingsState();
+  await settings.init();
   final state = AppState();
   await state.init();
-  runApp(ChangeNotifierProvider.value(value: state, child: const StreamBossApp()));
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider.value(value: state),
+      ChangeNotifierProvider.value(value: settings),
+    ],
+    child: const StreamBossApp(),
+  ));
 }
 
 class StreamBossApp extends StatelessWidget {

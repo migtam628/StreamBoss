@@ -59,7 +59,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
             return MediaTile(
               item: it,
               favorite: s.isFavorite(it),
-              onTap: () => openItem(context, it),
+              onTap: () => openItem(context, it, queue: items),
               onLongPress: () => s.toggleFavorite(it),
             );
           },

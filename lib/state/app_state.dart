@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
 import '../services/demo_catalog.dart';
@@ -20,16 +21,29 @@ class AppState extends ChangeNotifier {
   final List<MediaItem> recents = [];
 
   XtreamClient? _xtream;
+  final _secure = const FlutterSecureStorage();
+  final Map<String, int> positions = {}; // media key -> ms
 
   bool get ready => active != null && !loading && error == null;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
-    sources = [
-      for (final s in (p.getStringList('sources') ?? const []))
-        Source.fromJson(jsonDecode(s) as Map<String, dynamic>),
-    ];
+    sources = [];
+    for (final raw in (p.getStringList('sources') ?? const [])) {
+      final src = Source.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      sources.add(Source(
+        name: src.name,
+        type: src.type,
+        url: src.url,
+        username: src.username,
+        password: await _readSecret(src.name) ?? '',
+      ));
+    }
+    final pos = p.getString('positions');
+    if (pos != null) {
+      positions.addAll((jsonDecode(pos) as Map<String, dynamic>).map((k, v) => MapEntry(k, v as int)));
+    }
     favorites.addAll(p.getStringList('favorites') ?? const []);
     recents.addAll([
       for (final s in (p.getStringList('recents') ?? const []))
@@ -47,17 +61,38 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Passwords live in the platform keystore, never in shared_preferences.
+  Future<String?> _readSecret(String name) async {
+    try {
+      return await _secure.read(key: 'pass:$name');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _writeSecret(String name, String? value) async {
+    try {
+      value == null || value.isEmpty
+          ? await _secure.delete(key: 'pass:$name')
+          : await _secure.write(key: 'pass:$name', value: value);
+    } catch (_) {}
+  }
+
+  Future<void> _saveSources() => _prefs!.setStringList('sources', [
+        for (final e in sources) jsonEncode((e.toJson()..['pass'] = '')),
+      ]);
+
   Future<void> addSource(Source s) async {
     sources = [...sources.where((e) => e.name != s.name), s];
-    await _prefs?.setStringList(
-        'sources', [for (final e in sources) jsonEncode(e.toJson())]);
+    await _writeSecret(s.name, s.password);
+    await _saveSources();
     await activate(s);
   }
 
   Future<void> removeSource(Source s) async {
     sources = sources.where((e) => e.name != s.name).toList();
-    await _prefs?.setStringList(
-        'sources', [for (final e in sources) jsonEncode(e.toJson())]);
+    await _writeSecret(s.name, null);
+    await _saveSources();
     if (active?.name == s.name) {
       active = null;
       catalog = const Catalog();
@@ -126,4 +161,27 @@ class AppState extends ChangeNotifier {
         'recents', [for (final e in recents) jsonEncode(e.toJson())]);
     notifyListeners();
   }
+
+  // --- Resume positions -------------------------------------------------
+
+  Duration? resumeFor(MediaItem i) {
+    final ms = positions[i.key];
+    return ms == null ? null : Duration(milliseconds: ms);
+  }
+
+  void savePosition(MediaItem i, Duration pos, Duration total) {
+    if (i.kind == MediaKind.live || total.inSeconds < 60) return;
+    // Treat the last 3% as finished.
+    if (pos.inMilliseconds > total.inMilliseconds * 0.97) {
+      positions.remove(i.key);
+    } else if (pos.inSeconds > 10) {
+      positions[i.key] = pos.inMilliseconds;
+    }
+    _prefs?.setString('positions', jsonEncode(positions));
+  }
+
+  // --- EPG --------------------------------------------------------------
+
+  Future<List<EpgEntry>> epg(MediaItem live) async =>
+      _xtream == null ? const [] : _xtream!.shortEpg(live.id);
 }

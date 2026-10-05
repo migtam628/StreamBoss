@@ -19,9 +19,18 @@ so web works best with https + CORS-enabled providers.
 ## Features
 
 - Xtream Codes and M3U sources, multiple saved sources, offline demo mode
+- Passwords stored in the platform keystore (flutter_secure_storage), not in plain prefs
 - Live TV, Movies, Series (with episodes), categories, search
 - Home shelves: Continue watching, My List (long-press / hold select to favorite)
-- Playback via media_kit (libmpv): MKV, TS, HLS, MP4
+- TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
+- Xtream now/next EPG in the live player
+- Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
+  - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel
+  - controls visible: arrows move between buttons, Back hides them
+  - audio and subtitle track pickers, speed, sleep timer, skip-intro (+90s), stats overlay
+  - resume position for movies and episodes, per-episode "continue watching"
+- Settings: hardware/software decoder, network buffer presets (low/normal/high),
+  subtitle size/color/background with live preview, default speed
 - Keyboard / D-pad / remote navigation with visible focus rings
 
 ## Develop
@@ -30,19 +39,16 @@ Platform folders are generated, not committed:
 
 ```sh
 flutter create . --project-name streamboss --org com.streamboss
+dart run tool/patch_android.dart   # Android TV / Google TV / Fire TV manifest (leanback launcher, INTERNET, cleartext http)
 flutter pub get
 flutter run -d <device>
 flutter test
 ```
 
-Android TV / Fire TV: add `<uses-feature android:name="android.software.leanback" android:required="false"/>`,
-`<uses-feature android:name="android.hardware.touchscreen" android:required="false"/>` and a
-`android.intent.category.LEANBACK_LAUNCHER` intent filter to `android/app/src/main/AndroidManifest.xml`.
-Android/Fire TV also need the INTERNET permission in release builds (flutter create adds it for debug only).
+Linux desktop needs `libmpv-dev libsecret-1-dev` installed.
 
 ## Status / roadmap
 
-This is a first scaffold, written without a Flutter SDK available, so it has **not been compiled or run yet**.
-CI (`.github/workflows/build.yml`) will be the first real check. Next: TMDB metadata, subtitle/audio track
-picker, channel zapping, EPG, secure credential storage (credentials are currently in shared_preferences),
-tvOS, Roku parity.
+Not done yet: tvOS, Roku feature parity (the Roku channel is a minimal M3U list + player),
+full XMLTV program guide grid, picture-in-picture, settings backup/restore, shader management,
+intro/outro detection (skip-intro is a fixed +90s jump).

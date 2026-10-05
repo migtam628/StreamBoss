@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../widgets/tmdb_header.dart';
 import 'player_screen.dart';
 
 class SeriesScreen extends StatelessWidget {
@@ -25,8 +26,7 @@ class SeriesScreen extends StatelessWidget {
           }
           final eps = snap.data ?? [];
           return ListView(children: [
-            if (series.plot != null)
-              Padding(padding: const EdgeInsets.all(16), child: Text(series.plot!)),
+            TmdbHeader(item: series),
             for (final e in eps)
               ListTile(
                 leading: const Icon(Icons.play_circle_outline),
@@ -35,7 +35,14 @@ class SeriesScreen extends StatelessWidget {
                   builder: (_) => PlayerScreen(
                     title: '${series.name} – ${e.title}',
                     url: e.url,
-                    item: series,
+                    // Episode-scoped item so resume + "continue watching" are per episode.
+                    item: MediaItem(
+                      id: 'ep${e.id}',
+                      name: '${series.name} – ${e.title}',
+                      kind: MediaKind.movie,
+                      streamUrl: e.url,
+                      poster: series.poster,
+                    ),
                   ),
                 )),
               ),
