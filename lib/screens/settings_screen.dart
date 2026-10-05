@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
@@ -154,6 +156,37 @@ class SettingsScreen extends StatelessWidget {
             ),
           );
           if (v != null) st.update(tmdbKey: v);
+        },
+      ),
+
+      header('Backup'),
+      ListTile(
+        leading: const Icon(Icons.upload),
+        title: const Text('Copy backup to clipboard'),
+        subtitle: const Text('Sources (no passwords), settings, My List, resume positions'),
+        onTap: () async {
+          final data = jsonEncode({'app': s.exportData(), 'settings': st.toMap()});
+          await Clipboard.setData(ClipboardData(text: data));
+          if (context.mounted) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(const SnackBar(content: Text('Backup copied')));
+          }
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.download),
+        title: const Text('Restore backup from clipboard'),
+        onTap: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          try {
+            final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text ?? '';
+            final m = jsonDecode(text) as Map<String, dynamic>;
+            s.importData(m['app'] as Map<String, dynamic>);
+            st.applyMap(m['settings'] as Map<String, dynamic>);
+            messenger.showSnackBar(const SnackBar(content: Text('Backup restored')));
+          } catch (_) {
+            messenger.showSnackBar(const SnackBar(content: Text('Clipboard does not hold a valid backup')));
+          }
         },
       ),
 

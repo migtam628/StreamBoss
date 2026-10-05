@@ -23,7 +23,8 @@ so web works best with https + CORS-enabled providers.
 - Live TV, Movies, Series (with episodes), categories, search
 - Home shelves: Continue watching, My List (long-press / hold select to favorite)
 - TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
-- Xtream now/next EPG in the live player
+- Xtream now/next EPG in the live player, plus a Guide tab listing channels with now/next
+- Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
   - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel
   - controls visible: arrows move between buttons, Back hides them
@@ -50,5 +51,5 @@ Linux desktop needs `libmpv-dev libsecret-1-dev` installed.
 ## Status / roadmap
 
 Not done yet: tvOS, Roku feature parity (the Roku channel is a minimal M3U list + player),
-full XMLTV program guide grid, picture-in-picture, settings backup/restore, shader management,
+a time-grid guide / XMLTV for M3U sources, picture-in-picture (needs native code), shader management,
 intro/outro detection (skip-intro is a fixed +90s jump).

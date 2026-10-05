@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import 'browse_screen.dart';
+import 'guide_screen.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
@@ -20,6 +21,7 @@ class _ShellState extends State<Shell> {
   static const _dests = [
     (Icons.home_outlined, Icons.home, 'Home'),
     (Icons.live_tv_outlined, Icons.live_tv, 'Live'),
+    (Icons.view_list_outlined, Icons.view_list, 'Guide'),
     (Icons.movie_outlined, Icons.movie, 'Movies'),
     (Icons.tv_outlined, Icons.tv, 'Series'),
     (Icons.search, Icons.search, 'Search'),
@@ -32,6 +34,7 @@ class _ShellState extends State<Shell> {
     final pages = [
       const HomeScreen(),
       BrowseScreen(kind: MediaKind.live, catalog: s.catalog),
+      const GuideScreen(),
       BrowseScreen(kind: MediaKind.movie, catalog: s.catalog),
       BrowseScreen(kind: MediaKind.series, catalog: s.catalog),
       const SearchScreen(),

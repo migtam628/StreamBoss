@@ -51,4 +51,24 @@ class SettingsState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  Map<String, dynamic> toMap() => {
+        'decoder': decoder,
+        'bufferSecs': bufferSecs,
+        'subSize': subSize,
+        'subColor': subColor,
+        'subBackground': subBackground,
+        'speed': speed,
+        'tmdbKey': tmdbKey,
+      };
+
+  void applyMap(Map<String, dynamic> m) => update(
+        decoder: m['decoder'] as String?,
+        bufferSecs: (m['bufferSecs'] as num?)?.toInt(),
+        subSize: (m['subSize'] as num?)?.toDouble(),
+        subColor: (m['subColor'] as num?)?.toInt(),
+        subBackground: m['subBackground'] as bool?,
+        speed: (m['speed'] as num?)?.toDouble(),
+        tmdbKey: m['tmdbKey'] as String?,
+      );
 }

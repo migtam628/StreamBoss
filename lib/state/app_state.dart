@@ -184,4 +184,33 @@ class AppState extends ChangeNotifier {
 
   Future<List<EpgEntry>> epg(MediaItem live) async =>
       _xtream == null ? const [] : _xtream!.shortEpg(live.id);
+
+  // --- Backup / restore ---------------------------------------------------
+
+  /// Sources (without passwords), favorites, resume positions, recents.
+  Map<String, dynamic> exportData() => {
+        'sources': [for (final e in sources) e.toJson()..['pass'] = ''],
+        'favorites': favorites.toList(),
+        'positions': positions,
+        'recents': [for (final r in recents) r.toJson()],
+      };
+
+  void importData(Map<String, dynamic> m) {
+    for (final j in (m['sources'] as List? ?? const [])) {
+      final src = Source.fromJson(j as Map<String, dynamic>);
+      if (!sources.any((e) => e.name == src.name)) sources.add(src);
+    }
+    favorites.addAll([for (final f in (m['favorites'] as List? ?? const [])) '$f']);
+    positions.addAll((m['positions'] as Map? ?? const {}).map((k, v) => MapEntry('$k', (v as num).toInt())));
+    final have = recents.map((e) => e.key).toSet();
+    for (final j in (m['recents'] as List? ?? const [])) {
+      final it = MediaItem.fromJson(j as Map<String, dynamic>);
+      if (have.add(it.key)) recents.add(it);
+    }
+    _prefs?.setStringList('favorites', favorites.toList());
+    _prefs?.setString('positions', jsonEncode(positions));
+    _prefs?.setStringList('recents', [for (final e in recents) jsonEncode(e.toJson())]);
+    _saveSources();
+    notifyListeners();
+  }
 }
