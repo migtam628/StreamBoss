@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
+import '../state/settings_state.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
 
@@ -17,10 +18,11 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final size = context.watch<SettingsState>().posterSize;
     final q = _q.toLowerCase();
     final results = q.length < 2
         ? const []
-        : s.catalog.all.where((i) => i.name.toLowerCase().contains(q)).take(200).toList();
+        : s.shown.all.where((i) => i.name.toLowerCase().contains(q)).take(200).toList();
     return Column(children: [
       Padding(
         padding: const EdgeInsets.all(16),
@@ -33,8 +35,8 @@ class _SearchScreenState extends State<SearchScreen> {
       Expanded(
         child: GridView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 160,
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 160 * size,
               childAspectRatio: 2 / 3,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12),

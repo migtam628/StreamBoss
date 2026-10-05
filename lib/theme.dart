@@ -13,6 +13,8 @@ class Boss {
     final base = ThemeData.dark(useMaterial3: true);
     return base.copyWith(
       scaffoldBackgroundColor: bg,
+      focusColor: accent.withValues(alpha: 0.28),
+      hoverColor: accent.withValues(alpha: 0.10),
       colorScheme: const ColorScheme.dark(
         primary: accent,
         secondary: accent2,

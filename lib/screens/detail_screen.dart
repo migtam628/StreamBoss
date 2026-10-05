@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
+import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/tmdb_header.dart';
 import 'player_screen.dart';
@@ -13,9 +14,11 @@ class DetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final auto = context.watch<SettingsState>().autoResume;
     final resume = s.resumeFor(item);
-    void play() => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => PlayerScreen(title: item.name, url: item.streamUrl!, item: item)));
+    void play({Duration? at}) => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PlayerScreen(title: item.name, url: item.streamUrl!, item: item, startAt: at)));
+    String stamp(Duration d) => '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 
     return Scaffold(
       appBar: AppBar(backgroundColor: Boss.bg, actions: [
@@ -30,23 +33,39 @@ class DetailScreen extends StatelessWidget {
         TmdbHeader(item: item),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(children: [
-            FilledButton.icon(
-              autofocus: true,
-              onPressed: play,
-              icon: const Icon(Icons.play_arrow),
-              label: Text(resume == null
-                  ? 'Play'
-                  : 'Resume from ${resume.inMinutes}:${(resume.inSeconds % 60).toString().padLeft(2, '0')}'),
-            ),
-            if (resume != null) ...[
-              const SizedBox(width: 12),
+          child: Wrap(spacing: 12, runSpacing: 8, children: [
+            if (resume == null)
+              FilledButton.icon(
+                autofocus: true,
+                onPressed: play,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Play'),
+              )
+            else if (auto) ...[
+              // Auto-resume on: the main button continues where you left off.
+              FilledButton.icon(
+                autofocus: true,
+                onPressed: () => play(at: resume),
+                icon: const Icon(Icons.play_arrow),
+                label: Text('Resume from ${stamp(resume)}'),
+              ),
               OutlinedButton(
                 onPressed: () {
                   s.positions.remove(item.key);
                   play();
                 },
                 child: const Text('Start over'),
+              ),
+            ] else ...[
+              FilledButton.icon(
+                autofocus: true,
+                onPressed: play,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Play from start'),
+              ),
+              OutlinedButton(
+                onPressed: () => play(at: resume),
+                child: Text('Resume from ${stamp(resume)}'),
               ),
             ],
           ]),

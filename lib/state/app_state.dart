@@ -4,12 +4,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
 import '../services/demo_catalog.dart';
+import '../services/library_view.dart';
 import '../services/m3u_parser.dart';
+import '../services/net_config.dart';
 import '../services/provider_url.dart';
 import '../services/tmdb.dart';
 import '../services/xmltv.dart';
 import '../services/xtream_client.dart';
 import 'package:http/http.dart' as http;
+import 'settings_state.dart';
 
 class AppState extends ChangeNotifier {
   SharedPreferences? _prefs;
@@ -30,6 +33,44 @@ class AppState extends ChangeNotifier {
   final Map<String, int> positions = {}; // media key -> ms
 
   bool get ready => active != null && !loading && error == null;
+
+  // --- View of the library (hide-adult / sort options) ---------------------------------
+
+  SettingsState? _settings;
+  bool _lastAdult = false, _lastSort = false;
+  Catalog? _viewSrc;
+  bool _viewAdult = false, _viewSort = false;
+  Catalog _view = const Catalog();
+
+  /// Connects user preferences; only the ones that change what is listed rebuild the UI.
+  void bindSettings(SettingsState s) {
+    _settings = s;
+    _lastAdult = s.hideAdult;
+    _lastSort = s.sortAz;
+    s.addListener(() {
+      if (s.hideAdult != _lastAdult || s.sortAz != _lastSort) {
+        _lastAdult = s.hideAdult;
+        _lastSort = s.sortAz;
+        notifyListeners();
+      }
+    });
+  }
+
+  /// The catalog as it should be displayed: [catalog] with the user's filters applied.
+  Catalog get shown {
+    final adult = _settings?.hideAdult ?? false;
+    final sort = _settings?.sortAz ?? false;
+    if (!identical(_viewSrc, catalog) || adult != _viewAdult || sort != _viewSort) {
+      _view = buildView(catalog, hideAdult: adult, sortAz: sort);
+      _viewSrc = catalog;
+      _viewAdult = adult;
+      _viewSort = sort;
+    }
+    return _view;
+  }
+
+  /// True when an M3U-style link was upgraded to the provider's Xtream API.
+  bool get usingXtreamApi => _xtream != null;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -134,7 +175,7 @@ class AppState extends ChangeNotifier {
               }
             }
             if (_xtream == null) {
-              final res = await http.get(Uri.parse(s.url)).timeout(const Duration(seconds: 60));
+              final res = await http.get(Uri.parse(s.url), headers: NetConfig.headers).timeout(const Duration(seconds: 60));
               if (res.statusCode != 200) throw Exception('Playlist returned ${res.statusCode}');
               catalog = parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true));
             }
@@ -187,7 +228,7 @@ class AppState extends ChangeNotifier {
   }
 
   List<MediaItem> get favoriteItems =>
-      catalog.all.where((i) => favorites.contains(i.key)).toList();
+      shown.all.where((i) => favorites.contains(i.key)).toList();
 
   void markWatched(MediaItem i) {
     recents.removeWhere((e) => e.key == i.key);
@@ -195,6 +236,26 @@ class AppState extends ChangeNotifier {
     if (recents.length > 20) recents.removeLast();
     _prefs?.setStringList(
         'recents', [for (final e in recents) jsonEncode(e.toJson())]);
+    notifyListeners();
+  }
+
+  // --- Clearing personal data ---------------------------------------------------------
+
+  void clearRecents() {
+    recents.clear();
+    _prefs?.remove('recents');
+    notifyListeners();
+  }
+
+  void clearPositions() {
+    positions.clear();
+    _prefs?.remove('positions');
+    notifyListeners();
+  }
+
+  void clearFavorites() {
+    favorites.clear();
+    _prefs?.remove('favorites');
     notifyListeners();
   }
 
@@ -276,7 +337,7 @@ class AppState extends ChangeNotifier {
     guideError = null;
     notifyListeners();
     try {
-      final res = await http.get(uri).timeout(const Duration(seconds: 90));
+      final res = await http.get(uri, headers: NetConfig.headers).timeout(const Duration(seconds: 90));
       if (res.statusCode != 200) throw Exception('Guide returned ${res.statusCode}');
       final body = utf8.decode(res.bodyBytes, allowMalformed: true);
       final now = DateTime.now();

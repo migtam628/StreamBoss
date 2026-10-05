@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
+import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/tmdb_header.dart';
 import 'player_screen.dart';
@@ -31,20 +32,25 @@ class SeriesScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.play_circle_outline),
                 title: Text('S${e.season} · E${e.number}  ${e.title}'),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => PlayerScreen(
-                    title: '${series.name} – ${e.title}',
-                    url: e.url,
-                    // Episode-scoped item so resume + "continue watching" are per episode.
-                    item: MediaItem(
-                      id: 'ep${e.id}',
-                      name: '${series.name} – ${e.title}',
-                      kind: MediaKind.movie,
-                      streamUrl: e.url,
-                      poster: series.poster,
+                onTap: () {
+                  // Episode-scoped item so resume + "continue watching" are per episode.
+                  final ep = MediaItem(
+                    id: 'ep${e.id}',
+                    name: '${series.name} – ${e.title}',
+                    kind: MediaKind.movie,
+                    streamUrl: e.url,
+                    poster: series.poster,
+                  );
+                  final auto = context.read<SettingsState>().autoResume;
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => PlayerScreen(
+                      title: ep.name,
+                      url: e.url,
+                      item: ep,
+                      startAt: auto ? s.resumeFor(ep) : null,
                     ),
-                  ),
-                )),
+                  ));
+                },
               ),
           ]);
         },

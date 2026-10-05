@@ -7,3 +7,12 @@ Future<void> applyBuffer(Player player, int cacheSecs) async {}
 Future<void> applyShaders(Player player, List<MapEntry<String, String>> idAndSource) async {}
 
 bool get shadersSupported => false;
+
+/// Web: the browser decides languages and the User-Agent.
+Future<void> applyPlaybackPrefs(
+  Player player, {
+  required String audioLang,
+  required String subLang,
+  required bool subsOn,
+  required String userAgent,
+}) async {}

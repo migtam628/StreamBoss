@@ -13,6 +13,7 @@ Future<void> main() async {
   final settings = SettingsState();
   await settings.init();
   final state = AppState();
+  state.bindSettings(settings);
   await state.init();
   runApp(MultiProvider(
     providers: [
@@ -29,10 +30,15 @@ class StreamBossApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final scale = context.watch<SettingsState>().uiScale;
     return MaterialApp(
       title: 'StreamBoss',
       debugShowCheckedModeBanner: false,
       theme: Boss.theme(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: s.active == null || s.error != null || s.loading
           ? const SetupScreen()
           : const Shell(),

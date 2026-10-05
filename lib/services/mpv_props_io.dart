@@ -32,3 +32,28 @@ Future<void> applyShaders(Player player, List<MapEntry<String, String>> idAndSou
   // mpv path-list separator: ';' on Windows, ':' elsewhere.
   await plat.setProperty('glsl-shaders', paths.join(Platform.isWindows ? ';' : ':'));
 }
+
+/// Preferred audio / subtitle languages (mpv language lists such as "en,eng"), whether
+/// subtitles start enabled, and the User-Agent libmpv sends. Set before the media opens.
+Future<void> applyPlaybackPrefs(
+  Player player, {
+  required String audioLang,
+  required String subLang,
+  required bool subsOn,
+  required String userAgent,
+}) async {
+  final plat = player.platform;
+  if (plat is! NativePlayer) return;
+  Future<void> set(String k, String v) async {
+    try {
+      await plat.setProperty(k, v);
+    } catch (_) {
+      // A property this libmpv build doesn't know must not stop playback.
+    }
+  }
+
+  if (audioLang.isNotEmpty) await set('alang', audioLang);
+  if (subLang.isNotEmpty) await set('slang', subLang);
+  if (!subsOn) await set('sid', 'no');
+  if (userAgent.isNotEmpty) await set('user-agent', userAgent);
+}

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/media.dart';
+import 'net_config.dart';
 import 'tmdb.dart';
 
 class XtreamClient {
@@ -25,7 +26,7 @@ class XtreamClient {
       .replace(queryParameters: {'username': user, 'password': pass});
 
   Future<dynamic> _get(String action, [Map<String, String> extra = const {}]) async {
-    final res = await _http.get(_api(action, extra)).timeout(const Duration(seconds: 30));
+    final res = await _http.get(_api(action, extra), headers: NetConfig.headers).timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
       throw Exception('Server returned ${res.statusCode}');
     }

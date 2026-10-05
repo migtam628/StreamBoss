@@ -5,6 +5,7 @@ import 'package:streamboss/models/media.dart';
 import 'package:streamboss/screens/guide_screen.dart';
 import 'package:streamboss/services/xmltv.dart';
 import 'package:streamboss/state/app_state.dart';
+import 'package:streamboss/state/settings_state.dart';
 
 void main() {
   testWidgets('guide grid renders programme cells and empty rows', (tester) async {
@@ -22,8 +23,11 @@ void main() {
     ];
     await tester.binding.setSurfaceSize(const Size(1000, 600));
     await tester.pumpWidget(MaterialApp(
-      home: ChangeNotifierProvider.value(
-        value: state,
+      home: MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AppState>.value(value: state),
+          ChangeNotifierProvider<SettingsState>(create: (_) => SettingsState()),
+        ],
         child: const Scaffold(body: GuideGrid(channels: channels)),
       ),
     ));

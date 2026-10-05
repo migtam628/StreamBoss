@@ -26,12 +26,16 @@ class PlayerScreen extends StatefulWidget {
   /// Live channels to zap through with Up/Down (the tapped one is [item]).
   final List<MediaItem>? queue;
 
+  /// Where to start (movies/episodes). Null = from the beginning.
+  final Duration? startAt;
+
   const PlayerScreen({
     super.key,
     required this.title,
     required this.url,
     required this.item,
     this.queue,
+    this.startAt,
   });
 
   @override
@@ -108,6 +112,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _start() async {
     await applyBuffer(_player, _settings.bufferSecs);
+    await applyPlaybackPrefs(
+      _player,
+      audioLang: _settings.audioLang,
+      subLang: _settings.subLang,
+      subsOn: _settings.subsOn,
+      userAgent: _settings.userAgent,
+    );
     await _applyShaders();
     if (_queue != null) {
       await _player.open(Playlist(
@@ -115,7 +126,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         index: _index,
       ));
     } else {
-      await _player.open(Media(widget.url, start: _app.resumeFor(widget.item)));
+      await _player.open(Media(widget.url, start: widget.startAt));
     }
     if (!_live && _settings.speed != 1) await _player.setRate(_settings.speed);
     _onChannelChanged();
@@ -178,7 +189,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   void _scheduleHide() {
     _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 5), () {
+    final secs = _settings.controlsHideSecs;
+    if (secs <= 0) return; // "never": controls stay until dismissed
+    _hideTimer = Timer(Duration(seconds: secs), () {
       // Don't hide behind an open menu.
       if (mounted && _playing && ModalRoute.of(context)?.isCurrent == true) _hideControls();
     });
@@ -227,11 +240,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.arrowLeft && !_live) {
-      _seekBy(-10);
+      _seekBy(-_settings.seekSecs);
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.arrowRight && !_live) {
-      _seekBy(10);
+      _seekBy(_settings.seekSecs);
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.arrowUp && _queue != null) {
@@ -251,6 +264,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
     return KeyEventResult.ignored;
   }
+
+  IconData _seekIcon(bool forward) => switch (_settings.seekSecs) {
+        5 => forward ? Icons.forward_5 : Icons.replay_5,
+        30 => forward ? Icons.forward_30 : Icons.replay_30,
+        _ => forward ? Icons.forward_10 : Icons.replay_10,
+      };
 
   // --- pickers ----------------------------------------------------------
 
@@ -439,11 +458,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 subtitleViewConfiguration: SubtitleViewConfiguration(
                   style: TextStyle(
                     fontSize: st.subSize,
+                    fontWeight: st.subBold ? FontWeight.w700 : FontWeight.w400,
                     height: 1.4,
                     color: Color(st.subColor),
                     backgroundColor: st.subBackground ? const Color(0xAA000000) : null,
                   ),
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
+                  padding: EdgeInsets.fromLTRB(24, 0, 24, st.subBottom),
                 ),
               ),
               if (_buffering) const Center(child: CircularProgressIndicator()),
@@ -568,12 +588,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
               spacing: 4,
               children: [
                 if (_queue != null) _btn(Icons.skip_previous, 'Previous channel', _player.previous),
-                if (!_live) _btn(Icons.replay_10, 'Back 10s', () => _seekBy(-10)),
+                if (!_live)
+                  _btn(_seekIcon(false), 'Back ${_settings.seekSecs}s', () => _seekBy(-_settings.seekSecs)),
                 _btn(_playing ? Icons.pause : Icons.play_arrow, 'Play / pause', _player.playOrPause,
                     node: _playBtn),
-                if (!_live) _btn(Icons.forward_10, 'Forward 10s', () => _seekBy(10)),
+                if (!_live)
+                  _btn(_seekIcon(true), 'Forward ${_settings.seekSecs}s', () => _seekBy(_settings.seekSecs)),
                 if (_queue != null) _btn(Icons.skip_next, 'Next channel', _player.next),
-                if (!_live) _btn(Icons.fast_forward, 'Skip intro (+90s)', () => _seekBy(90)),
+                if (!_live)
+                  _btn(Icons.fast_forward, 'Skip ahead (+${_settings.skipSecs}s)', () => _seekBy(_settings.skipSecs)),
                 _btn(Icons.audiotrack, 'Audio', _pickAudio),
                 _btn(Icons.subtitles, 'Subtitles', _pickSubtitle),
                 if (!_live) _btn(Icons.speed, 'Speed', _pickSpeed, on: _rate != 1),

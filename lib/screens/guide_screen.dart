@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../services/xmltv.dart';
 import '../services/xtream_client.dart';
+import '../services/time_format.dart';
 import '../state/app_state.dart';
+import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/focus_card.dart';
 import 'open_item.dart';
@@ -27,11 +29,12 @@ class _GuideScreenState extends State<GuideScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    context.watch<SettingsState>(); // rebuild when the clock format changes
     if (!_requested) {
       _requested = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => s.loadGuide());
     }
-    final all = s.catalog.live;
+    final all = s.shown.live;
     if (all.isEmpty) {
       return const Center(child: Text('No live channels.', style: TextStyle(color: Boss.muted)));
     }
@@ -47,7 +50,7 @@ class _GuideScreenState extends State<GuideScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               children: [
-                for (final c in [const Category('', 'All'), ...s.catalog.liveCategories])
+                for (final c in [const Category('', 'All'), ...s.shown.liveCategories])
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
@@ -144,8 +147,7 @@ class _GuideGridState extends State<GuideGrid> {
     }
   }
 
-  String _hm(DateTime d) =>
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  String _hm(DateTime d) => fmtTime(d, use24h: context.read<SettingsState>().use24h);
 
   @override
   Widget build(BuildContext context) {
@@ -284,8 +286,7 @@ class _NowNextList extends StatefulWidget {
 class _NowNextListState extends State<_NowNextList> {
   final _cache = <String, Future<List<EpgEntry>>>{};
 
-  String _hm(DateTime d) =>
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  String _hm(DateTime d) => fmtTime(d, use24h: context.read<SettingsState>().use24h);
 
   @override
   Widget build(BuildContext context) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
+import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
@@ -21,6 +22,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final size = context.watch<SettingsState>().posterSize;
     final cats = widget.catalog.categoriesFor(widget.kind);
     final all = widget.catalog.itemsFor(widget.kind);
     final items = _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
@@ -48,7 +50,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
         child: GridView.builder(
           padding: const EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: live ? 220 : 160,
+            maxCrossAxisExtent: (live ? 220 : 160) * size,
             childAspectRatio: live ? 16 / 10 : 2 / 3,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,

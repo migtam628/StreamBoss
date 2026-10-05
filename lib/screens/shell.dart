@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
+import '../state/settings_state.dart';
 import 'browse_screen.dart';
 import 'guide_screen.dart';
 import 'home_screen.dart';
@@ -16,9 +17,17 @@ class Shell extends StatefulWidget {
 }
 
 class _ShellState extends State<Shell> {
-  int _i = 0;
+  late int _i;
   // Tabs are built on first visit only, so e.g. the guide isn't downloaded at login.
-  final _visited = <int>{0};
+  final _visited = <int>{};
+
+  @override
+  void initState() {
+    super.initState();
+    // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings
+    _i = context.read<SettingsState>().startTab.clamp(0, _dests.length - 1);
+    _visited.add(_i);
+  }
 
   static const _dests = [
     (Icons.home_outlined, Icons.home, 'Home'),
@@ -35,10 +44,10 @@ class _ShellState extends State<Shell> {
     final s = context.watch<AppState>();
     final pages = [
       const HomeScreen(),
-      BrowseScreen(kind: MediaKind.live, catalog: s.catalog),
+      BrowseScreen(kind: MediaKind.live, catalog: s.shown),
       const GuideScreen(),
-      BrowseScreen(kind: MediaKind.movie, catalog: s.catalog),
-      BrowseScreen(kind: MediaKind.series, catalog: s.catalog),
+      BrowseScreen(kind: MediaKind.movie, catalog: s.shown),
+      BrowseScreen(kind: MediaKind.series, catalog: s.shown),
       const SearchScreen(),
       const SettingsScreen(),
     ];

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
+import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
@@ -12,7 +13,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final c = s.catalog;
+    final c = s.shown;
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
@@ -76,6 +77,7 @@ class _Shelf extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
     final s = context.read<AppState>();
+    final size = context.watch<SettingsState>().posterSize;
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -86,7 +88,7 @@ class _Shelf extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 190,
+          height: 190 * size,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
