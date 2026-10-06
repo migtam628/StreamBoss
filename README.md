@@ -127,14 +127,15 @@ every release. The first build signed with your key has to be installed after un
 - Phone setup: on the connect screen, "Set up from your phone" shows a QR code and a 4-digit PIN; the phone opens a small
   page served by the app on your home network and sends the login back, so no typing with a remote. The server runs only
   while that screen is open, locks after 5 wrong PINs, and nothing leaves the local network (native apps only)
-- Nine layouts, chosen in Settings > Appearance > Layout (the choice is per device): **Marquee** (a featured title on Home, a
+- Twelve layouts, chosen in Settings > Appearance > Layout (the choice is per device): **Marquee** (a featured title on Home, a
   slim icon rail, rows of posters), **Control Room** (categories, a numbered channel list with what is on now, and a
   details pane; built for flipping live channels), **Spotlight** (a poster wall where the focused title gets a details
   panel, with a single navigation pill), **Prime Time** (the TV guide is Home, with the highlighted programme's details
   above it), **Coverflow** (one big title at a time with its neighbors fanned out), **Hub** (a launcher of big colored
   tiles), **Daylight** (the light one: white cards, one green accent), **Cable Box** (opens on a channel with a
-  now/next banner; Up and Down change channel) and **Index** (big type, almost no posters, the lightest to run). Each
-  has its own colors and a phone version
+  now/next banner; Up and Down change channel), **Index** (big type, almost no posters, the lightest to run), **Glass** (frosted panels over a soft
+  backdrop, with a dock), **Bento** (a board of flat colored tiles) and **Library** (a tree on the left and dense rows,
+  like a media server). Each has its own colors and a phone version
 - Free public channels: Settings > Source (or the connect screen) can browse the public iptv-org and Free-TV playlist
   directories by category, country, language or the full index, and save any number of them as one combined source. The
   app does not host or vouch for these lists; you can still paste any M3U link you choose

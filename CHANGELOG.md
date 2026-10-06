@@ -4,6 +4,13 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b6 - 2026-10-06
+- Three more layouts join the nine in Settings > Appearance > Layout (now twelve cards): **Glass**, **Bento** and **Library**.
+  - Glass puts frosted panels over a soft colored backdrop, with a dock at the bottom for navigation (on a phone the bottom bar floats). Home is a frosted feature panel, a Live now panel, a Continue panel and the usual shelves. On a phone and desktop the panels blur what is behind them; on a TV they use a translucent fill only, because blur is costly on weak sticks.
+  - Bento makes Home a board of flat colored tiles: Continue, Live now (with now and next), your library at a glance, My list, a strip of what is on now, and search. Tiles share the screen on a TV and stack on a phone. The navigation is a row of flat blocks.
+  - Library is laid out like a media server: a tree of screens with counts on the left, a thin breadcrumb on top, and dense rows (poster, title, kind, rating, progress) on Home. Live, Movies and Series use the category list with a details pane.
+- Each layout has a wireframe card in the picker.
+
 ## 0.3.0b5 - 2026-10-06
 - Three more layouts join the six in Settings > Appearance > Layout (now nine cards): **Daylight**, **Cable Box** and **Index**.
   - Daylight is the first light layout: soft grey ground, white cards and one green accent. It has a feature card, a Live now row of channel cards with progress, and the usual shelves. The focus ring turns black so it still stands out on white. The whole app follows the light palette, including Settings, the connect screen and the guide.

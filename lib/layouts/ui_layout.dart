@@ -20,7 +20,13 @@ enum UiLayout {
   cable('Cable Box',
       'Opens on a channel with a banner like a cable box. Up and Down change channel, OK plays.'),
   indexList('Index',
-      'Big type and almost no posters. A list of words that opens what is inside. Light to run.');
+      'Big type and almost no posters. A list of words that opens what is inside. Light to run.'),
+  glass('Glass',
+      'Frosted panels floating over a soft colored backdrop, with a small dock at the bottom.'),
+  bento('Bento',
+      'Home is a board of flat colored tiles: continue, live now, a guide strip, your list and search.'),
+  library('Library',
+      'Like a media server: a tree on the left, dense rows on the right, a thin breadcrumb on top.');
 
   final String label;
   final String blurb;
@@ -37,6 +43,9 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
 
   /// Light palettes (Daylight) flip the Material theme to light and the focus ring to ink.
   final Brightness brightness;
+
+  /// Glass draws panels as translucent fills over the backdrop (and blurs them off a TV).
+  final bool frosted;
   const LayoutPalette({
     required this.bg,
     required this.surface,
@@ -47,6 +56,7 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     required this.muted,
     required this.line,
     this.brightness = Brightness.dark,
+    this.frosted = false,
   });
 
   bool get light => brightness == Brightness.light;
@@ -154,6 +164,38 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     line: Color(0x61FFFFFF),
   );
 
+  static const glass = LayoutPalette(
+    bg: Color(0xFF0D2F4A),
+    surface: Color(0xFF16405F),
+    surfaceHi: Color(0xFF225778),
+    accent: Color(0xFFBFE9FF),
+    accent2: Color(0xFFFFAA78),
+    text: Color(0xFFFFFFFF),
+    muted: Color(0xFFB5D2E6),
+    line: Color(0x52FFFFFF),
+    frosted: true,
+  );
+  static const bento = LayoutPalette(
+    bg: Color(0xFF17141F),
+    surface: Color(0xFF2A2535),
+    surfaceHi: Color(0xFF3A3447),
+    accent: Color(0xFFFF5A3C),
+    accent2: Color(0xFFFFD23F),
+    text: Color(0xFFF6F4F1),
+    muted: Color(0xFFA8A2B5),
+    line: Color(0xFF3A3447),
+  );
+  static const library = LayoutPalette(
+    bg: Color(0xFF20272E),
+    surface: Color(0xFF181E24),
+    surfaceHi: Color(0xFF2B343C),
+    accent: Color(0xFFCFA95B),
+    accent2: Color(0xFF8DB07A),
+    text: Color(0xFFDBE1E6),
+    muted: Color(0xFF93A0AB),
+    line: Color(0xFF333D47),
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
@@ -164,6 +206,9 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.daylight => daylight,
         UiLayout.cable => cable,
         UiLayout.indexList => indexList,
+        UiLayout.glass => glass,
+        UiLayout.bento => bento,
+        UiLayout.library => library,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).
@@ -180,7 +225,8 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
           Color? text,
           Color? muted,
           Color? line,
-          Brightness? brightness}) =>
+          Brightness? brightness,
+          bool? frosted}) =>
       LayoutPalette(
         bg: bg ?? this.bg,
         surface: surface ?? this.surface,
@@ -191,6 +237,7 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         muted: muted ?? this.muted,
         line: line ?? this.line,
         brightness: brightness ?? this.brightness,
+        frosted: frosted ?? this.frosted,
       );
 
   @override
@@ -207,6 +254,7 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
       muted: l(muted, other.muted),
       line: l(line, other.line),
       brightness: t < 0.5 ? brightness : other.brightness,
+      frosted: t < 0.5 ? frosted : other.frosted,
     );
   }
 }

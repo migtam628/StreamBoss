@@ -225,6 +225,9 @@ void main() {
             await t.pumpAndSettle();
             expect(tester(t), isNull);
             await t.tap(find.text('Hub').first);
+          } else if (layout == UiLayout.glass) {
+            // The dock is below the page, so take the last match.
+            await t.tap(find.text(kDests[k].label).last);
           } else if (layout == UiLayout.cable) {
             await t.tap(find.text(k == 1 ? 'CHANNELS' : 'MOVIES').first);
             await t.pumpAndSettle();
@@ -412,6 +415,57 @@ void main() {
       await t.pumpAndSettle();
       // Tapping a word opens that screen.
       expect(find.text('Index'), findsWidgets);
+    });
+  });
+
+  group('Glass', () {
+    test('is a frosted palette on a dark theme', () {
+      expect(LayoutPalette.glass.frosted, isTrue);
+      expect(LayoutPalette.marquee.frosted, isFalse);
+      expect(Boss.theme(layout: UiLayout.glass).brightness, Brightness.dark);
+    });
+
+    testWidgets('TV: a dock with every screen sits under the page', (t) async {
+      final (st, app) = await setup({'layout': 'glass', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      for (final d in kDests) {
+        expect(find.text(d.label), findsWidgets, reason: d.label);
+      }
+      expect(find.text('Play'), findsOneWidget);
+    });
+  });
+
+  group('Bento', () {
+    testWidgets('TV: Home is a board of tiles', (t) async {
+      final (st, app) = await setup({'layout': 'bento', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      for (final k in ['LIVE NOW', 'LIBRARY', 'MY LIST', 'ON NOW']) {
+        expect(find.text(k), findsOneWidget, reason: k);
+      }
+      expect(find.text('Search channels, movies, series'), findsOneWidget);
+    });
+
+    testWidgets('phone: the tiles stack and scroll without overflow', (t) async {
+      final (st, app) = await setup({'layout': 'bento'});
+      await pumpApp(t, st, app, const Size(390, 800));
+      expect(find.text('LIVE NOW'), findsOneWidget);
+      await t.drag(find.byType(ListView).first, const Offset(0, -600));
+      await t.pumpAndSettle();
+      expect(tester(t), isNull);
+    });
+  });
+
+  group('Library', () {
+    testWidgets('TV: a tree on the left and a breadcrumb that follows', (t) async {
+      final (st, app) = await setup({'layout': 'library', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      expect(find.text('LIBRARY'), findsOneWidget);
+      expect(find.text('Arena Sports 1'), findsWidgets);
+      await t.tap(find.text('Movies').first);
+      await t.pumpAndSettle();
+      expect(tester(t), isNull);
+      // The crumb now names the screen as well as the tree row.
+      expect(find.text('Movies'), findsWidgets);
     });
   });
 }

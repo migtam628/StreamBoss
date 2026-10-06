@@ -23,9 +23,13 @@ class BrowseScreen extends StatelessWidget {
       case UiLayout.marquee:
       case UiLayout.hub:
       case UiLayout.daylight:
+      case UiLayout.glass:
         return _MarqueeBrowse(kind: kind, catalog: catalog);
+      case UiLayout.library:
+        return ControlView(kind: kind, catalog: catalog);
       case UiLayout.cable:
       case UiLayout.indexList:
+      case UiLayout.bento:
         return kind == MediaKind.live ? ControlView(kind: kind, catalog: catalog) : _MarqueeBrowse(kind: kind, catalog: catalog);
       case UiLayout.prime:
         return kind == MediaKind.live ? ControlView(kind: kind, catalog: catalog) : _MarqueeBrowse(kind: kind, catalog: catalog);

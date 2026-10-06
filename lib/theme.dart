@@ -37,7 +37,9 @@ class Boss {
       ),
       textTheme: base.textTheme.apply(bodyColor: p.text, displayColor: p.text),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: p.surface,
+        backgroundColor: p.frosted ? p.text.withValues(alpha: 0.12) : p.surface,
+        elevation: p.frosted ? 0 : null,
+        surfaceTintColor: p.frosted ? Colors.transparent : null,
         indicatorColor: p.accent.withValues(alpha: 0.25),
       ),
       // Buttons are bigger on a TV: they are read and pressed from across the room.

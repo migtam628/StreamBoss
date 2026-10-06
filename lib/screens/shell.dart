@@ -4,6 +4,8 @@ import '../models/media.dart';
 import '../services/crash_guard.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../layouts/glass_view.dart';
+import '../layouts/library_view.dart';
 import '../layouts/shell_nav.dart';
 import '../layouts/ui_layout.dart';
 import '../widgets/tv.dart';
@@ -109,23 +111,44 @@ class _ShellState extends State<Shell> {
           if (_i != 0) HubBar(index: _i, onSelect: select, layout: layout),
           Expanded(child: body),
         ]);
+      } else if (layout == UiLayout.glass) {
+        chrome = Column(children: [
+          Expanded(child: body),
+          GlassDock(index: _i, onSelect: select, layout: layout),
+        ]);
+      } else if (layout == UiLayout.library) {
+        chrome = LibraryChrome(index: _i, onSelect: select, body: body);
       } else {
         chrome = Column(children: [
           TopNav(layout: layout, index: _i, onSelect: select),
           Expanded(child: body),
         ]);
       }
-      return guard(Scaffold(
-        body: _Backdrop(layout: layout, child: TvSafe(child: chrome)),
-      ));
+      return guard(_frame(
+          layout, Scaffold(backgroundColor: layout == UiLayout.glass ? Colors.transparent : null, body: _Backdrop(layout: layout, child: TvSafe(child: chrome)))));
     }
-    return guard(Scaffold(
+    return guard(_frame(layout, Scaffold(
+      backgroundColor: layout == UiLayout.glass ? Colors.transparent : null,
       body: _Backdrop(layout: layout, child: SafeArea(child: body)),
       bottomNavigationBar: layout == UiLayout.indexList
           ? (_i == 0 ? null : IndexBackBar(index: _i, onSelect: select))
-          : PhoneNav(layout: layout, index: _i, onSelect: select),
-    ));
+          : layout == UiLayout.glass
+              ? SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: GlassPanel(
+                        radius: 30,
+                        padding: EdgeInsets.zero,
+                        child: PhoneNav(layout: layout, index: _i, onSelect: select)),
+                  ),
+                )
+              : PhoneNav(layout: layout, index: _i, onSelect: select),
+    )));
   }
+
+  /// Glass paints its backdrop behind the whole screen, bars included.
+  Widget _frame(UiLayout layout, Widget scaffold) => layout == UiLayout.glass ? GlassBackdrop(child: scaffold) : scaffold;
 
   void select(int v) => setState(() {
         _i = v;

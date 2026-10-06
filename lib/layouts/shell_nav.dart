@@ -82,6 +82,9 @@ List<int> topTabs(UiLayout l) => switch (l) {
       UiLayout.cable => (bar: [0, 2, 3], more: [1, 4, 5, 6]),
       // The list on Home is the menu, so the bar only appears inside a section (see IndexBackBar).
       UiLayout.indexList => (bar: [0, 5, 6], more: <int>[]),
+      UiLayout.glass => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
+      UiLayout.bento => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
+      UiLayout.library => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
     };
 
 /// Bottom navigation for phones: four main screens and a More sheet for the rest.
@@ -152,6 +155,9 @@ class NavTab extends StatefulWidget {
   final bool selected;
   final VoidCallback onTap;
   final bool pill, underline;
+
+  /// Flat rectangular tab (Bento): sharp corners, solid fill.
+  final bool block;
   const NavTab(
       {super.key,
       required this.label,
@@ -159,7 +165,8 @@ class NavTab extends StatefulWidget {
       required this.selected,
       required this.onTap,
       this.pill = false,
-      this.underline = false});
+      this.underline = false,
+      this.block = false});
 
   @override
   State<NavTab> createState() => _NavTabState();
@@ -173,10 +180,14 @@ class _NavTabState extends State<NavTab> {
     final p = LayoutPalette.of(context);
     final tv = TvScope.of(context);
     final on = widget.selected;
-    final Color fill = widget.pill
+    final Color fill = widget.block
+        ? (on ? p.text : p.surface)
+        : widget.pill
         ? (on ? p.text : Colors.transparent)
         : (on && !widget.underline ? p.surfaceHi : Colors.transparent);
-    final Color fg = widget.pill
+    final Color fg = widget.block
+        ? (on ? p.bg : p.text)
+        : widget.pill
         ? (on ? p.bg : p.text.withValues(alpha: 0.8))
         : (on ? p.text : p.muted);
     return Semantics(
@@ -184,18 +195,18 @@ class _NavTabState extends State<NavTab> {
       selected: on,
       label: widget.label,
       child: InkWell(
-        borderRadius: BorderRadius.circular(widget.pill ? 40 : 10),
+        borderRadius: BorderRadius.circular(widget.block ? 0 : (widget.pill ? 40 : 10)),
         onFocusChange: (f) => setState(() => _focused = f),
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),
           padding: EdgeInsets.symmetric(
-              horizontal: widget.pill ? 18 : 14, vertical: widget.pill ? 8 : 8),
+              horizontal: widget.pill ? 18 : 14, vertical: widget.block ? 12 : 8),
           decoration: BoxDecoration(
             color: fill,
             borderRadius: widget.underline && !_focused
                 ? null
-                : BorderRadius.circular(widget.pill ? 40 : 10),
+                : BorderRadius.circular(widget.block ? 0 : (widget.pill ? 40 : 10)),
             border: widget.underline && !_focused
                 ? Border(
                     bottom: BorderSide(
@@ -241,6 +252,7 @@ class TopNav extends StatelessWidget {
     final centered = layout == UiLayout.spotlight;
     final soft = layout == UiLayout.daylight;
     final pill = centered || soft;
+    final flat = layout == UiLayout.bento;
     final underline = layout == UiLayout.coverflow;
     final tabs = [
       for (final i in topTabs(layout))
@@ -249,6 +261,7 @@ class TopNav extends StatelessWidget {
             selected: i == index,
             pill: pill,
             underline: underline,
+            block: flat,
             onTap: () => onSelect(i)),
     ];
     final settings = NavTab(
@@ -257,6 +270,7 @@ class TopNav extends StatelessWidget {
       selected: index == 6,
       pill: pill,
       underline: underline,
+      block: flat,
       onTap: () => onSelect(6),
     );
     if (centered) {
@@ -322,7 +336,7 @@ class TopNav extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(children: [
               for (final t in tabs)
-                Padding(padding: const EdgeInsets.only(right: 4), child: t)
+                Padding(padding: EdgeInsets.only(right: flat ? 2 : 4), child: t)
             ]),
           ),
         ),
