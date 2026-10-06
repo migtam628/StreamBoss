@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../layouts/ui_layout.dart';
-import '../theme.dart';
 import 'settings/settings_pages.dart';
 
 /// Settings hub. Wide windows get a two-pane layout (sections on the left, the page on the
@@ -19,8 +18,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final sec = settingsSections[i];
     return ListTile(
       selected: wide && i == _sel,
-      selectedColor: Boss.accent,
-      selectedTileColor: Boss.accent.withValues(alpha: 0.12),
+      selectedColor: LayoutPalette.of(context).accent,
+      selectedTileColor: LayoutPalette.of(context).accent.withValues(alpha: 0.12),
       leading: Icon(sec.icon),
       title: Text(sec.title),
       subtitle: Text(sec.subtitle),

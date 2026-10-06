@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import '../layouts/ui_layout.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/media.dart';
 import '../services/tmdb.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
-import '../theme.dart';
 import 'net_image.dart';
 
 /// Poster, backdrop, overview, cast and trailer for a movie or series.
@@ -62,7 +62,7 @@ class _TmdbHeaderState extends State<TmdbHeader> {
                       aspectRatio: 2 / 3,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: ColoredBox(color: Boss.surfaceHi, child: _image(poster)),
+                        child: ColoredBox(color: LayoutPalette.of(context).surfaceHi, child: _image(poster)),
                       ),
                     ),
                   ),
@@ -74,7 +74,7 @@ class _TmdbHeaderState extends State<TmdbHeader> {
                   if (meta.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
-                      child: Text(meta, style: const TextStyle(color: Boss.accent2)),
+                      child: Text(meta, style: TextStyle(color: LayoutPalette.of(context).accent2)),
                     ),
                   if (overview != null)
                     Padding(padding: const EdgeInsets.only(top: 12), child: Text(overview)),
@@ -82,7 +82,7 @@ class _TmdbHeaderState extends State<TmdbHeader> {
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text('Cast: ${t.cast.join(', ')}',
-                          style: const TextStyle(color: Boss.muted)),
+                          style: TextStyle(color: LayoutPalette.of(context).muted)),
                     ),
                   if (t?.trailerKey != null)
                     Padding(

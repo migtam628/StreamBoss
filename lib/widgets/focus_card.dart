@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme.dart';
+import '../layouts/ui_layout.dart';
 import 'tv.dart';
 
 /// Tappable tile with a visible focus ring + scale, so D-pad / keyboard / remote
@@ -33,6 +33,7 @@ class _FocusCardState extends State<FocusCard> {
   Widget build(BuildContext context) {
     // On a TV the focused card is the cursor: bigger lift, a white ring and a glow.
     final tv = TvScope.of(context);
+    final pal = LayoutPalette.of(context);
     return AnimatedScale(
       scale: _focused ? (tv ? 1.12 : 1.06) : 1,
       duration: const Duration(milliseconds: 120),
@@ -41,9 +42,9 @@ class _FocusCardState extends State<FocusCard> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(widget.radius + 3),
           border: Border.all(
-              color: _focused ? (tv ? Colors.white : Boss.accent) : Colors.transparent, width: tv ? 4 : 3),
+              color: _focused ? (tv ? pal.ring : pal.accent) : Colors.transparent, width: tv ? 4 : 3),
           boxShadow: tv && _focused
-              ? [BoxShadow(color: Boss.accent.withValues(alpha: 0.55), blurRadius: 24, spreadRadius: 2)]
+              ? [BoxShadow(color: pal.accent.withValues(alpha: 0.55), blurRadius: 24, spreadRadius: 2)]
               : null,
         ),
         child: ClipRRect(

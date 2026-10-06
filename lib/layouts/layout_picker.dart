@@ -4,7 +4,7 @@ import '../state/settings_state.dart';
 import 'common.dart';
 import 'ui_layout.dart';
 
-/// Settings > Appearance > Layout: pick one of the three looks. Each card draws a small
+/// Settings > Appearance > Layout: pick one of the looks. Each card draws a small
 /// wireframe of the layout in its own colors.
 class LayoutPicker extends StatelessWidget {
   const LayoutPicker({super.key});
@@ -344,6 +344,178 @@ class _Wireframe extends StatelessWidget {
                             padding: const EdgeInsets.only(right: 3),
                             child: box(soft)))
                 ])),
+          ]),
+        ),
+      UiLayout.daylight => Column(children: [
+          Container(
+            height: 14,
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(children: [
+              box(pal.accent, w: 6, h: 6, r: 3),
+              const SizedBox(width: 6),
+              box(const Color(0xFF111827), w: 20, h: 6, r: 4),
+              const SizedBox(width: 4),
+              box(const Color(0xFFCBD2DC), w: 14, h: 5, r: 4),
+              const SizedBox(width: 4),
+              box(const Color(0xFFCBD2DC), w: 14, h: 5, r: 4),
+            ]),
+          ),
+          Expanded(
+            flex: 5,
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(6)),
+              child: Row(children: [
+                Expanded(
+                    flex: 5,
+                    child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              box(const Color(0xFF111827), w: 46, h: 7),
+                              const SizedBox(height: 3),
+                              box(const Color(0xFFCBD2DC), w: 52, h: 3),
+                              const SizedBox(height: 5),
+                              box(pal.accent, w: 20, h: 7, r: 5),
+                            ]))),
+                Expanded(
+                    flex: 4,
+                    child: ClipRRect(
+                        borderRadius: const BorderRadius.horizontal(
+                            right: Radius.circular(6)),
+                        child: _grad(
+                            const Color(0xFF2B6CFF), const Color(0xFF0D1B5C)))),
+              ]),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
+              child: Row(children: [
+                for (var i = 0; i < 4; i++)
+                  Expanded(
+                      child: Container(
+                          margin: EdgeInsets.only(right: i == 3 ? 0 : 3),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(3)),
+                          alignment: Alignment.bottomLeft,
+                          padding: const EdgeInsets.all(2),
+                          child: box(pal.accent, w: 12, h: 2, r: 1)))
+              ]),
+            ),
+          ),
+        ]),
+      UiLayout.cable => Stack(children: [
+          Positioned.fill(
+              child: Container(
+                  decoration: const BoxDecoration(
+                      gradient: RadialGradient(
+                          center: Alignment(0.3, -0.2),
+                          radius: 1.0,
+                          colors: [Color(0xFF1F7C86), Color(0xFF05070A)])))),
+          for (var i = 0; i < 14; i++)
+            Positioned(
+                left: 0,
+                right: 0,
+                top: 4.0 + i * 8,
+                child: Container(height: 1.2, color: const Color(0x30000000))),
+          Positioned(
+              left: 10,
+              top: 8,
+              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text('207',
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 26,
+                        height: 0.9,
+                        color: pal.accent)),
+                const SizedBox(width: 6),
+                box(pal.accent2, w: 30, h: 4, r: 1),
+              ])),
+          Positioned(
+              right: 8,
+              top: 22,
+              child: Column(children: [
+                for (var i = 0; i < 4; i++)
+                  Container(
+                      margin: const EdgeInsets.only(bottom: 2),
+                      width: 22,
+                      height: 7,
+                      decoration: BoxDecoration(
+                          color: i == 2 ? pal.accent : Colors.transparent,
+                          border: Border.all(color: pal.line)))
+              ])),
+          Positioned(
+              left: 8,
+              right: 8,
+              bottom: 6,
+              child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                      color: const Color(0xCC05070A),
+                      border: Border.all(color: pal.line)),
+                  child: Column(children: [
+                    Row(children: [
+                      box(pal.accent2, w: 10, h: 3, r: 1),
+                      const SizedBox(width: 4),
+                      box(pal.accent.withValues(alpha: 0.6), w: 46, h: 3, r: 1),
+                    ]),
+                    const SizedBox(height: 3),
+                    Row(children: [
+                      for (var i = 0; i < 5; i++)
+                        Expanded(
+                            child: Container(
+                                margin: EdgeInsets.only(right: i == 4 ? 0 : 2),
+                                height: 8,
+                                color: i == 2 ? pal.accent : pal.line))
+                    ]),
+                  ]))),
+        ]),
+      UiLayout.indexList => Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+          child: Row(children: [
+            Expanded(
+              flex: 6,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var i = 0; i < 5; i++)
+                      Container(
+                          margin: const EdgeInsets.only(bottom: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          color: i == 1 ? pal.accent : Colors.transparent,
+                          child: box(
+                              i == 1
+                                  ? pal.surfaceHi
+                                  : Colors.white.withValues(alpha: 0.7),
+                              w: [44, 50, 38, 34, 46][i].toDouble(),
+                              h: 7,
+                              r: 1)),
+                  ]),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 4,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(height: 22, color: pal.surfaceHi),
+                    const SizedBox(height: 4),
+                    box(pal.accent, w: 26, h: 2, r: 1),
+                    const SizedBox(height: 4),
+                    box(Colors.white, w: 36, h: 3, r: 1),
+                    const SizedBox(height: 2),
+                    box(Colors.white54, w: 28, h: 2, r: 1),
+                    const SizedBox(height: 4),
+                    box(Colors.white, w: 32, h: 3, r: 1),
+                  ]),
+            ),
           ]),
         ),
       UiLayout.spotlight => Column(children: [

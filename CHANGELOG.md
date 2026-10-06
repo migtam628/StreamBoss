@@ -4,6 +4,13 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b5 - 2026-10-06
+- Three more layouts join the six in Settings > Appearance > Layout (now nine cards): **Daylight**, **Cable Box** and **Index**.
+  - Daylight is the first light layout: soft grey ground, white cards and one green accent. It has a feature card, a Live now row of channel cards with progress, and the usual shelves. The focus ring turns black so it still stands out on white. The whole app follows the light palette, including Settings, the connect screen and the guide.
+  - Cable Box opens on the last channel you watched with a big channel number and a banner showing what is on now and next. Up and Down (or a swipe on a phone) change channel, Right reaches the categories and the nearby channels, and OK plays full screen. Guide, Channels, Movies, Series, Search and Settings are labeled keys under the banner. This screen shows the banner, not live video; the picture opens in the player.
+  - Index is text first: Home is a list of very large words (Live now, Continue, Movies, Series, Guide, Settings) with counts. On a TV the highlighted word shows what is inside it on the right, with one thumbnail. On a phone the word opens in place and a slim bar returns to the list. It loads no poster wall on Home, so it is the lightest layout.
+- The phone's More sheet now uses each layout's own names for screens.
+
 ## 0.3.0b4 - 2026-10-06
 - Free public channels: when several lists are added and none loads, the error now says why (for example "Couldn't look up 'iptv-org.github.io'" or "Playlist returned 403") instead of only "None of the N playlists could be loaded".
 

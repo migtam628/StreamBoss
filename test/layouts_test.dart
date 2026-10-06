@@ -179,6 +179,19 @@ void main() {
           (t) async {
         final (st, app) = await setup({'layout': layout.name});
         await pumpApp(t, st, app, const Size(420, 900));
+        if (layout == UiLayout.indexList) {
+          // The list is the menu: no bottom bar on Home, a slim back bar inside a section.
+          expect(find.byType(NavigationBar), findsNothing);
+          expect(find.text('MOVIES'), findsOneWidget);
+          await t.tap(find.text('MOVIES'));
+          await t.pumpAndSettle();
+          expect(tester(t), isNull);
+          expect(find.byType(IndexBackBar), findsOneWidget);
+          await t.tap(find.text('Index'));
+          await t.pumpAndSettle();
+          expect(find.text('MOVIES'), findsOneWidget);
+          return;
+        }
         expect(find.byType(NavigationBar), findsOneWidget);
         final tabs = phoneTabs(layout);
         expect(find.text('More'),
@@ -212,6 +225,16 @@ void main() {
             await t.pumpAndSettle();
             expect(tester(t), isNull);
             await t.tap(find.text('Hub').first);
+          } else if (layout == UiLayout.cable) {
+            await t.tap(find.text(k == 1 ? 'CHANNELS' : 'MOVIES').first);
+            await t.pumpAndSettle();
+            expect(tester(t), isNull);
+            await t.tap(find.text('Live').first);
+          } else if (layout == UiLayout.indexList) {
+            await t.tap(find.text(k == 1 ? 'LIVE NOW' : 'MOVIES').first);
+            await t.pumpAndSettle();
+            expect(tester(t), isNull);
+            await t.tap(find.text('Index').first);
           } else {
             await t.tap(find.text(kDests[k].label).first);
           }
@@ -319,6 +342,77 @@ void main() {
     await t.tap(find.text('Control Room'));
     await t.pumpAndSettle();
     expect(st.layout, UiLayout.control);
+  });
+
+  group('Daylight', () {
+    test('is the light layout: light Material theme and an ink focus ring', () {
+      const p = LayoutPalette.daylight;
+      expect(p.light, isTrue);
+      expect(p.ring, p.text);
+      expect(Boss.theme(layout: UiLayout.daylight).brightness, Brightness.light);
+      expect(Boss.theme(layout: UiLayout.marquee).brightness, Brightness.dark);
+      expect(LayoutPalette.marquee.ring, Colors.white);
+    });
+
+    testWidgets('Home shows a feature card with Play and the live channels',
+        (t) async {
+      final (st, app) = await setup({'layout': 'daylight'});
+      await pumpApp(t, st, app, const Size(420, 900));
+      expect(find.text('Play'), findsOneWidget);
+      expect(find.text('Live now'), findsOneWidget);
+      expect(find.text('Arena Sports 1'), findsWidgets);
+    });
+  });
+
+  group('Cable Box', () {
+    testWidgets('Down and Up change channel and the banner follows',
+        (t) async {
+      final (st, app) = await setup({'layout': 'cable', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      expect(find.text('ARENA SPORTS 1'), findsOneWidget);
+      expect(find.text('1'), findsWidgets);
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await t.pumpAndSettle();
+      expect(find.text('METRO NEWS 24'), findsOneWidget);
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await t.pumpAndSettle();
+      expect(find.text('ARENA SPORTS 1'), findsOneWidget);
+    });
+
+    testWidgets('a category narrows the channels', (t) async {
+      final (st, app) = await setup({'layout': 'cable', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      await t.tap(find.text('NEWS').first);
+      await t.pumpAndSettle();
+      expect(find.text('METRO NEWS 24'), findsOneWidget);
+      expect(find.text('ARENA SPORTS 1'), findsNothing);
+    });
+
+    testWidgets('the soft keys open the other screens', (t) async {
+      final (st, app) = await setup({'layout': 'cable', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      for (final k in ['GUIDE', 'CHANNELS', 'MOVIES', 'SERIES', 'SEARCH', 'SETTINGS']) {
+        expect(find.text(k), findsOneWidget, reason: k);
+      }
+    });
+  });
+
+  group('Index', () {
+    testWidgets('the words show counts and the panel follows the highlight',
+        (t) async {
+      final (st, app) = await setup({'layout': 'indexList', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      for (final w in ['LIVE NOW', 'CONTINUE', 'MOVIES', 'SERIES', 'GUIDE', 'SETTINGS']) {
+        expect(find.text(w), findsOneWidget, reason: w);
+      }
+      // Nothing watched yet: the first word is highlighted and lists what is live.
+      expect(find.text('ON NOW'), findsOneWidget);
+      expect(find.text('Arena Sports 1'), findsOneWidget);
+      await t.tap(find.text('MOVIES'));
+      await t.pumpAndSettle();
+      // Tapping a word opens that screen.
+      expect(find.text('Index'), findsWidgets);
+    });
   });
 }
 

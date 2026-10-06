@@ -14,7 +14,13 @@ enum UiLayout {
   coverflow('Coverflow',
       'One big poster at a time with its neighbors fanned out. Flip through and press play.'),
   hub('Hub',
-      'A launcher of big colored tiles, with what you were watching underneath. Nothing to learn.');
+      'A launcher of big colored tiles, with what you were watching underneath. Nothing to learn.'),
+  daylight('Daylight',
+      'The light layout. White cards on soft grey, one green accent, a feature card and what is live.'),
+  cable('Cable Box',
+      'Opens on a channel with a banner like a cable box. Up and Down change channel, OK plays.'),
+  indexList('Index',
+      'Big type and almost no posters. A list of words that opens what is inside. Light to run.');
 
   final String label;
   final String blurb;
@@ -28,6 +34,9 @@ enum UiLayout {
 /// layout widgets read them with [LayoutPalette.of].
 class LayoutPalette extends ThemeExtension<LayoutPalette> {
   final Color bg, surface, surfaceHi, accent, accent2, text, muted, line;
+
+  /// Light palettes (Daylight) flip the Material theme to light and the focus ring to ink.
+  final Brightness brightness;
   const LayoutPalette({
     required this.bg,
     required this.surface,
@@ -37,7 +46,19 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     required this.text,
     required this.muted,
     required this.line,
+    this.brightness = Brightness.dark,
   });
+
+  bool get light => brightness == Brightness.light;
+
+  /// The outline on a focused control on a TV: white on dark layouts, ink on light ones.
+  Color get ring => light ? text : Colors.white;
+
+  /// A faint wash of the text color, for chips and fields that sit on the background.
+  Color wash([double alpha = 0.10]) => text.withValues(alpha: alpha);
+
+  /// Text that sits on [accent]: dark on a bright accent, white on a dark one.
+  Color get onAccent => accent.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 
   static const marquee = LayoutPalette(
     bg: Color(0xFF0B0B12),
@@ -101,6 +122,38 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     line: Color(0x14FFFFFF),
   );
 
+  static const daylight = LayoutPalette(
+    bg: Color(0xFFECEFF3),
+    surface: Color(0xFFFFFFFF),
+    surfaceHi: Color(0xFFE2E7EE),
+    accent: Color(0xFF0E9F6E),
+    accent2: Color(0xFF0B7A55),
+    text: Color(0xFF111827),
+    muted: Color(0xFF566070),
+    line: Color(0xFFDDE2EA),
+    brightness: Brightness.light,
+  );
+  static const cable = LayoutPalette(
+    bg: Color(0xFF05070A),
+    surface: Color(0xFF0B1116),
+    surfaceHi: Color(0xFF16222B),
+    accent: Color(0xFFFFB000),
+    accent2: Color(0xFF3DFF8A),
+    text: Color(0xFFFFE0A3),
+    muted: Color(0xFFC99A3C),
+    line: Color(0x66FFB000),
+  );
+  static const indexList = LayoutPalette(
+    bg: Color(0xFF1D33F0),
+    surface: Color(0xFF142BD0),
+    surfaceHi: Color(0xFF0B0F3A),
+    accent: Color(0xFFF7E733),
+    accent2: Color(0xFFF7E733),
+    text: Color(0xFFFFFFFF),
+    muted: Color(0xFFCBD2FF),
+    line: Color(0x61FFFFFF),
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
@@ -108,6 +161,9 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.prime => prime,
         UiLayout.coverflow => coverflow,
         UiLayout.hub => hub,
+        UiLayout.daylight => daylight,
+        UiLayout.cable => cable,
+        UiLayout.indexList => indexList,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).
@@ -123,7 +179,8 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
           Color? accent2,
           Color? text,
           Color? muted,
-          Color? line}) =>
+          Color? line,
+          Brightness? brightness}) =>
       LayoutPalette(
         bg: bg ?? this.bg,
         surface: surface ?? this.surface,
@@ -133,6 +190,7 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         text: text ?? this.text,
         muted: muted ?? this.muted,
         line: line ?? this.line,
+        brightness: brightness ?? this.brightness,
       );
 
   @override
@@ -148,6 +206,7 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
       text: l(text, other.text),
       muted: l(muted, other.muted),
       line: l(line, other.line),
+      brightness: t < 0.5 ? brightness : other.brightness,
     );
   }
 }

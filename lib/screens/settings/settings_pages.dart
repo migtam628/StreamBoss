@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
+import '../../layouts/ui_layout.dart';
 import '../../layouts/layout_picker.dart';
 import '../free_playlists_screen.dart';
 import '../onboarding_screen.dart';
@@ -18,7 +19,6 @@ import '../../services/net_config.dart';
 import '../../services/update_check.dart';
 import '../../state/app_state.dart';
 import '../../state/settings_state.dart';
-import '../../theme.dart';
 import '../shader_screen.dart';
 import 'settings_widgets.dart';
 
@@ -87,12 +87,12 @@ class SourcePage extends StatelessWidget {
       ),
       const SettingsHeader('Saved sources'),
       if (s.sources.isEmpty)
-        const ListTile(title: Text('No saved sources', style: TextStyle(color: Boss.muted))),
+        ListTile(title: Text('No saved sources', style: TextStyle(color: LayoutPalette.of(context).muted))),
       for (final src in s.sources)
         ListTile(
           leading: Icon(
             active?.name == src.name ? Icons.radio_button_checked : Icons.radio_button_off,
-            color: active?.name == src.name ? Boss.accent : null,
+            color: active?.name == src.name ? LayoutPalette.of(context).accent : null,
           ),
           title: Text(src.name),
           subtitle: Text(src.type.name.toUpperCase()),
@@ -281,7 +281,7 @@ class SubtitlesPage extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         height: 110,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: Boss.surfaceHi, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: LayoutPalette.of(context).surfaceHi, borderRadius: BorderRadius.circular(12)),
         child: Text(
           'The quick brown fox jumps over the lazy dog',
           textAlign: TextAlign.center,
@@ -545,7 +545,7 @@ class NetworkPage extends StatelessWidget {
         },
       ),
       if (ua.isNotEmpty && !kIsWeb)
-        ListTile(dense: true, title: Text(ua, style: const TextStyle(color: Boss.muted, fontSize: 12))),
+        ListTile(dense: true, title: Text(ua, style: TextStyle(color: LayoutPalette.of(context).muted, fontSize: 12))),
       ActionRow(
         icon: Icons.network_check,
         title: 'Test connection',

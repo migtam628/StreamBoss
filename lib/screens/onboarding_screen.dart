@@ -73,7 +73,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   value: (_step + 1) / _titles.length,
                   minHeight: 4,
                   borderRadius: BorderRadius.circular(4),
-                  backgroundColor: Colors.white12,
+                  backgroundColor: p.wash(0.12),
                   valueColor: AlwaysStoppedAnimation(p.accent),
                 ),
                 const SizedBox(height: 20),
@@ -304,24 +304,16 @@ class _Choices<T> extends StatelessWidget {
             final on = o.$1 == value;
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-              color: on ? p.accent : Colors.white.withValues(alpha: 0.10),
+              color: on ? p.accent : p.wash(),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 if (on) ...[
-                  Icon(Icons.check,
-                      size: 18,
-                      color: p.accent.computeLuminance() > 0.5
-                          ? Colors.black
-                          : Colors.white),
+                  Icon(Icons.check, size: 18, color: p.onAccent),
                   const SizedBox(width: 6)
                 ],
                 Text(o.$2,
                     style: TextStyle(
                         fontWeight: on ? FontWeight.w700 : FontWeight.w500,
-                        color: on
-                            ? (p.accent.computeLuminance() > 0.5
-                                ? Colors.black
-                                : Colors.white)
-                            : p.text)),
+                        color: on ? p.onAccent : p.text)),
               ]),
             );
           },

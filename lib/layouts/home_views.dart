@@ -7,9 +7,12 @@ import '../state/settings_state.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
+import 'cable_view.dart';
 import 'common.dart';
+import 'daylight_view.dart';
 import 'coverflow_view.dart';
 import 'hub_view.dart';
+import 'index_view.dart';
 import 'prime_view.dart';
 import 'spotlight_view.dart';
 import 'ui_layout.dart';
@@ -263,6 +266,12 @@ class LayoutHome extends StatelessWidget {
         return const PrimeHome();
       case UiLayout.hub:
         return const HubHome();
+      case UiLayout.daylight:
+        return const DaylightHome();
+      case UiLayout.cable:
+        return const CableHome();
+      case UiLayout.indexList:
+        return const IndexHome();
       case UiLayout.coverflow:
         final seen2 = <String>{};
         List<MediaItem> uniq2(Iterable<MediaItem> xs) => [

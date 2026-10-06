@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme.dart';
+import '../../layouts/ui_layout.dart';
 
 /// Small building blocks shared by every settings page. All rows are plain ListTiles, so they
 /// take focus from a D-pad / keyboard and show the theme's focus highlight.
@@ -12,8 +12,8 @@ class SettingsHeader extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 22, 16, 4),
         child: Text(text.toUpperCase(),
-            style: const TextStyle(
-                color: Boss.accent, fontWeight: FontWeight.w700, letterSpacing: 1.5, fontSize: 12)),
+            style: TextStyle(
+                color: LayoutPalette.of(context).accent, fontWeight: FontWeight.w700, letterSpacing: 1.5, fontSize: 12)),
       );
 }
 
@@ -38,7 +38,7 @@ class SwitchRow extends StatelessWidget {
         title: Text(title),
         subtitle: subtitle == null ? null : Text(subtitle!),
         value: value,
-        activeThumbColor: Boss.accent,
+        activeThumbColor: LayoutPalette.of(context).accent,
         onChanged: onChanged,
       );
 }
@@ -80,7 +80,7 @@ class ChoiceRow<T> extends StatelessWidget {
             ListTile(
               autofocus: o.$1 == value,
               title: Text(o.$2),
-              trailing: o.$1 == value ? const Icon(Icons.check, color: Boss.accent) : null,
+              trailing: o.$1 == value ? Icon(Icons.check, color: LayoutPalette.of(context).accent) : null,
               onTap: () => Navigator.pop(ctx, o.$1),
             ),
         ],
@@ -96,9 +96,9 @@ class ChoiceRow<T> extends StatelessWidget {
         title: Text(title),
         subtitle: subtitle == null ? null : Text(subtitle!),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(_label, style: const TextStyle(color: Boss.muted)),
+          Text(_label, style: TextStyle(color: LayoutPalette.of(context).muted)),
           const SizedBox(width: 4),
-          const Icon(Icons.chevron_right, color: Boss.muted),
+          Icon(Icons.chevron_right, color: LayoutPalette.of(context).muted),
         ]),
         onTap: enabled ? () => _pick(context) : null,
       );
@@ -133,7 +133,7 @@ class SliderRow extends StatelessWidget {
           min: min,
           max: max,
           divisions: divisions,
-          activeColor: Boss.accent,
+          activeColor: LayoutPalette.of(context).accent,
           onChanged: onChanged,
         ),
       );
@@ -156,7 +156,7 @@ class ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? Boss.accent : null;
+    final color = destructive ? LayoutPalette.of(context).accent : null;
     return ListTile(
       enabled: onTap != null,
       leading: Icon(icon, color: color),
@@ -175,7 +175,7 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
         title: Text(title),
-        trailing: Text(value, style: const TextStyle(color: Boss.muted)),
+        trailing: Text(value, style: TextStyle(color: LayoutPalette.of(context).muted)),
       );
 }
 

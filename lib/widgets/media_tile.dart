@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/media.dart';
-import '../theme.dart';
+import '../layouts/ui_layout.dart';
 import 'focus_card.dart';
 import 'net_image.dart';
 import 'tv.dart';
@@ -27,6 +27,7 @@ class MediaTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final landscape = item.kind == MediaKind.live;
     final tv = TvScope.of(context);
+    final pal = LayoutPalette.of(context);
     return FocusCard(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -36,11 +37,11 @@ class MediaTile extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Container(
-            color: Boss.surfaceHi,
+            color: pal.surfaceHi,
             child: item.poster == null
-                ? _fallback()
+                ? _fallback(pal)
                 : NetImage(item.poster!,
-                    fit: landscape ? BoxFit.contain : BoxFit.cover, fallback: _fallback),
+                    fit: landscape ? BoxFit.contain : BoxFit.cover, fallback: () => _fallback(pal)),
           ),
           Positioned(
             left: 0,
@@ -58,28 +59,28 @@ class MediaTile extends StatelessWidget {
               child: Text(item.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: tv ? 15 : 12, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: Colors.white, fontSize: tv ? 15 : 12, fontWeight: FontWeight.w600)),
             ),
           ),
           if (favorite)
-            const Positioned(
+            Positioned(
               top: 6,
               right: 6,
-              child: Icon(Icons.favorite, size: 16, color: Boss.accent),
+              child: Icon(Icons.favorite, size: 16, color: pal.accent),
             ),
         ],
       ),
     );
   }
 
-  Widget _fallback() => Center(
+  Widget _fallback(LayoutPalette pal) => Center(
         child: Icon(
           switch (item.kind) {
             MediaKind.live => Icons.live_tv,
             MediaKind.movie => Icons.movie,
             MediaKind.series => Icons.tv,
           },
-          color: Boss.muted,
+          color: pal.muted,
           size: 36,
         ),
       );

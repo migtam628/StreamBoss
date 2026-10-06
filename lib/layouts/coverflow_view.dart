@@ -217,7 +217,7 @@ class _Card extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: ring ? (tv ? Colors.white : p.accent) : Colors.transparent,
+              color: ring ? (tv ? p.ring : p.accent) : Colors.transparent,
               width: 4),
           boxShadow: [
             BoxShadow(

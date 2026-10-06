@@ -7,7 +7,6 @@ import '../services/time_format.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../layouts/ui_layout.dart';
-import '../theme.dart';
 import '../widgets/focus_card.dart';
 import 'open_item.dart';
 
@@ -39,7 +38,7 @@ class _GuideScreenState extends State<GuideScreen> {
     }
     final all = s.shown.live;
     if (all.isEmpty) {
-      return const Center(child: Text('No live channels.', style: TextStyle(color: Boss.muted)));
+      return Center(child: Text('No live channels.', style: TextStyle(color: LayoutPalette.of(context).muted)));
     }
     final items = _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
     final showGrid = _mode == _Mode.grid && s.hasGuideSource;
@@ -174,7 +173,7 @@ class _GuideGridState extends State<GuideGrid> {
                       left: m * pxPerMin + 6,
                       top: 8,
                       child: Text(_hm(_start.add(Duration(minutes: m))),
-                          style: const TextStyle(color: Boss.muted, fontSize: 12)),
+                          style: TextStyle(color: LayoutPalette.of(context).muted, fontSize: 12)),
                     ),
                 ]),
               ),
@@ -219,11 +218,11 @@ class _GuideGridState extends State<GuideGrid> {
                       builder: (_, __) {
                         final off = _h.hasClients ? _h.offset : 0.0;
                         if (progs.isEmpty) {
-                          return const Align(
+                          return Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
-                              padding: EdgeInsets.only(left: 8),
-                              child: Text('No guide data', style: TextStyle(color: Boss.muted)),
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Text('No guide data', style: TextStyle(color: LayoutPalette.of(context).muted)),
                             ),
                           );
                         }
@@ -273,7 +272,7 @@ class _GuideGridState extends State<GuideGrid> {
             Text('${_hm(p.start)}–${_hm(p.end)}',
                 maxLines: 1,
                 overflow: TextOverflow.clip,
-                style: const TextStyle(fontSize: 10, color: Boss.muted)),
+                style: TextStyle(fontSize: 10, color: LayoutPalette.of(context).muted)),
           ]),
         ),
       ),
@@ -304,7 +303,7 @@ class _NowNextListState extends State<_NowNextList> {
         final ch = widget.items[i];
         final fut = _cache.putIfAbsent(ch.id, () => s.epg(ch).catchError((_) => <EpgEntry>[]));
         return ListTile(
-          leading: const Icon(Icons.live_tv, color: Boss.muted),
+          leading: Icon(Icons.live_tv, color: LayoutPalette.of(context).muted),
           title: Text(ch.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: FutureBuilder<List<EpgEntry>>(
             future: fut,
@@ -314,7 +313,7 @@ class _NowNextListState extends State<_NowNextList> {
               final next = list.where((e) => e.start.isAfter(DateTime.now())).firstOrNull;
               if (now == null) {
                 return Text(snap.connectionState == ConnectionState.done ? 'No guide data' : '…',
-                    style: const TextStyle(color: Boss.muted));
+                    style: TextStyle(color: LayoutPalette.of(context).muted));
               }
               return Text(
                 '${_hm(now.start)}–${_hm(now.end)}  ${now.title}'

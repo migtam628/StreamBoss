@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
-import '../theme.dart';
 import '../widgets/tmdb_header.dart';
 import '../widgets/tv.dart';
 import 'player_screen.dart';
@@ -27,7 +26,7 @@ class DetailScreen extends StatelessWidget {
       appBar: AppBar(backgroundColor: LayoutPalette.of(context).bg, actions: [
         IconButton(
           icon: Icon(s.isFavorite(item) ? Icons.favorite : Icons.favorite_border,
-              color: Boss.accent),
+              color: LayoutPalette.of(context).accent),
           tooltip: 'My list',
           onPressed: () => s.toggleFavorite(item),
         ),

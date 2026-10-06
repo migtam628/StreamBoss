@@ -39,8 +39,7 @@ class _FocusSurfaceState extends State<FocusSurface> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(widget.radius),
         border: Border.all(
-            color:
-                _focused ? (tv ? Colors.white : p.accent) : Colors.transparent,
+            color: _focused ? (tv ? p.ring : p.accent) : Colors.transparent,
             width: 3),
         boxShadow: tv && _focused
             ? [
@@ -118,13 +117,10 @@ class ChipRow extends StatelessWidget {
           builder: (_, __) => Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            color:
-                i == selected ? p.accent : Colors.white.withValues(alpha: 0.10),
+            color: i == selected ? p.accent : p.wash(),
             child: Text(labels[i],
                 style: TextStyle(
-                    color: i == selected && p.accent.computeLuminance() > 0.5
-                        ? Colors.black
-                        : (i == selected ? Colors.white : p.text),
+                    color: i == selected ? p.onAccent : p.text,
                     fontWeight:
                         i == selected ? FontWeight.w700 : FontWeight.w500)),
           ),

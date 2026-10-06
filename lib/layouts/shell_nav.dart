@@ -45,6 +45,9 @@ class ShellNav extends InheritedWidget {
 String destLabel(UiLayout l, int i) => switch ((l, i)) {
       (UiLayout.prime, 0) => 'Guide',
       (UiLayout.hub, 0) => 'Hub',
+      (UiLayout.indexList, 0) => 'Index',
+      (UiLayout.cable, 0) => 'Live',
+      (UiLayout.cable, 1) => 'Channels',
       _ => kDests[i].label,
     };
 
@@ -53,6 +56,10 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
       (UiLayout.prime, 0) =>
         selected ? Icons.view_list : Icons.view_list_outlined,
       (UiLayout.hub, 0) => selected ? Icons.apps : Icons.apps_outlined,
+      (UiLayout.indexList, 0) =>
+        selected ? Icons.format_list_bulleted : Icons.format_list_bulleted,
+      (UiLayout.cable, 0) => selected ? Icons.live_tv : Icons.live_tv_outlined,
+      (UiLayout.cable, 1) => selected ? Icons.list : Icons.list,
       _ => selected ? kDests[i].selectedIcon : kDests[i].icon,
     };
 
@@ -71,6 +78,10 @@ List<int> topTabs(UiLayout l) => switch (l) {
       UiLayout.prime => (bar: [0, 1, 3, 4], more: [5, 6]),
       UiLayout.coverflow => (bar: [0, 3, 4, 1], more: [2, 5, 6]),
       UiLayout.hub => (bar: [0, 5, 6], more: <int>[]),
+      UiLayout.daylight => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
+      UiLayout.cable => (bar: [0, 2, 3], more: [1, 4, 5, 6]),
+      // The list on Home is the menu, so the bar only appears inside a section (see IndexBackBar).
+      UiLayout.indexList => (bar: [0, 5, 6], more: <int>[]),
     };
 
 /// Bottom navigation for phones: four main screens and a More sheet for the rest.
@@ -120,9 +131,8 @@ class PhoneNav extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           for (final i in items)
             ListTile(
-              leading:
-                  Icon(i == index ? kDests[i].selectedIcon : kDests[i].icon),
-              title: Text(kDests[i].label),
+              leading: Icon(destIcon(layout, i, selected: i == index)),
+              title: Text(destLabel(layout, i)),
               selected: i == index,
               onTap: () {
                 Navigator.pop(ctx);
@@ -164,10 +174,10 @@ class _NavTabState extends State<NavTab> {
     final tv = TvScope.of(context);
     final on = widget.selected;
     final Color fill = widget.pill
-        ? (on ? Colors.white : Colors.transparent)
+        ? (on ? p.text : Colors.transparent)
         : (on && !widget.underline ? p.surfaceHi : Colors.transparent);
     final Color fg = widget.pill
-        ? (on ? const Color(0xFF1A0F27) : p.text.withValues(alpha: 0.8))
+        ? (on ? p.bg : p.text.withValues(alpha: 0.8))
         : (on ? p.text : p.muted);
     return Semantics(
       button: true,
@@ -192,7 +202,7 @@ class _NavTabState extends State<NavTab> {
                         color: on ? p.accent : Colors.transparent, width: 3))
                 : Border.all(
                     color: _focused
-                        ? (tv ? Colors.white : p.accent)
+                        ? (tv ? p.ring : p.accent)
                         : Colors.transparent,
                     width: 3,
                   ),
@@ -228,7 +238,9 @@ class TopNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = LayoutPalette.of(context);
-    final pill = layout == UiLayout.spotlight;
+    final centered = layout == UiLayout.spotlight;
+    final soft = layout == UiLayout.daylight;
+    final pill = centered || soft;
     final underline = layout == UiLayout.coverflow;
     final tabs = [
       for (final i in topTabs(layout))
@@ -247,7 +259,7 @@ class TopNav extends StatelessWidget {
       underline: underline,
       onTap: () => onSelect(6),
     );
-    if (pill) {
+    if (centered) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
         child: Row(children: [
@@ -261,7 +273,7 @@ class TopNav extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: p.wash(0.08),
                       borderRadius: BorderRadius.circular(40)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     for (final t in tabs)
@@ -290,9 +302,17 @@ class TopNav extends StatelessWidget {
           color: underline ? Colors.transparent : p.surface,
           border: underline ? null : Border(bottom: BorderSide(color: p.line))),
       child: Row(children: [
+        if (soft) ...[
+          Container(
+              width: 12,
+              height: 12,
+              decoration:
+                  BoxDecoration(color: p.accent, shape: BoxShape.circle)),
+          const SizedBox(width: 8),
+        ],
         Text(underline ? 'streamboss' : 'STREAMBOSS',
             style: TextStyle(
-                color: underline ? p.text : p.accent,
+                color: underline || soft ? p.text : p.accent,
                 fontWeight: FontWeight.w800,
                 letterSpacing: underline ? -0.2 : 1.6,
                 fontSize: underline ? 20 : 17)),
@@ -351,11 +371,17 @@ class _NavClockState extends State<NavClock> {
   }
 }
 
-/// Hub's top bar on wide screens inside a section: back to the Hub, the section's name, the time.
+/// The top bar of the launcher-style layouts (Hub, Index, Cable Box) on wide screens inside a
+/// section: back to the layout's Home, the section's name, the time.
 class HubBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onSelect;
-  const HubBar({super.key, required this.index, required this.onSelect});
+  final UiLayout layout;
+  const HubBar(
+      {super.key,
+      required this.index,
+      required this.onSelect,
+      this.layout = UiLayout.hub});
 
   @override
   Widget build(BuildContext context) {
@@ -367,16 +393,55 @@ class HubBar extends StatelessWidget {
           BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
       child: Row(children: [
         NavTab(
-            label: 'Hub',
-            icon: Icons.apps,
+            label: destLabel(layout, 0),
+            icon: destIcon(layout, 0),
             selected: false,
             onTap: () => onSelect(0)),
         const SizedBox(width: 14),
-        Text(destLabel(UiLayout.hub, index),
+        Text(destLabel(layout, index),
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
         const Spacer(),
         const NavClock(),
       ]),
+    );
+  }
+}
+
+/// Index on a phone, inside a section: one slim bar that returns to the list.
+class IndexBackBar extends StatelessWidget {
+  final int index;
+  final ValueChanged<int> onSelect;
+  const IndexBackBar({super.key, required this.index, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    return Material(
+      color: p.surfaceHi,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 56,
+          child: InkWell(
+            onTap: () => onSelect(0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(children: [
+                Icon(Icons.arrow_back, color: p.accent),
+                const SizedBox(width: 12),
+                Text('Index',
+                    style: TextStyle(
+                        color: p.accent,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18)),
+                const Spacer(),
+                Text(destLabel(UiLayout.indexList, index),
+                    style: TextStyle(color: p.text, fontSize: 16)),
+              ]),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

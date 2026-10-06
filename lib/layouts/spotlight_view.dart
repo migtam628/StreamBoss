@@ -110,7 +110,7 @@ class _SpotlightViewState extends State<SpotlightView> {
             onTap: () => ShellNav.maybeOf(context)?.select(5),
             builder: (ctx, _) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.white.withValues(alpha: 0.10),
+              color: LayoutPalette.of(context).wash(0.10),
               child: Row(children: [
                 Icon(Icons.search, color: LayoutPalette.of(ctx).muted),
                 const SizedBox(width: 10),
@@ -175,8 +175,8 @@ class _Details extends StatelessWidget {
           if (item.rating != null &&
               item.rating!.isNotEmpty &&
               item.rating != '0')
-            _pill('★ ${item.rating}'),
-          if (resume != null) _pill('Resume ${resume.inMinutes} min'),
+            _pill(context, '★ ${item.rating}'),
+          if (resume != null) _pill(context, 'Resume ${resume.inMinutes} min'),
         ]),
         const SizedBox(height: 12),
         Text(
@@ -204,10 +204,10 @@ class _Details extends StatelessWidget {
     );
   }
 
-  Widget _pill(String t) => Container(
+  Widget _pill(BuildContext context, String t) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
+            color: LayoutPalette.of(context).wash(0.12),
             borderRadius: BorderRadius.circular(20)),
         child: Text(t, style: const TextStyle(fontSize: 14)),
       );

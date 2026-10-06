@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import '../layouts/ui_layout.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../services/pairing.dart';
 import '../services/provider_url.dart';
 import '../state/app_state.dart';
-import '../theme.dart';
 import '../widgets/tv.dart';
 import 'free_playlists_screen.dart';
 import 'pairing_dialog.dart';
@@ -41,17 +41,17 @@ class _SetupScreenState extends State<SetupScreen> {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text('STREAMBOSS',
+                      Text('STREAMBOSS',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 4,
-                              color: Boss.accent)),
+                              color: LayoutPalette.of(context).accent)),
                       const SizedBox(height: 4),
-                      const Text('Bring your own provider. We just play it.',
+                      Text('Bring your own provider. We just play it.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Boss.muted)),
+                          style: TextStyle(color: LayoutPalette.of(context).muted)),
                       const SizedBox(height: 28),
                       // Typing a login with a remote is miserable, so offer to take it from a phone.
                       if (pairingSupported) ...[
@@ -64,16 +64,16 @@ class _SetupScreenState extends State<SetupScreen> {
                             if (src != null) s.addSource(src);
                           },
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('or enter it here', textAlign: TextAlign.center, style: TextStyle(color: Boss.muted)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text('or enter it here', textAlign: TextAlign.center, style: TextStyle(color: LayoutPalette.of(context).muted)),
                         ),
                       ],
                       if (s.error != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Text(s.error!,
-                              style: const TextStyle(color: Boss.accent)),
+                              style: TextStyle(color: LayoutPalette.of(context).accent)),
                         ),
                       if (s.sources.isNotEmpty) ...[
                         for (final src in s.sources)

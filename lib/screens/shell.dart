@@ -78,9 +78,11 @@ class _ShellState extends State<Shell> {
       ],
     );
 
-    // On a TV, Back from any tab returns to Home first; only Home lets Back leave the app.
+    // On a TV, Back from any tab returns to Home first; only Home lets Back leave the app. Index and
+    // Cable Box do the same on a phone because their Home is the root of everything else.
+    final backHome = tv || layout == UiLayout.indexList || layout == UiLayout.cable;
     Widget guard(Widget child) => PopScope(
-          canPop: !tv || _i == 0,
+          canPop: !backHome || _i == 0,
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) setState(() => _i = 0);
           },
@@ -102,9 +104,9 @@ class _ShellState extends State<Shell> {
           ),
           Expanded(child: body),
         ]);
-      } else if (layout == UiLayout.hub) {
+      } else if (layout == UiLayout.hub || layout == UiLayout.indexList || layout == UiLayout.cable) {
         chrome = Column(children: [
-          if (_i != 0) HubBar(index: _i, onSelect: select),
+          if (_i != 0) HubBar(index: _i, onSelect: select, layout: layout),
           Expanded(child: body),
         ]);
       } else {
@@ -119,7 +121,9 @@ class _ShellState extends State<Shell> {
     }
     return guard(Scaffold(
       body: _Backdrop(layout: layout, child: SafeArea(child: body)),
-      bottomNavigationBar: PhoneNav(layout: layout, index: _i, onSelect: select),
+      bottomNavigationBar: layout == UiLayout.indexList
+          ? (_i == 0 ? null : IndexBackBar(index: _i, onSelect: select))
+          : PhoneNav(layout: layout, index: _i, onSelect: select),
     ));
   }
 

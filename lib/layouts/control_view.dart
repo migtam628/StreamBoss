@@ -291,7 +291,7 @@ class _ChannelRow extends StatelessWidget {
                                 value: _progress(now),
                                 minHeight: 4,
                                 backgroundColor:
-                                    Colors.white.withValues(alpha: 0.12),
+                                    LayoutPalette.of(context).wash(0.12),
                                 valueColor: AlwaysStoppedAnimation(p.accent),
                               ),
                             ),
@@ -447,7 +447,7 @@ class _PreviewPane extends StatelessWidget {
                           child: LinearProgressIndicator(
                               value: _progress(now),
                               minHeight: 4,
-                              backgroundColor: Colors.white12,
+                              backgroundColor: LayoutPalette.of(context).wash(0.12),
                               valueColor: AlwaysStoppedAnimation(p.accent)),
                         ),
                       ],

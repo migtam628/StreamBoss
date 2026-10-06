@@ -13,13 +13,13 @@ class Boss {
   /// [tv] switches on the 10-foot styling: a bold white focus outline on every control (a
   /// remote has no pointer, so focus is the only cursor) and a larger navigation rail.
   static ThemeData theme({bool tv = false, UiLayout layout = UiLayout.marquee}) {
-    final base = ThemeData.dark(useMaterial3: true);
     final p = LayoutPalette.forLayout(layout);
+    final base = p.light ? ThemeData.light(useMaterial3: true) : ThemeData.dark(useMaterial3: true);
 
     // Buttons get a white outline while focused so the selection is visible from the couch.
     WidgetStateProperty<BorderSide?>? focusSide([BorderSide unfocused = BorderSide.none]) => tv
         ? WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.focused) ? const BorderSide(color: Colors.white, width: 3) : unfocused)
+            (s) => s.contains(WidgetState.focused) ? BorderSide(color: p.ring, width: 3) : unfocused)
         : null;
 
     return base.copyWith(
@@ -27,10 +27,13 @@ class Boss {
       extensions: [p],
       focusColor: p.accent.withValues(alpha: 0.28),
       hoverColor: p.accent.withValues(alpha: 0.10),
-      colorScheme: ColorScheme.dark(
+      colorScheme: (p.light ? ColorScheme.light : ColorScheme.dark)(
         primary: p.accent,
         secondary: p.accent2,
         surface: p.surface,
+        // Tonal buttons on a light layout: a quiet grey chip with ink text, not a dark green block.
+        secondaryContainer: p.light ? p.surfaceHi : null,
+        onSecondaryContainer: p.light ? p.text : null,
       ),
       textTheme: base.textTheme.apply(bodyColor: p.text, displayColor: p.text),
       navigationBarTheme: NavigationBarThemeData(
@@ -45,19 +48,19 @@ class Boss {
         padding: tv ? const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 26, vertical: 14)) : null,
         minimumSize: tv ? const WidgetStatePropertyAll(Size(0, 52)) : null,
       )),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: ButtonStyle(side: focusSide(const BorderSide(color: Colors.white38)))),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: ButtonStyle(side: focusSide(BorderSide(color: p.text.withValues(alpha: 0.38))))),
       textButtonTheme: TextButtonThemeData(style: ButtonStyle(side: focusSide())),
       iconButtonTheme: IconButtonThemeData(style: ButtonStyle(side: focusSide())),
       chipTheme: ChipThemeData(
         side: tv
             ? WidgetStateBorderSide.resolveWith((s) => s.contains(WidgetState.focused)
-                ? const BorderSide(color: Colors.white, width: 3)
-                : const BorderSide(color: Colors.white24))
+                ? BorderSide(color: p.ring, width: 3)
+                : BorderSide(color: p.text.withValues(alpha: 0.24)))
             : null,
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: tv ? Colors.transparent : p.surface,
-        unselectedIconTheme: tv ? const IconThemeData(size: 30, color: Color(0xFFD0D0DC)) : null,
+        unselectedIconTheme: tv ? IconThemeData(size: 30, color: p.text.withValues(alpha: 0.8)) : null,
         minWidth: tv ? 96 : null,
         indicatorColor: p.accent.withValues(alpha: 0.25),
         selectedIconTheme: IconThemeData(color: p.accent, size: tv ? 30 : null),
