@@ -6,6 +6,7 @@ import '../services/provider_url.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/tv.dart';
+import 'free_playlists_screen.dart';
 import 'pairing_dialog.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -150,6 +151,10 @@ class _SetupScreenState extends State<SetupScreen> {
                           padding: EdgeInsets.all(12),
                           child: Text('Connect'),
                         ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreePlaylistsScreen())),
+                        child: const Text('Browse free public channels'),
                       ),
                       TextButton(
                         onPressed: () => s.activate(Source.demo),

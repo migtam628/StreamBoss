@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import '../../layouts/layout_picker.dart';
+import '../free_playlists_screen.dart';
 import '../onboarding_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -109,6 +110,12 @@ class SourcePage extends StatelessWidget {
             },
           ),
         ),
+      ActionRow(
+        icon: Icons.public,
+        title: 'Add free public channels',
+        subtitle: 'Browse public lists by category, country or language and add as many as you like',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreePlaylistsScreen())),
+      ),
       ActionRow(
         icon: Icons.add,
         title: 'Add another source',

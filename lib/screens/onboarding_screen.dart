@@ -247,6 +247,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 'A playlist address. Links that contain a username and password work too.'),
             _point(p, Icons.phone_android, 'No typing on a TV',
                 'The next screen can show a QR code so you can enter the details from your phone.'),
+            _point(p, Icons.public, 'No provider yet?',
+                'The next screen also lets you browse free public channels, or try the demo.'),
           ],
         ]);
     }

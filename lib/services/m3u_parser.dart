@@ -57,6 +57,52 @@ Catalog parseM3u(String body) {
   );
 }
 
+/// Combines several parsed playlists into one. A stream that appears in more than one is kept once,
+/// ids are prefixed with the list they came from so they stay unique, and categories keep the order
+/// they were first seen in.
+Catalog mergeCatalogs(List<Catalog> parts) {
+  final seen = <String>{};
+  final live = <MediaItem>[];
+  final movies = <MediaItem>[];
+  String? epg;
+  MediaItem take(int p, MediaItem e) => MediaItem(
+        id: '$p-${e.id}',
+        name: e.name,
+        kind: e.kind,
+        streamUrl: e.streamUrl,
+        poster: e.poster,
+        categoryId: e.categoryId,
+        rating: e.rating,
+        plot: e.plot,
+        epgId: e.epgId,
+      );
+  for (var p = 0; p < parts.length; p++) {
+    epg ??= parts[p].epgUrl;
+    for (final e in parts[p].live) {
+      if (seen.add(e.streamUrl ?? '$p-${e.id}')) live.add(take(p, e));
+    }
+    for (final e in parts[p].movies) {
+      if (seen.add(e.streamUrl ?? '$p-${e.id}')) movies.add(take(p, e));
+    }
+  }
+  List<Category> cats(Iterable<Category> all, List<MediaItem> items) {
+    final used = items.map((e) => e.categoryId).toSet();
+    final byId = <String, Category>{};
+    for (final c in all) {
+      if (used.contains(c.id)) byId.putIfAbsent(c.id, () => c);
+    }
+    return byId.values.toList();
+  }
+
+  return Catalog(
+    epgUrl: epg,
+    live: live,
+    movies: movies,
+    liveCategories: cats([for (final p in parts) ...p.liveCategories], live),
+    movieCategories: cats([for (final p in parts) ...p.movieCategories], movies),
+  );
+}
+
 /// Index of the first comma outside quotes (the title follows it), or -1.
 int _titleComma(String line) {
   var inQuote = false;

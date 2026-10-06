@@ -10,6 +10,7 @@ import '../services/net_config.dart';
 import '../services/provider_url.dart';
 import '../services/tmdb.dart';
 import '../services/xmltv.dart';
+import '../services/free_playlists.dart';
 import '../services/http_client.dart';
 import '../services/xtream_client.dart';
 import 'settings_state.dart';
@@ -160,6 +161,12 @@ class AppState extends ChangeNotifier {
         case SourceType.m3u:
           {
             _xtream = null;
+            // Several playlist addresses, one per line, load and merge into one library.
+            final urls = s.url.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+            if (urls.length > 1) {
+              catalog = await loadMergedPlaylists(urls);
+              break;
+            }
             // A provider's get.php?username=..&password=.. link is the Xtream panel in disguise.
             // Its API gives proper movies, series, posters and guide data, so prefer it and
             // fall back to the plain playlist when the panel doesn't answer.

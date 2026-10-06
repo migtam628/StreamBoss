@@ -133,6 +133,9 @@ every release. The first build signed with your key has to be installed after un
   panel, with a single navigation pill), **Prime Time** (the TV guide is Home, with the highlighted programme's details
   above it), **Coverflow** (one big title at a time with its neighbors fanned out) and **Hub** (a launcher of big colored
   tiles). Each has its own colors and a phone version with a bottom bar
+- Free public channels: Settings > Source (or the connect screen) can browse the public iptv-org and Free-TV playlist
+  directories by category, country, language or the full index, and save any number of them as one combined source. The
+  app does not host or vouch for these lists; you can still paste any M3U link you choose
 - First-run setup wizard (screen, layout, playback defaults, then connecting a provider); skippable, and repeatable from
   Settings > About > Run setup again
 - TV mode (automatic on Android TV, Google TV and Fire TV; Settings > Appearance > TV mode forces it on or off):
