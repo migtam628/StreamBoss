@@ -4,6 +4,14 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b2 - 2026-10-06
+- Three more layouts join the three from the first beta, in Settings > Appearance > Layout (now six cards): **Prime Time**, **Coverflow** and **Hub**.
+  - Prime Time: the TV guide is Home. The details of the highlighted programme (channel, title, time left) sit above the time grid. Live uses the channel list with a details pane, Movies and Series use poster grids.
+  - Coverflow: one big title in the middle with its neighbors fanned out. Left and Right (or a swipe) flip through them and OK plays. It is used for Home, Movies, Series and Live, with category chips on top.
+  - Hub: Home is a launcher of big colored tiles (Live TV, Movies, Series, Guide, Favorites, Search, Settings) with Continue watching underneath. Inside a section a bar takes you back to the Hub, and Back always returns to it. A new My list page opens from the Favorites tile.
+- First-run setup. On a device with no saved provider the app now opens a short wizard: what the app is, your screen (TV mode, text size, TV zoom), the layout, playback defaults (audio language, subtitles) and then the connect screen. Every choice applies as you make it, it can be skipped at any step, and Settings > About > Run setup again opens it later. People who already have a provider never see it.
+- The guide uses the selected layout's colors.
+
 ## 0.3.0b1 - 2026-10-05
 - Three selectable layouts, in Settings > Appearance > Layout: Marquee, Control Room and Spotlight, each with its own navigation, Home and browse screens, colors and a phone version. The choice is kept per device and is not part of backups. This is a beta: tell me what feels wrong on your TV and phone.
   - Marquee: a featured title with Play focused, a slim icon rail on TV and a bottom bar on phones.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/crash_guard.dart';
 import 'services/device.dart';
@@ -21,6 +22,8 @@ Future<void> main() async {
   final state = AppState();
   state.bindSettings(settings);
   await state.init();
+  // Someone who already has a provider has been through setup, whichever version they came from.
+  if (state.sources.isNotEmpty && !settings.onboarded) settings.set('onboarded', true);
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: state),
@@ -54,9 +57,15 @@ class StreamBossApp extends StatelessWidget {
           ),
         ),
       ),
-      home: s.active == null || s.error != null || s.loading
-          ? const SetupScreen()
-          : const Shell(),
+      home: needsOnboarding(st, s)
+          ? OnboardingScreen(onDone: () => st.set('onboarded', true))
+          : s.active == null || s.error != null || s.loading
+              ? const SetupScreen()
+              : const Shell(),
     );
   }
 }
+
+/// First-run setup shows once, before the connect screen, on a device with no providers saved.
+bool needsOnboarding(SettingsState settings, AppState app) =>
+    !settings.onboarded && app.sources.isEmpty && app.active == null;

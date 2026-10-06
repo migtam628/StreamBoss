@@ -8,6 +8,9 @@ import '../widgets/media_tile.dart';
 import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
+import 'coverflow_view.dart';
+import 'hub_view.dart';
+import 'prime_view.dart';
 import 'spotlight_view.dart';
 import 'ui_layout.dart';
 
@@ -256,6 +259,32 @@ class LayoutHome extends StatelessWidget {
           ],
           showResume: true,
         );
+      case UiLayout.prime:
+        return const PrimeHome();
+      case UiLayout.hub:
+        return const HubHome();
+      case UiLayout.coverflow:
+        final seen2 = <String>{};
+        List<MediaItem> uniq2(Iterable<MediaItem> xs) => [
+              for (final x in xs)
+                if (seen2.add(x.key)) x
+            ];
+        return CoverflowView(sections: [
+          (
+            'All',
+            uniq2([
+              ...s.recents,
+              ...s.favoriteItems,
+              ...c.movies.take(40),
+              ...c.series.take(40)
+            ])
+          ),
+          if (s.recents.isNotEmpty) ('Continue', s.recents),
+          if (s.favoriteItems.isNotEmpty) ('My list', s.favoriteItems),
+          if (c.movies.isNotEmpty) ('Movies', c.movies.take(60).toList()),
+          if (c.series.isNotEmpty) ('Series', c.series.take(60).toList()),
+          if (c.live.isNotEmpty) ('Live', c.live.take(60).toList()),
+        ]);
     }
   }
 }

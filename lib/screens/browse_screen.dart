@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../layouts/common.dart';
 import '../layouts/control_view.dart';
+import '../layouts/coverflow_view.dart';
 import '../layouts/spotlight_view.dart';
 import '../layouts/ui_layout.dart';
 import '../models/media.dart';
@@ -20,7 +21,17 @@ class BrowseScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (context.select<SettingsState, UiLayout>((s) => s.layout)) {
       case UiLayout.marquee:
+      case UiLayout.hub:
         return _MarqueeBrowse(kind: kind, catalog: catalog);
+      case UiLayout.prime:
+        return kind == MediaKind.live ? ControlView(kind: kind, catalog: catalog) : _MarqueeBrowse(kind: kind, catalog: catalog);
+      case UiLayout.coverflow:
+        final cf = catalog.categoriesFor(kind);
+        final allCf = catalog.itemsFor(kind);
+        return CoverflowView(sections: [
+          ('All', allCf),
+          for (final c in cf) (c.name, allCf.where((i) => i.categoryId == c.id).toList()),
+        ]);
       case UiLayout.control:
         return ControlView(kind: kind, catalog: catalog);
       case UiLayout.spotlight:

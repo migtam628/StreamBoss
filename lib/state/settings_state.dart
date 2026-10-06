@@ -35,6 +35,7 @@ class SettingsState extends ChangeNotifier {
     'startTab': 0,
     'tvMode': 'auto', // auto | on | off
     'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
+    'onboarded': false, // the first-run setup has been done or skipped (this device)
     'layout': 'marquee', // marquee | control | spotlight
     // library & guide
     'hideAdult': false,
@@ -49,7 +50,7 @@ class SettingsState extends ChangeNotifier {
   static const secretKeys = {'tmdbKey'};
 
   /// Describes this device rather than the user's taste, so backups don't carry it over.
-  static const deviceKeys = {'tvMode', 'tvWidth', 'layout', 'videoOutput'};
+  static const deviceKeys = {'tvMode', 'tvWidth', 'layout', 'videoOutput', 'onboarded'};
 
   /// Set at startup from [DeviceInfo]; tests set it directly.
   static bool detectedTv = false;
@@ -101,6 +102,8 @@ class SettingsState extends ChangeNotifier {
   /// Width in logical pixels of the canvas the TV layout is drawn on (see TvCanvas). A smaller
   /// number zooms in, a larger one zooms out.
   int get tvWidth => _g('tvWidth');
+
+  bool get onboarded => _g('onboarded');
 
   UiLayout get layout => UiLayout.fromKey(_g<String>('layout'));
 

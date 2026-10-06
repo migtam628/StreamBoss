@@ -114,12 +114,22 @@ void main() {
       }
     });
 
-    test('phone bars never repeat a screen and together cover all seven', () {
+    test(
+        'phone bars never repeat a screen, and every layout can reach Settings and Search',
+        () {
       for (final l in UiLayout.values) {
         final t = phoneTabs(l);
-        expect({...t.bar, ...t.more}.length, 7);
-        expect(t.bar.length + t.more.length, 7);
+        final all = [...t.bar, ...t.more];
+        expect(all.toSet().length, all.length, reason: l.label);
+        expect(all, containsAll([5, 6]), reason: l.label);
+        expect(t.bar.length, lessThanOrEqualTo(4));
       }
+    });
+
+    test('Prime Time calls Home the Guide and Hub calls it the Hub', () {
+      expect(destLabel(UiLayout.prime, 0), 'Guide');
+      expect(destLabel(UiLayout.hub, 0), 'Hub');
+      expect(destLabel(UiLayout.marquee, 0), 'Home');
     });
   });
 
@@ -170,18 +180,21 @@ void main() {
         final (st, app) = await setup({'layout': layout.name});
         await pumpApp(t, st, app, const Size(420, 900));
         expect(find.byType(NavigationBar), findsOneWidget);
-        expect(find.text('More'), findsOneWidget);
-        for (final k in phoneTabs(layout).bar) {
+        final tabs = phoneTabs(layout);
+        expect(find.text('More'),
+            tabs.more.isEmpty ? findsNothing : findsOneWidget);
+        for (final k in tabs.bar) {
           await t.tap(find.descendant(
               of: find.byType(NavigationBar),
-              matching: find.text(kDests[k].label)));
+              matching: find.text(destLabel(layout, k))));
           await t.pumpAndSettle();
           expect(tester(t), isNull, reason: 'no exceptions on that tab');
         }
-        await t.tap(find.text('More'));
-        await t.pumpAndSettle();
-        expect(find.text(kDests[phoneTabs(layout).more.first].label),
-            findsWidgets);
+        if (tabs.more.isNotEmpty) {
+          await t.tap(find.text('More'));
+          await t.pumpAndSettle();
+          expect(find.text(destLabel(layout, tabs.more.first)), findsWidgets);
+        }
       });
 
       testWidgets(
@@ -194,6 +207,11 @@ void main() {
             final rail = t.widget<NavigationRail>(find.byType(NavigationRail));
             expect(rail.destinations.length, 7);
             (rail.onDestinationSelected!)(k);
+          } else if (layout == UiLayout.hub) {
+            await t.tap(find.text(k == 1 ? 'Live TV' : 'Movies').first);
+            await t.pumpAndSettle();
+            expect(tester(t), isNull);
+            await t.tap(find.text('Hub').first);
           } else {
             await t.tap(find.text(kDests[k].label).first);
           }
@@ -239,6 +257,54 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('Arena Sports 1'), findsNothing);
     expect(find.text('Metro News 24'), findsWidgets);
+  });
+
+  testWidgets('Hub: the tiles open Live, Movies and the other places',
+      (t) async {
+    final (st, app) = await setup({'layout': 'hub', 'tvMode': 'on'});
+    await pumpApp(t, st, app, const Size(1280, 720));
+    expect(find.text('Live TV'), findsOneWidget);
+    expect(find.text('Favorites'), findsOneWidget);
+    expect(find.text('2 channels'), findsOneWidget);
+    await t.tap(find.text('Movies'));
+    await t.pumpAndSettle();
+    expect(find.text('Salt Road'), findsWidgets);
+    expect(find.text('Hub'), findsOneWidget,
+        reason: 'the bar to get back to the hub');
+  });
+
+  testWidgets('Hub: Back from a section returns to the hub', (t) async {
+    final (st, app) = await setup({'layout': 'hub', 'tvMode': 'on'});
+    await pumpApp(t, st, app, const Size(1280, 720));
+    await t.tap(find.text('Movies'));
+    await t.pumpAndSettle();
+    await t.binding.handlePopRoute();
+    await t.pumpAndSettle();
+    expect(find.text('Live TV'), findsOneWidget);
+  });
+
+  testWidgets('Coverflow: Right flips to the next title and the details follow',
+      (t) async {
+    final (st, app) =
+        await setup({'layout': 'coverflow', 'tvMode': 'on', 'startTab': 3});
+    await pumpApp(t, st, app, const Size(1280, 720));
+    expect(find.text('1 of 2', findRichText: true), findsNothing);
+    expect(find.textContaining('1 of 2'), findsOneWidget);
+    await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await t.pumpAndSettle();
+    expect(find.textContaining('2 of 2'), findsOneWidget);
+    await t.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await t.pumpAndSettle();
+    expect(find.textContaining('1 of 2'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Prime Time: Home is the guide, with a channel list when there is no guide source',
+      (t) async {
+    final (st, app) = await setup({'layout': 'prime', 'tvMode': 'on'});
+    await pumpApp(t, st, app, const Size(1280, 720));
+    expect(find.text('Arena Sports 1'), findsWidgets);
+    expect(find.text('Move over the grid to see what is on.'), findsOneWidget);
   });
 
   testWidgets('Appearance page: choosing a layout card changes the setting',

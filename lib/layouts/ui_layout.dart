@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// The three selectable looks (Settings > Appearance > Layout). Each one changes the navigation,
+/// The selectable looks (Settings > Appearance > Layout). Each one changes the navigation,
 /// the Home screen and the browse screens, and carries its own palette.
 enum UiLayout {
   marquee('Marquee',
@@ -8,7 +8,13 @@ enum UiLayout {
   control('Control Room',
       'Channel-first. Categories, a numbered channel list with what is on now, and a details pane.'),
   spotlight('Spotlight',
-      'A poster wall. The focused title gets a details panel; navigation is one pill.');
+      'A poster wall. The focused title gets a details panel; navigation is one pill.'),
+  prime('Prime Time',
+      'The TV guide is Home: details of the highlighted show above a time grid of every channel.'),
+  coverflow('Coverflow',
+      'One big poster at a time with its neighbors fanned out. Flip through and press play.'),
+  hub('Hub',
+      'A launcher of big colored tiles, with what you were watching underneath. Nothing to learn.');
 
   final String label;
   final String blurb;
@@ -64,10 +70,44 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     line: Color(0x1FFFFFFF),
   );
 
+  static const prime = LayoutPalette(
+    bg: Color(0xFF0A1020),
+    surface: Color(0xFF101A33),
+    surfaceHi: Color(0xFF1A2A52),
+    accent: Color(0xFF4C8DFF),
+    accent2: Color(0xFFFFD166),
+    text: Color(0xFFEEF2FB),
+    muted: Color(0xFF93A3C8),
+    line: Color(0xFF1B2748),
+  );
+  static const coverflow = LayoutPalette(
+    bg: Color(0xFF0E0B0A),
+    surface: Color(0xFF1A1412),
+    surfaceHi: Color(0xFF2A201B),
+    accent: Color(0xFFFF6A3D),
+    accent2: Color(0xFFF3E9DC),
+    text: Color(0xFFF3E9DC),
+    muted: Color(0xFFA89A8C),
+    line: Color(0x1FF3E9DC),
+  );
+  static const hub = LayoutPalette(
+    bg: Color(0xFF12131A),
+    surface: Color(0xFF1B1C26),
+    surfaceHi: Color(0xFF262836),
+    accent: Color(0xFF35D0BA),
+    accent2: Color(0xFFFF5D8F),
+    text: Color(0xFFF2F2F7),
+    muted: Color(0xFF9A9BB2),
+    line: Color(0x14FFFFFF),
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
         UiLayout.spotlight => spotlight,
+        UiLayout.prime => prime,
+        UiLayout.coverflow => coverflow,
+        UiLayout.hub => hub,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).

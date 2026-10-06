@@ -102,6 +102,11 @@ class _ShellState extends State<Shell> {
           ),
           Expanded(child: body),
         ]);
+      } else if (layout == UiLayout.hub) {
+        chrome = Column(children: [
+          if (_i != 0) HubBar(index: _i, onSelect: select),
+          Expanded(child: body),
+        ]);
       } else {
         chrome = Column(children: [
           TopNav(layout: layout, index: _i, onSelect: select),

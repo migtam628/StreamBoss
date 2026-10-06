@@ -127,10 +127,14 @@ every release. The first build signed with your key has to be installed after un
 - Phone setup: on the connect screen, "Set up from your phone" shows a QR code and a 4-digit PIN; the phone opens a small
   page served by the app on your home network and sends the login back, so no typing with a remote. The server runs only
   while that screen is open, locks after 5 wrong PINs, and nothing leaves the local network (native apps only)
-- Three layouts, chosen in Settings > Appearance > Layout (the choice is per device): **Marquee** (a featured title on Home, a
+- Six layouts, chosen in Settings > Appearance > Layout (the choice is per device): **Marquee** (a featured title on Home, a
   slim icon rail, rows of posters), **Control Room** (categories, a numbered channel list with what is on now, and a
-  details pane; built for flipping live channels) and **Spotlight** (a poster wall where the focused title gets a details
-  panel, with a single navigation pill). Each has its own colors and a phone version with a bottom bar and a More sheet
+  details pane; built for flipping live channels), **Spotlight** (a poster wall where the focused title gets a details
+  panel, with a single navigation pill), **Prime Time** (the TV guide is Home, with the highlighted programme's details
+  above it), **Coverflow** (one big title at a time with its neighbors fanned out) and **Hub** (a launcher of big colored
+  tiles). Each has its own colors and a phone version with a bottom bar
+- First-run setup wizard (screen, layout, playback defaults, then connecting a provider); skippable, and repeatable from
+  Settings > About > Run setup again
 - TV mode (automatic on Android TV, Google TV and Fire TV; Settings > Appearance > TV mode forces it on or off):
   the screen is laid out on a fixed canvas about 1280 px wide whatever the device reports (Settings > Appearance > TV
   zoom changes how much fits), a bold white focus ring with glow, overscan-safe margins, the cursor starting on Play,

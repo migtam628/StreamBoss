@@ -6,6 +6,7 @@ import '../services/xtream_client.dart';
 import '../services/time_format.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../layouts/ui_layout.dart';
 import '../theme.dart';
 import '../widgets/focus_card.dart';
 import 'open_item.dart';
@@ -15,7 +16,9 @@ enum _Mode { grid, list }
 /// TV guide: an XMLTV time grid when the source provides one, plus a simpler
 /// now/next list (Xtream short EPG) that also works without XMLTV.
 class GuideScreen extends StatefulWidget {
-  const GuideScreen({super.key});
+  /// Called when focus lands on a programme cell (used by Prime Time's details header).
+  final void Function(MediaItem channel, Programme programme)? onFocusProgramme;
+  const GuideScreen({super.key, this.onFocusProgramme});
 
   @override
   State<GuideScreen> createState() => _GuideScreenState();
@@ -56,7 +59,7 @@ class _GuideScreenState extends State<GuideScreen> {
                     child: ChoiceChip(
                       label: Text(c.name),
                       selected: (_cat ?? '') == c.id,
-                      selectedColor: Boss.accent,
+                      selectedColor: LayoutPalette.of(context).accent,
                       onSelected: (_) => setState(() => _cat = c.id.isEmpty ? null : c.id),
                     ),
                   ),
@@ -91,12 +94,12 @@ class _GuideScreenState extends State<GuideScreen> {
                     ? Center(
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
                         Text('Guide failed: ${s.guideError}',
-                            style: const TextStyle(color: Boss.accent)),
+                            style: TextStyle(color: LayoutPalette.of(context).accent)),
                         TextButton(
                             onPressed: () => s.loadGuide(force: true),
                             child: const Text('Retry')),
                       ]))
-                    : GuideGrid(channels: items))
+                    : GuideGrid(channels: items, onFocusProgramme: widget.onFocusProgramme))
             : _NowNextList(items: items),
       ),
     ]);
@@ -108,7 +111,8 @@ class _GuideScreenState extends State<GuideScreen> {
 /// D-pad focus on a cell).
 class GuideGrid extends StatefulWidget {
   final List<MediaItem> channels;
-  const GuideGrid({super.key, required this.channels});
+  final void Function(MediaItem channel, Programme programme)? onFocusProgramme;
+  const GuideGrid({super.key, required this.channels, this.onFocusProgramme});
 
   @override
   State<GuideGrid> createState() => _GuideGridState();
@@ -252,11 +256,14 @@ class _GuideGridState extends State<GuideGrid> {
       child: FocusCard(
         radius: 8,
         onFocus: (f) {
-          if (f) _reveal(left, width);
+          if (f) {
+            _reveal(left, width);
+            widget.onFocusProgramme?.call(ch, p);
+          }
         },
         onTap: () => openItem(context, ch, queue: widget.channels),
         child: Container(
-          color: p.isNow ? Boss.accent.withValues(alpha: 0.35) : Boss.surfaceHi,
+          color: p.isNow ? LayoutPalette.of(context).accent.withValues(alpha: 0.35) : LayoutPalette.of(context).surfaceHi,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(p.title,

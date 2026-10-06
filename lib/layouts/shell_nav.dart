@@ -41,11 +41,36 @@ class ShellNav extends InheritedWidget {
   bool updateShouldNotify(ShellNav old) => old.index != index;
 }
 
+/// Name of screen [i] in [l]: Prime Time's Home is the guide, Hub's is the hub.
+String destLabel(UiLayout l, int i) => switch ((l, i)) {
+      (UiLayout.prime, 0) => 'Guide',
+      (UiLayout.hub, 0) => 'Hub',
+      _ => kDests[i].label,
+    };
+
+IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
+    switch ((l, i)) {
+      (UiLayout.prime, 0) =>
+        selected ? Icons.view_list : Icons.view_list_outlined,
+      (UiLayout.hub, 0) => selected ? Icons.apps : Icons.apps_outlined,
+      _ => selected ? kDests[i].selectedIcon : kDests[i].icon,
+    };
+
+/// The tabs of a top navigation bar, in order (settings has its own button).
+List<int> topTabs(UiLayout l) => switch (l) {
+      UiLayout.prime => [0, 1, 3, 4, 5],
+      UiLayout.coverflow => [0, 3, 4, 1, 2, 5],
+      _ => [0, 1, 2, 3, 4, 5],
+    };
+
 /// The five items of the phone's bottom bar for each layout, then what "More" holds.
 ({List<int> bar, List<int> more}) phoneTabs(UiLayout l) => switch (l) {
       UiLayout.marquee => (bar: [0, 1, 2, 3], more: [4, 5, 6]),
       UiLayout.control => (bar: [0, 1, 2, 5], more: [3, 4, 6]),
       UiLayout.spotlight => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
+      UiLayout.prime => (bar: [0, 1, 3, 4], more: [5, 6]),
+      UiLayout.coverflow => (bar: [0, 3, 4, 1], more: [2, 5, 6]),
+      UiLayout.hub => (bar: [0, 5, 6], more: <int>[]),
     };
 
 /// Bottom navigation for phones: four main screens and a More sheet for the rest.
@@ -63,8 +88,9 @@ class PhoneNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = phoneTabs(layout);
     final inBar = tabs.bar.indexOf(index);
+    final hasMore = tabs.more.isNotEmpty;
     return NavigationBar(
-      selectedIndex: inBar >= 0 ? inBar : tabs.bar.length,
+      selectedIndex: inBar >= 0 ? inBar : (hasMore ? tabs.bar.length : 0),
       onDestinationSelected: (v) {
         if (v < tabs.bar.length) {
           onSelect(tabs.bar[v]);
@@ -76,11 +102,12 @@ class PhoneNav extends StatelessWidget {
       destinations: [
         for (final i in tabs.bar)
           NavigationDestination(
-              icon: Icon(kDests[i].icon),
-              selectedIcon: Icon(kDests[i].selectedIcon),
-              label: kDests[i].label),
-        const NavigationDestination(
-            icon: Icon(Icons.more_horiz), label: 'More'),
+              icon: Icon(destIcon(layout, i)),
+              selectedIcon: Icon(destIcon(layout, i, selected: true)),
+              label: destLabel(layout, i)),
+        if (hasMore)
+          const NavigationDestination(
+              icon: Icon(Icons.more_horiz), label: 'More'),
       ],
     );
   }
@@ -114,14 +141,15 @@ class NavTab extends StatefulWidget {
   final IconData? icon;
   final bool selected;
   final VoidCallback onTap;
-  final bool pill;
+  final bool pill, underline;
   const NavTab(
       {super.key,
       required this.label,
       this.icon,
       required this.selected,
       required this.onTap,
-      this.pill = false});
+      this.pill = false,
+      this.underline = false});
 
   @override
   State<NavTab> createState() => _NavTabState();
@@ -137,7 +165,7 @@ class _NavTabState extends State<NavTab> {
     final on = widget.selected;
     final Color fill = widget.pill
         ? (on ? Colors.white : Colors.transparent)
-        : (on ? p.surfaceHi : Colors.transparent);
+        : (on && !widget.underline ? p.surfaceHi : Colors.transparent);
     final Color fg = widget.pill
         ? (on ? const Color(0xFF1A0F27) : p.text.withValues(alpha: 0.8))
         : (on ? p.text : p.muted);
@@ -155,13 +183,19 @@ class _NavTabState extends State<NavTab> {
               horizontal: widget.pill ? 18 : 14, vertical: widget.pill ? 8 : 8),
           decoration: BoxDecoration(
             color: fill,
-            borderRadius: BorderRadius.circular(widget.pill ? 40 : 10),
-            border: Border.all(
-              color: _focused
-                  ? (tv ? Colors.white : p.accent)
-                  : Colors.transparent,
-              width: 3,
-            ),
+            borderRadius: widget.underline && !_focused
+                ? null
+                : BorderRadius.circular(widget.pill ? 40 : 10),
+            border: widget.underline && !_focused
+                ? Border(
+                    bottom: BorderSide(
+                        color: on ? p.accent : Colors.transparent, width: 3))
+                : Border.all(
+                    color: _focused
+                        ? (tv ? Colors.white : p.accent)
+                        : Colors.transparent,
+                    width: 3,
+                  ),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             if (widget.icon != null) ...[
@@ -191,18 +225,18 @@ class TopNav extends StatelessWidget {
       required this.index,
       required this.onSelect});
 
-  static const _tabs = [0, 1, 2, 3, 4, 5];
-
   @override
   Widget build(BuildContext context) {
     final p = LayoutPalette.of(context);
     final pill = layout == UiLayout.spotlight;
+    final underline = layout == UiLayout.coverflow;
     final tabs = [
-      for (final i in _tabs)
+      for (final i in topTabs(layout))
         NavTab(
-            label: kDests[i].label,
+            label: destLabel(layout, i),
             selected: i == index,
             pill: pill,
+            underline: underline,
             onTap: () => onSelect(i)),
     ];
     final settings = NavTab(
@@ -210,6 +244,7 @@ class TopNav extends StatelessWidget {
       icon: Icons.settings_outlined,
       selected: index == 6,
       pill: pill,
+      underline: underline,
       onTap: () => onSelect(6),
     );
     if (pill) {
@@ -252,14 +287,15 @@ class TopNav extends StatelessWidget {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-          color: p.surface, border: Border(bottom: BorderSide(color: p.line))),
+          color: underline ? Colors.transparent : p.surface,
+          border: underline ? null : Border(bottom: BorderSide(color: p.line))),
       child: Row(children: [
-        Text('STREAMBOSS',
+        Text(underline ? 'streamboss' : 'STREAMBOSS',
             style: TextStyle(
-                color: p.accent,
+                color: underline ? p.text : p.accent,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 1.6,
-                fontSize: 17)),
+                letterSpacing: underline ? -0.2 : 1.6,
+                fontSize: underline ? 20 : 17)),
         const SizedBox(width: 24),
         Expanded(
           child: SingleChildScrollView(
@@ -312,5 +348,35 @@ class _NavClockState extends State<NavClock> {
             color: p.muted,
             fontFeatures: const [FontFeature.tabularFigures()],
             fontSize: 16));
+  }
+}
+
+/// Hub's top bar on wide screens inside a section: back to the Hub, the section's name, the time.
+class HubBar extends StatelessWidget {
+  final int index;
+  final ValueChanged<int> onSelect;
+  const HubBar({super.key, required this.index, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration:
+          BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
+      child: Row(children: [
+        NavTab(
+            label: 'Hub',
+            icon: Icons.apps,
+            selected: false,
+            onTap: () => onSelect(0)),
+        const SizedBox(width: 14),
+        Text(destLabel(UiLayout.hub, index),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+        const Spacer(),
+        const NavClock(),
+      ]),
+    );
   }
 }

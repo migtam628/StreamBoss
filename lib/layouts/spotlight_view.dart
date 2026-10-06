@@ -40,7 +40,7 @@ class _SpotlightViewState extends State<SpotlightView> {
           child: Text('Nothing here yet.',
               style: TextStyle(color: LayoutPalette.of(context).muted)));
     }
-    final sec = _sec.clamp(0, secs.length - 1);
+    final sec = _sec.clamp(0, secs.length - 1).toInt();
     final items = secs[sec].$2;
     final live =
         items.isNotEmpty && items.every((e) => e.kind == MediaKind.live);

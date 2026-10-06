@@ -45,7 +45,8 @@ class _ControlViewState extends State<ControlView> {
         _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
     final live = widget.kind == MediaKind.live;
     if (all.isEmpty) {
-      return Center(child: Text('Nothing here yet.', style: TextStyle(color: p.muted)));
+      return Center(
+          child: Text('Nothing here yet.', style: TextStyle(color: p.muted)));
     }
     final shown = _focused != null && items.contains(_focused)
         ? _focused

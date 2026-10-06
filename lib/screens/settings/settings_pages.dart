@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import '../../layouts/layout_picker.dart';
+import '../onboarding_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -770,6 +771,14 @@ class _AboutPageState extends State<AboutPage> {
             icon: Icons.new_releases_outlined,
             title: 'Release notes & downloads',
             onTap: () => launchUrl(Uri.parse(kReleasesUrl), mode: LaunchMode.externalApplication),
+          ),
+          ActionRow(
+            icon: Icons.auto_awesome_outlined,
+            title: 'Run setup again',
+            subtitle: 'The first-run steps: screen, look and playback defaults',
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (ctx) => OnboardingScreen(rerun: true, onDone: () => Navigator.of(ctx).pop()),
+            )),
           ),
           const SettingsHeader('Support'),
           ActionRow(
