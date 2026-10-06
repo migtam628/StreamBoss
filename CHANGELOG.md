@@ -4,6 +4,9 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b4 - 2026-10-06
+- Free public channels: when several lists are added and none loads, the error now says why (for example "Couldn't look up 'iptv-org.github.io'" or "Playlist returned 403") instead of only "None of the N playlists could be loaded".
+
 ## 0.3.0b3 - 2026-10-06
 - Free public channels. The connect screen (and Settings > Source > Add free public channels) now opens a browser of the public iptv-org and Free-TV playlist directories. Pick one list, several, or Select all on a tab: Categories, Countries (loaded from iptv-org, with search), Languages, and More (the whole iptv-org index, Free-TV and similar). Your picks are downloaded in parallel, combined, de-duplicated and saved as one source, and a list that fails to load is skipped instead of failing the rest. Very large picks ask first, because they can take a minute on a phone or a TV stick.
 - A source can now hold several playlist addresses (one per line); they load as one library. Pasting any M3U link of your own still works as before.

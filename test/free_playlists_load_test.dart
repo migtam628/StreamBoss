@@ -44,7 +44,11 @@ void main() {
     });
 
     test('throws only when none loads', () async {
-      expect(loadMergedPlaylists([u('/x.m3u'), u('/y.m3u')]), throwsException);
+      await expectLater(
+          loadMergedPlaylists([u('/x.m3u'), u('/y.m3u')]),
+          throwsA(predicate((e) =>
+              e.toString().contains('None of the 2 playlists') &&
+              e.toString().contains('Playlist returned 404'))));
     });
 
     test('a source with several addresses activates as one library', () async {

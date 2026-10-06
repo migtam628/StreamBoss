@@ -4,6 +4,7 @@ import '../models/media.dart';
 import 'http_client.dart';
 import 'm3u_parser.dart';
 import 'net_config.dart';
+import 'provider_url.dart';
 
 /// A public playlist the user can add with one tap.
 class FreeList {
@@ -183,6 +184,7 @@ String freeSourceName(List<FreeList> picked) => picked.length == 1
 Future<Catalog> loadMergedPlaylists(List<String> urls,
     {http.Client? client, int parallel = 6}) async {
   final parts = <Catalog>[];
+  Object? firstError;
   for (var i = 0; i < urls.length; i += parallel) {
     final batch = urls.skip(i).take(parallel);
     final got = await Future.wait(batch.map((u) async {
@@ -190,16 +192,23 @@ Future<Catalog> loadMergedPlaylists(List<String> urls,
         final res = await (client ?? appHttp)
             .get(Uri.parse(u), headers: NetConfig.headers)
             .timeout(const Duration(seconds: 60));
-        if (res.statusCode != 200) return null;
+        if (res.statusCode != 200) {
+          firstError ??= Exception('Playlist returned ${res.statusCode}');
+          return null;
+        }
         return parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true));
-      } catch (_) {
+      } catch (e) {
+        firstError ??= e;
         return null;
       }
     }));
     parts.addAll(got.whereType<Catalog>());
   }
   if (parts.isEmpty) {
-    throw Exception('None of the ${urls.length} playlists could be loaded');
+    // Say why, not just that it failed: the first list's own error is what a person can act on.
+    final why = firstError == null ? '' : ' ${friendlyError(firstError!)}';
+    throw Exception(
+        'None of the ${urls.length} playlists could be loaded.$why');
   }
   return mergeCatalogs(parts);
 }
