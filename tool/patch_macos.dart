@@ -32,4 +32,39 @@ void main() {
     }
   }
   stdout.writeln(patched == 0 ? 'Already patched.' : 'Added network entitlements to $patched file(s).');
+  _patchDockIcon();
+}
+
+/// Lets the app change its Dock icon (Settings > Appearance > App icon, lib/services/app_icon.dart):
+/// a `com.streamboss/app_icon` channel whose `setDockIcon` call receives PNG bytes. macOS keeps the
+/// icon only while the app runs, so the app sets it again at every start.
+void _patchDockIcon() {
+  final f = File('macos/Runner/MainFlutterWindow.swift');
+  if (!f.existsSync()) {
+    stderr.writeln('${f.path} not found; the Dock icon cannot be changed.');
+    return;
+  }
+  var x = f.readAsStringSync();
+  if (x.contains('com.streamboss/app_icon')) return;
+  const anchor = 'RegisterGeneratedPlugins(registry: flutterViewController)';
+  if (!x.contains(anchor)) {
+    stderr.writeln('Unexpected ${f.path}; the Dock icon cannot be changed.');
+    return;
+  }
+  const channel = '''
+
+    let iconChannel = FlutterMethodChannel(name: "com.streamboss/app_icon", binaryMessenger: flutterViewController.engine.binaryMessenger)
+    iconChannel.setMethodCallHandler { call, result in
+      if call.method == "setDockIcon",
+         let data = (call.arguments as? FlutterStandardTypedData)?.data,
+         let image = NSImage(data: data) {
+        NSApplication.shared.applicationIconImage = image
+        result(true)
+      } else {
+        result(false)
+      }
+    }''';
+  x = x.replaceFirst(anchor, '$anchor$channel');
+  f.writeAsStringSync(x);
+  stdout.writeln('Added the Dock icon channel.');
 }

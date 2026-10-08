@@ -39,6 +39,7 @@ class SettingsState extends ChangeNotifier {
     'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
     'onboarded': false, // the first-run setup has been done or skipped (this device)
     'layout': 'marquee', // marquee | control | spotlight
+    'appIcon': 'crown', // crown | bold | signal | screen (this device)
     // library & guide
     'hideAdult': false,
     'sortAz': false,
@@ -52,7 +53,7 @@ class SettingsState extends ChangeNotifier {
   static const secretKeys = {'tmdbKey'};
 
   /// Describes this device rather than the user's taste, so backups don't carry it over.
-  static const deviceKeys = {'tvMode', 'tvWidth', 'layout', 'videoOutput', 'onboarded'};
+  static const deviceKeys = {'tvMode', 'tvWidth', 'layout', 'videoOutput', 'onboarded', 'appIcon'};
 
   /// Set at startup from [DeviceInfo]; tests set it directly.
   static bool detectedTv = false;
@@ -71,6 +72,7 @@ class SettingsState extends ChangeNotifier {
   double get speed => _g('speed');
   bool get autoResume => _g('autoResume');
   bool get autoplayNext => _g('autoplayNext');
+  String get appIcon => _g('appIcon');
   String get aspect => _g('aspect');
   int get seekSecs => _g('seekSecs');
   int get skipSecs => _g('skipSecs');

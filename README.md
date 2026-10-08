@@ -113,6 +113,8 @@ every release. The first build signed with your key has to be installed after un
 - Home shelves: Continue watching, My List (long-press to favorite; on TV use the button on the movie page)
 - TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
 - Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header; D-pad friendly) with a now/next list fallback
+- Four app icons (Crown, Bold B, Signal, Screen) to switch between at will: Settings > Appearance > App icon (Android, Android TV
+  and macOS; other platforms use the Crown icon). Drawings and generator in `design/`
 - Xtream account details (status, expiry, connections in use) under Settings > Source & library
 - Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
@@ -159,7 +161,8 @@ Platform folders are generated, not committed:
 ```sh
 flutter create . --project-name streamboss --org com.streamboss
 dart run tool/patch_macos.dart     # macOS: network entitlement (the sandboxed app can't connect without it)
-dart run tool/patch_android.dart   # Android TV / Google TV / Fire TV manifest (leanback launcher, INTERNET, cleartext http)
+dart run tool/patch_android.dart   # Android TV / Google TV / Fire TV manifest (leanback launcher, INTERNET, cleartext http, the switchable icons)
+dart run tool/patch_icons.dart     # the StreamBoss icon in the generated iOS, macOS, Windows and web projects
 flutter pub get
 flutter run -d <device>
 flutter test

@@ -4,6 +4,14 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b9 - 2026-10-08
+- A new app icon and logo, with four to choose from: **Crown**, **Bold B**, **Signal** and **Screen**. Settings > Appearance > App icon changes the icon of the installed app whenever you like.
+  - Android and Android TV: the launcher icon switches for real (adaptive icons, a one-color layer for Android 13 themed icons, and a matching TV and Fire TV banner for each). Your launcher can take a few seconds to show the change, and a few of them close the app for a moment.
+  - macOS: the Dock icon changes, and is set again every time the app starts.
+  - iOS, Windows, Linux, the web, tvOS and Roku cannot change their icon while the app runs, so they get the Crown icon in place of the Flutter default. The Roku icon and splash screen are new too.
+- The default icon on a fresh install is Crown.
+- The drawings and the script that makes every size are in `design/`.
+
 ## 0.3.0b8 - 2026-10-08
 - Type a channel number. While watching live TV with a channel list, press digits on the remote or keyboard (2, 0, 7) and the player jumps to channel 207 when you pause, or at once on OK. A number with no channel says so.
 - Last channel. A Last channel button in the player (and the L key, or the Last key on remotes that have one) goes back to the channel before this one.

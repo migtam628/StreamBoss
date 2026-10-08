@@ -7,6 +7,7 @@ import 'services/crash_guard.dart';
 import 'services/device.dart';
 import 'screens/shell.dart';
 import 'state/app_state.dart';
+import 'services/app_icon.dart';
 import 'state/settings_state.dart';
 import 'theme.dart';
 import 'widgets/tv.dart';
@@ -24,6 +25,7 @@ Future<void> main() async {
   await state.init();
   // Someone who already has a provider has been through setup, whichever version they came from.
   if (state.sources.isNotEmpty && !settings.onboarded) settings.set('onboarded', true);
+  AppIconService.restore(AppIcon.fromKey(settings.appIcon));
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: state),

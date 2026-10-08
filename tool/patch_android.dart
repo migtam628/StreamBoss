@@ -13,6 +13,7 @@ void main() {
   _copyResources();
   _patchSigning();
   if (x.contains('LEANBACK_LAUNCHER')) {
+    _patchIconAliases();
     stdout.writeln('Already patched.');
     return;
   }
@@ -39,7 +40,45 @@ void main() {
   x = x.replaceFirst('<activity', '<activity\n            android:supportsPictureInPicture="true"');
 
   f.writeAsStringSync(x);
+  _patchIconAliases();
   stdout.writeln('Patched AndroidManifest.xml for TV.');
+}
+
+/// The launcher icons the app can switch between (Settings > Appearance > App icon). Each one is an
+/// `activity-alias` of MainActivity with its own icon and TV banner; exactly one is enabled at a time and
+/// the native channel in MainActivity flips them. Keep this list in step with lib/services/app_icon.dart
+/// and design/make_icons.mjs.
+const _iconNames = ['crown', 'bold', 'signal', 'screen'];
+
+String _aliasClass(String n) => 'Icon${n[0].toUpperCase()}${n.substring(1)}';
+
+void _patchIconAliases() {
+  final f = File('android/app/src/main/AndroidManifest.xml');
+  var x = f.readAsStringSync();
+  if (x.contains('.${_aliasClass(_iconNames.first)}"')) return;
+  // The launcher entry moves from the activity itself to the aliases.
+  x = x.replaceFirst(RegExp(r'<intent-filter>\s*<action android:name="android.intent.action.MAIN"\s*/>[\s\S]*?</intent-filter>'), '');
+  final aliases = StringBuffer();
+  for (final n in _iconNames) {
+    aliases.writeln('''        <activity-alias
+            android:name=".${_aliasClass(n)}"
+            android:targetActivity=".MainActivity"
+            android:enabled="${n == _iconNames.first}"
+            android:exported="true"
+            android:icon="@mipmap/ic_logo_$n"
+            android:roundIcon="@mipmap/ic_logo_${n}_round"
+            android:banner="@drawable/banner_$n"
+            android:label="StreamBoss">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>''');
+  }
+  x = x.replaceFirst('</application>', '$aliases    </application>');
+  f.writeAsStringSync(x);
+  stdout.writeln('Added the launcher icon aliases.');
 }
 
 /// Replaces the generated MainActivity with one exposing picture-in-picture
@@ -66,6 +105,7 @@ String _mainActivity(String pkg) => '''
 package $pkg
 
 import android.app.PictureInPictureParams
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
@@ -77,8 +117,46 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private var pipChannel: MethodChannel? = null
 
+    // The launcher icons (activity-aliases in the manifest, see tool/patch_android.dart).
+    private val iconNames = listOf("crown", "bold", "signal", "screen")
+
+    private fun iconComponent(name: String) =
+        ComponentName(this, "$pkg.Icon" + name.replaceFirstChar { it.uppercase() })
+
+    private fun currentIcon(): String {
+        for (n in iconNames) {
+            if (packageManager.getComponentEnabledSetting(iconComponent(n)) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) return n
+        }
+        return iconNames.first() // never switched: the manifest enables the first one
+    }
+
+    private fun setIcon(name: String) {
+        // Enable the new one before disabling the others so there is always a launcher entry.
+        packageManager.setComponentEnabledSetting(iconComponent(name), PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+        for (n in iconNames) {
+            if (n != name) {
+                packageManager.setComponentEnabledSetting(iconComponent(n), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+            }
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.streamboss/app_icon").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "current" -> result.success(currentIcon())
+                "set" -> {
+                    val name = call.arguments as? String
+                    if (name != null && iconNames.contains(name)) {
+                        setIcon(name)
+                        result.success(true)
+                    } else {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.streamboss/pip")
         pipChannel = channel
         channel.setMethodCallHandler { call, result ->

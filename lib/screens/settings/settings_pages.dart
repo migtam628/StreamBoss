@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
+import '../../services/app_icon.dart';
+import '../../layouts/common.dart';
 import '../../layouts/ui_layout.dart';
 import '../../layouts/layout_picker.dart';
 import '../free_playlists_screen.dart';
@@ -381,6 +383,10 @@ class AppearancePage extends StatelessWidget {
     return ListView(children: [
       const SettingsHeader('Layout'),
       const LayoutPicker(),
+      if (AppIconService.supported) ...[
+        const SettingsHeader('App icon'),
+        const AppIconPicker(),
+      ],
       const SettingsHeader('Size'),
       ChoiceRow<double>(
         icon: Icons.text_fields,
@@ -851,6 +857,74 @@ class _AboutPageState extends State<AboutPage> {
           ),
         ]);
       },
+    );
+  }
+}
+
+/// Settings > Appearance > App icon: the four icons as tiles. Tapping one changes the icon of the
+/// installed app (see AppIconService for what that means on each system).
+class AppIconPicker extends StatefulWidget {
+  const AppIconPicker({super.key});
+
+  @override
+  State<AppIconPicker> createState() => _AppIconPickerState();
+}
+
+class _AppIconPickerState extends State<AppIconPicker> {
+  @override
+  void initState() {
+    super.initState();
+    // The system is the truth on Android (an older install, or a change made elsewhere).
+    AppIconService.current().then((c) {
+      if (!mounted || c == null) return;
+      final st = context.read<SettingsState>();
+      if (st.appIcon != c.name) st.set('appIcon', c.name);
+    });
+  }
+
+  Future<void> _pick(AppIcon icon) async {
+    final st = context.read<SettingsState>();
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await AppIconService.set(icon);
+    if (ok) st.set('appIcon', icon.name);
+    messenger.showSnackBar(SnackBar(
+        content: Text(ok
+            ? '${icon.label} icon set. Your launcher can take a few seconds to show it.'
+            : 'The icon could not be changed on this device.')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    final cur = AppIcon.fromKey(context.watch<SettingsState>().appIcon);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Wrap(spacing: 14, runSpacing: 14, children: [
+        for (final icon in AppIcon.values)
+          FocusSurface(
+            radius: 16,
+            semanticLabel: '${icon.label} icon${icon == cur ? ', selected' : ''}',
+            onTap: () => _pick(icon),
+            builder: (_, __) => Container(
+              width: 104,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: p.surface,
+                border: Border.all(color: icon == cur ? p.accent : Colors.transparent, width: 2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Image.asset(icon.asset, width: 72, height: 72, filterQuality: FilterQuality.medium),
+                const SizedBox(height: 8),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (icon == cur) Icon(Icons.check_circle, size: 16, color: p.accent),
+                  if (icon == cur) const SizedBox(width: 4),
+                  Flexible(child: Text(icon.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
+                ]),
+              ]),
+            ),
+          ),
+      ]),
     );
   }
 }
