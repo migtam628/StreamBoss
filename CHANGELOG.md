@@ -4,6 +4,10 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b10 - 2026-10-08
+- Fix: the free public channels (and any other `https://` playlist or provider) failed on phones, tablets, TVs and desktops with "Invalid request method". The connection helper that tries IPv4 first handed Dart a plain socket and never started TLS, so servers received unencrypted data on port 443 and refused it. HTTPS now does its TLS handshake. Plain `http://` addresses and the web build were not affected.
+- A test now runs a real local HTTPS server so this cannot come back.
+
 ## 0.3.0b9 - 2026-10-08
 - A new app icon and logo, with four to choose from: **Crown**, **Bold B**, **Signal** and **Screen**. Settings > Appearance > App icon changes the icon of the installed app whenever you like.
   - Android and Android TV: the launcher icon switches for real (adaptive icons, a one-color layer for Android 13 themed icons, and a matching TV and Fire TV banner for each). Your launcher can take a few seconds to show the change, and a few of them close the app for a moment.

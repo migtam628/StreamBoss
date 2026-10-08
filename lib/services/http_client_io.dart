@@ -7,17 +7,28 @@ import 'provider_url.dart';
 /// Dart races IPv4 and IPv6 and, when everything fails, reports the *first* error, which is
 /// usually the instant "Network is unreachable" from a missing IPv6 route and hides what
 /// actually went wrong over IPv4. This tries IPv4 addresses first and reports their error.
+///
+/// A connection factory returns a raw socket and Dart never upgrades it, so for a direct https
+/// request the TLS handshake is done here. Without it the server gets plaintext on port 443 and
+/// its TLS alert comes back as "Invalid request method". Through a proxy Dart sends CONNECT
+/// itself, so the proxy socket stays plain.
 Future<ConnectionTask<Socket>> ipv4FirstConnect(
     Uri url, String? proxyHost, int? proxyPort) async {
   final host = proxyHost ?? url.host;
   final port = proxyPort ?? url.port;
+  final secure = proxyHost == null && url.scheme == 'https';
+  Future<Socket> upgrade(Socket s) =>
+      secure ? SecureSocket.secure(s, host: url.host) : Future.value(s);
   List<InternetAddress> v4;
   try {
     v4 = await InternetAddress.lookup(host, type: InternetAddressType.IPv4);
   } on SocketException {
     v4 = const [];
   }
-  if (v4.isEmpty) return Socket.startConnect(host, port);
+  if (v4.isEmpty) {
+    final task = await Socket.startConnect(host, port);
+    return ConnectionTask.fromSocket(task.socket.then(upgrade), task.cancel);
+  }
 
   var cancelled = false;
   final socket = () async {
@@ -26,8 +37,8 @@ Future<ConnectionTask<Socket>> ipv4FirstConnect(
     for (final a in v4) {
       if (cancelled) break;
       try {
-        return await Socket.connect(a, port,
-            timeout: const Duration(seconds: 12));
+        return await upgrade(await Socket.connect(a, port,
+            timeout: const Duration(seconds: 12)));
       } catch (e, s) {
         firstError ??= e;
         firstStack ??= s;
