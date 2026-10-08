@@ -4,6 +4,13 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b7 - 2026-10-08
+- Three more layouts join the twelve in Settings > Appearance > Layout (now fifteen cards): **Orbit**, **Mood** and **Mosaic**.
+  - Orbit puts the sections on a big dial: Live, Movies, Series, Guide, My list, Search and Settings. Left and Right (or a swipe, or a tap on a label) spin it, Up and Down pick one of the titles fanned out beside it, and OK opens that title or, with none picked, the section. On a phone the dial rises from the bottom and a slim bar returns to it from inside a section.
+  - Mood asks "What are you in the mood for?" and offers six pills: Something live, A movie night (best rated first), A short watch (series), Keep watching, Kids (categories named kids, family, cartoon and the like) and Surprise me. The picked pill shows a shelf. A mood the library cannot fill says so instead of showing a wrong shelf.
+  - Mosaic shows four channel tiles at once, with the sound marked on the focused one, a tray to choose which channel fills it, and OK for full screen. The tiles show each channel and what is on, not live video: four streams at once needs more decoders than most TV sticks have. On a phone it is one big tile with a strip of the other three.
+- Each has a picker wireframe, phone navigation and tests.
+
 ## 0.3.0b6 - 2026-10-06
 - Three more layouts join the nine in Settings > Appearance > Layout (now twelve cards): **Glass**, **Bento** and **Library**.
   - Glass puts frosted panels over a soft colored backdrop, with a dock at the bottom for navigation (on a phone the bottom bar floats). Home is a frosted feature panel, a Live now panel, a Continue panel and the usual shelves. On a phone and desktop the panels blur what is behind them; on a TV they use a translucent fill only, because blur is costly on weak sticks.

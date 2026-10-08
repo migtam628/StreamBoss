@@ -46,6 +46,9 @@ String destLabel(UiLayout l, int i) => switch ((l, i)) {
       (UiLayout.prime, 0) => 'Guide',
       (UiLayout.hub, 0) => 'Hub',
       (UiLayout.indexList, 0) => 'Index',
+      (UiLayout.orbit, 0) => 'Orbit',
+      (UiLayout.mood, 0) => 'Mood',
+      (UiLayout.mosaic, 0) => 'Mosaic',
       (UiLayout.cable, 0) => 'Live',
       (UiLayout.cable, 1) => 'Channels',
       _ => kDests[i].label,
@@ -59,6 +62,9 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
       (UiLayout.indexList, 0) =>
         selected ? Icons.format_list_bulleted : Icons.format_list_bulleted,
       (UiLayout.cable, 0) => selected ? Icons.live_tv : Icons.live_tv_outlined,
+      (UiLayout.orbit, 0) => Icons.donut_large,
+      (UiLayout.mood, 0) => selected ? Icons.mood : Icons.mood_outlined,
+      (UiLayout.mosaic, 0) => selected ? Icons.grid_view_rounded : Icons.grid_view,
       (UiLayout.cable, 1) => selected ? Icons.list : Icons.list,
       _ => selected ? kDests[i].selectedIcon : kDests[i].icon,
     };
@@ -85,6 +91,10 @@ List<int> topTabs(UiLayout l) => switch (l) {
       UiLayout.glass => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
       UiLayout.bento => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
       UiLayout.library => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
+      // The dial is the menu on a phone, so Orbit shows a bar only inside a section.
+      UiLayout.orbit => (bar: [0, 5, 6], more: <int>[]),
+      UiLayout.mood => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
+      UiLayout.mosaic => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
     };
 
 /// Bottom navigation for phones: four main screens and a More sheet for the rest.
@@ -421,11 +431,12 @@ class HubBar extends StatelessWidget {
   }
 }
 
-/// Index on a phone, inside a section: one slim bar that returns to the list.
+/// Index and Orbit on a phone, inside a section: one slim bar that returns to their Home.
 class IndexBackBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onSelect;
-  const IndexBackBar({super.key, required this.index, required this.onSelect});
+  final UiLayout layout;
+  const IndexBackBar({super.key, required this.index, required this.onSelect, this.layout = UiLayout.indexList});
 
   @override
   Widget build(BuildContext context) {
@@ -443,13 +454,13 @@ class IndexBackBar extends StatelessWidget {
               child: Row(children: [
                 Icon(Icons.arrow_back, color: p.accent),
                 const SizedBox(width: 12),
-                Text('Index',
+                Text(destLabel(layout, 0),
                     style: TextStyle(
                         color: p.accent,
                         fontWeight: FontWeight.w800,
                         fontSize: 18)),
                 const Spacer(),
-                Text(destLabel(UiLayout.indexList, index),
+                Text(destLabel(layout, index),
                     style: TextStyle(color: p.text, fontSize: 16)),
               ]),
             ),

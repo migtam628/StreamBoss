@@ -237,16 +237,16 @@ class _Continue extends StatelessWidget {
 }
 
 /// Builds from a channel's now and next, fetched once.
-class _NowNext extends StatefulWidget {
+class NowNext extends StatefulWidget {
   final MediaItem channel;
   final Widget Function(EpgEntry? now, EpgEntry? next) builder;
-  const _NowNext({required this.channel, required this.builder});
+  const NowNext({super.key, required this.channel, required this.builder});
 
   @override
-  State<_NowNext> createState() => _NowNextState();
+  State<NowNext> createState() => _NowNextState();
 }
 
-class _NowNextState extends State<_NowNext> {
+class _NowNextState extends State<NowNext> {
   late final Future<List<EpgEntry>> _epg;
 
   @override
@@ -286,7 +286,7 @@ class _Live extends StatelessWidget {
         const Text('No live channels', style: TextStyle(color: _ink, fontSize: 24, fontWeight: FontWeight.w800)),
       ]);
     }
-    return _NowNext(
+    return NowNext(
       channel: channel!,
       builder: (now, next) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _Label('Live now', lead: dot),
@@ -328,7 +328,7 @@ class _GuideStrip extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: _NowNext(
+                  child: NowNext(
                     channel: ch,
                     builder: (now, _) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(ch.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 17, fontWeight: FontWeight.w800)),

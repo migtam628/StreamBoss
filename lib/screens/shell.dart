@@ -6,6 +6,8 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../layouts/glass_view.dart';
 import '../layouts/library_view.dart';
+import '../layouts/mood_view.dart';
+import '../layouts/mosaic_view.dart';
 import '../layouts/shell_nav.dart';
 import '../layouts/ui_layout.dart';
 import '../widgets/tv.dart';
@@ -82,7 +84,7 @@ class _ShellState extends State<Shell> {
 
     // On a TV, Back from any tab returns to Home first; only Home lets Back leave the app. Index and
     // Cable Box do the same on a phone because their Home is the root of everything else.
-    final backHome = tv || layout == UiLayout.indexList || layout == UiLayout.cable;
+    final backHome = tv || layout == UiLayout.indexList || layout == UiLayout.cable || layout == UiLayout.orbit;
     Widget guard(Widget child) => PopScope(
           canPop: !backHome || _i == 0,
           onPopInvokedWithResult: (didPop, _) {
@@ -106,7 +108,12 @@ class _ShellState extends State<Shell> {
           ),
           Expanded(child: body),
         ]);
-      } else if (layout == UiLayout.hub || layout == UiLayout.indexList || layout == UiLayout.cable) {
+      } else if (layout == UiLayout.hub ||
+          layout == UiLayout.indexList ||
+          layout == UiLayout.cable ||
+          layout == UiLayout.orbit ||
+          layout == UiLayout.mood ||
+          layout == UiLayout.mosaic) {
         chrome = Column(children: [
           if (_i != 0) HubBar(index: _i, onSelect: select, layout: layout),
           Expanded(child: body),
@@ -125,13 +132,13 @@ class _ShellState extends State<Shell> {
         ]);
       }
       return guard(_frame(
-          layout, Scaffold(backgroundColor: layout == UiLayout.glass ? Colors.transparent : null, body: _Backdrop(layout: layout, child: TvSafe(child: chrome)))));
+          layout, Scaffold(backgroundColor: _paints(layout) ? Colors.transparent : null, body: _Backdrop(layout: layout, child: TvSafe(child: chrome)))));
     }
     return guard(_frame(layout, Scaffold(
-      backgroundColor: layout == UiLayout.glass ? Colors.transparent : null,
+      backgroundColor: _paints(layout) ? Colors.transparent : null,
       body: _Backdrop(layout: layout, child: SafeArea(child: body)),
-      bottomNavigationBar: layout == UiLayout.indexList
-          ? (_i == 0 ? null : IndexBackBar(index: _i, onSelect: select))
+      bottomNavigationBar: layout == UiLayout.indexList || layout == UiLayout.orbit
+          ? (_i == 0 ? null : IndexBackBar(index: _i, onSelect: select, layout: layout))
           : layout == UiLayout.glass
               ? SafeArea(
                   top: false,
@@ -148,7 +155,15 @@ class _ShellState extends State<Shell> {
   }
 
   /// Glass paints its backdrop behind the whole screen, bars included.
-  Widget _frame(UiLayout layout, Widget scaffold) => layout == UiLayout.glass ? GlassBackdrop(child: scaffold) : scaffold;
+  Widget _frame(UiLayout layout, Widget scaffold) => switch (layout) {
+        UiLayout.glass => GlassBackdrop(child: scaffold),
+        UiLayout.mood => MoodBackdrop(child: scaffold),
+        UiLayout.mosaic => MosaicBackdrop(child: scaffold),
+        _ => scaffold,
+      };
+
+  /// Layouts that draw their own backdrop behind the whole screen.
+  static bool _paints(UiLayout l) => l == UiLayout.glass || l == UiLayout.mood || l == UiLayout.mosaic;
 
   void select(int v) => setState(() {
         _i = v;

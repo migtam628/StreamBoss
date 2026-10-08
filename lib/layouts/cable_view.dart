@@ -128,7 +128,7 @@ class _CableHomeState extends State<CableHome> {
       ),
       banner,
       const SizedBox(height: 10),
-      _SoftKeys(onSelect: (i) => ShellNav.maybeOf(context)?.select(i)),
+      SoftKeys(onSelect: (i) => ShellNav.maybeOf(context)?.select(i)),
       const SizedBox(height: 6),
     ]);
   }
@@ -409,9 +409,9 @@ class _Banner extends StatelessWidget {
 }
 
 /// Wide screens: the other screens as labeled keys under the banner, like the colored keys on a remote.
-class _SoftKeys extends StatelessWidget {
+class SoftKeys extends StatelessWidget {
   final ValueChanged<int> onSelect;
-  const _SoftKeys({required this.onSelect});
+  const SoftKeys({super.key, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {

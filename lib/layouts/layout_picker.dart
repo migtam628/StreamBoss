@@ -645,6 +645,99 @@ class _Wireframe extends StatelessWidget {
             ]),
           ),
         ]),
+      UiLayout.orbit => Stack(children: [
+          Positioned(
+              left: -34,
+              top: 6,
+              child: Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: pal.accent.withValues(alpha: 0.7), width: 2)))),
+          Positioned(
+              left: -22,
+              top: 18,
+              child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: pal.line, width: 1)))),
+          Positioned(left: 26, top: 40, child: box(pal.accent, w: 22, h: 8, r: 5)),
+          Positioned(left: 24, top: 18, child: box(pal.accent2.withValues(alpha: 0.6), w: 16, h: 6, r: 4)),
+          Positioned(left: 24, top: 62, child: box(pal.accent2.withValues(alpha: 0.6), w: 16, h: 6, r: 4)),
+          Positioned(
+              left: 66,
+              right: 10,
+              top: 12,
+              child: Column(children: [
+                for (var i = 0; i < 4; i++)
+                  Padding(
+                      padding: EdgeInsets.only(left: [8, 14, 14, 8][i].toDouble(), bottom: 4),
+                      child: Container(
+                          height: 12,
+                          decoration: BoxDecoration(
+                              color: i == 1 ? pal.accent : pal.surfaceHi,
+                              borderRadius: BorderRadius.circular(5)))),
+              ])),
+        ]),
+      UiLayout.mood => Container(
+          decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF131E3B), Color(0xFF52507F), Color(0xFFD9A199)])),
+          child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                box(pal.accent, w: 24, h: 3, r: 2),
+                const SizedBox(height: 4),
+                box(Colors.white, w: 80, h: 7),
+                const SizedBox(height: 8),
+                Wrap(spacing: 4, runSpacing: 4, children: [
+                  for (var i = 0; i < 6; i++)
+                    box(i == 1 ? pal.accent : Colors.white.withValues(alpha: 0.25), w: 30, h: 10, r: 6),
+                ]),
+                const Spacer(),
+                Row(children: [
+                  for (var i = 0; i < 4; i++)
+                    Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: box(Colors.white.withValues(alpha: 0.28), w: 22, h: 26, r: 4)),
+                ]),
+              ]))),
+      UiLayout.mosaic => Container(
+          color: const Color(0xFF14693A),
+          padding: const EdgeInsets.all(6),
+          child: Column(children: [
+            Expanded(
+                child: Column(children: [
+              Expanded(
+                  child: Row(children: [
+                Expanded(child: Container(decoration: BoxDecoration(color: const Color(0xFF0B3A20), border: Border.all(color: pal.accent, width: 2)))),
+                const SizedBox(width: 3),
+                const Expanded(child: ColoredBox(color: Color(0xFF0B3A20), child: SizedBox.expand())),
+              ])),
+              const SizedBox(height: 3),
+              const Expanded(
+                  child: Row(children: [
+                Expanded(child: ColoredBox(color: Color(0xFF0B3A20), child: SizedBox.expand())),
+                SizedBox(width: 3),
+                Expanded(child: ColoredBox(color: Color(0xFF0B3A20), child: SizedBox.expand())),
+              ])),
+            ])),
+            const SizedBox(height: 4),
+            Row(children: [
+              for (var i = 0; i < 5; i++)
+                Expanded(
+                    child: Container(
+                        margin: const EdgeInsets.only(right: 2),
+                        height: 7,
+                        color: i == 1 ? pal.accent : Colors.white24)),
+            ]),
+          ]),
+        ),
       UiLayout.spotlight => Column(children: [
           const SizedBox(height: 5),
           box(Colors.white24, w: 64, h: 8, r: 5),

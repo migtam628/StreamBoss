@@ -26,7 +26,13 @@ enum UiLayout {
   bento('Bento',
       'Home is a board of flat colored tiles: continue, live now, a guide strip, your list and search.'),
   library('Library',
-      'Like a media server: a tree on the left, dense rows on the right, a thin breadcrumb on top.');
+      'Like a media server: a tree on the left, dense rows on the right, a thin breadcrumb on top.'),
+  orbit('Orbit',
+      'A big dial. Spin it to a section and its titles fan out beside it. Left and Right turn it.'),
+  mood('Mood',
+      'Asks what you are in the mood for, then shows a shelf for it. Calm, spacious, one idea at a time.'),
+  mosaic('Mosaic',
+      'Four channel tiles at once with the sound on one of them. Made for sport and news days.');
 
   final String label;
   final String blurb;
@@ -196,6 +202,37 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     line: Color(0xFF333D47),
   );
 
+  static const orbit = LayoutPalette(
+    bg: Color(0xFF2A0E1E),
+    surface: Color(0xFF3A1428),
+    surfaceHi: Color(0xFF4A1A35),
+    accent: Color(0xFFF0CF86),
+    accent2: Color(0xFFB9CBA7),
+    text: Color(0xFFE6ECD8),
+    muted: Color(0xFFBBA6B0),
+    line: Color(0x66F0CF86),
+  );
+  static const mood = LayoutPalette(
+    bg: Color(0xFF131E3B),
+    surface: Color(0xFF243059),
+    surfaceHi: Color(0xFF33406F),
+    accent: Color(0xFFFFD0B0),
+    accent2: Color(0xFFD9A199),
+    text: Color(0xFFFDF1EE),
+    muted: Color(0xFFCBC5E2),
+    line: Color(0x40FFFFFF),
+  );
+  static const mosaic = LayoutPalette(
+    bg: Color(0xFF0F5B30),
+    surface: Color(0xFF0B3A20),
+    surfaceHi: Color(0xFF14693A),
+    accent: Color(0xFFFFD400),
+    accent2: Color(0xFFF2F6EE),
+    text: Color(0xFFF2F6EE),
+    muted: Color(0xFFCFE0C8),
+    line: Color(0x4DF2F6EE),
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
@@ -209,6 +246,9 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.glass => glass,
         UiLayout.bento => bento,
         UiLayout.library => library,
+        UiLayout.orbit => orbit,
+        UiLayout.mood => mood,
+        UiLayout.mosaic => mosaic,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).

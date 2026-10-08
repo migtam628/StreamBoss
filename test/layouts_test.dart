@@ -192,6 +192,18 @@ void main() {
           expect(find.text('MOVIES'), findsOneWidget);
           return;
         }
+        if (layout == UiLayout.orbit) {
+          // The dial is the menu: no bottom bar on Home, a slim back bar inside a section.
+          expect(find.byType(NavigationBar), findsNothing);
+          await t.tap(find.text('Movies').last); // the front stop (the dial is below the fan): tapping it opens the section
+          await t.pumpAndSettle();
+          expect(tester(t), isNull);
+          expect(find.byType(IndexBackBar), findsOneWidget);
+          await t.tap(find.text('Orbit'));
+          await t.pumpAndSettle();
+          expect(find.byType(IndexBackBar), findsNothing);
+          return;
+        }
         expect(find.byType(NavigationBar), findsOneWidget);
         final tabs = phoneTabs(layout);
         expect(find.text('More'),
@@ -228,6 +240,25 @@ void main() {
           } else if (layout == UiLayout.glass) {
             // The dock is below the page, so take the last match.
             await t.tap(find.text(kDests[k].label).last);
+          } else if (layout == UiLayout.mood) {
+            await t.tap(find.text(k == 1 ? 'Browse Live' : 'Browse Movies').first);
+            await t.pumpAndSettle();
+            expect(tester(t), isNull);
+            await t.tap(find.text('Mood').first);
+          } else if (layout == UiLayout.mosaic) {
+            await t.tap(find.text(k == 1 ? 'CHANNELS' : 'MOVIES').first);
+            await t.pumpAndSettle();
+            expect(tester(t), isNull);
+            await t.tap(find.text('Mosaic').first);
+          } else if (layout == UiLayout.orbit) {
+            // Spin to the stop, then OK opens it; the bar returns to the dial.
+            final key = k == 1 ? LogicalKeyboardKey.arrowLeft : LogicalKeyboardKey.arrowRight;
+            await t.sendKeyEvent(key);
+            await t.pumpAndSettle();
+            await t.sendKeyEvent(LogicalKeyboardKey.enter);
+            await t.pumpAndSettle();
+            expect(tester(t), isNull);
+            await t.tap(find.text('Orbit').first);
           } else if (layout == UiLayout.cable) {
             await t.tap(find.text(k == 1 ? 'CHANNELS' : 'MOVIES').first);
             await t.pumpAndSettle();
@@ -466,6 +497,63 @@ void main() {
       expect(tester(t), isNull);
       // The crumb now names the screen as well as the tree row.
       expect(find.text('Movies'), findsWidgets);
+    });
+  });
+
+  group('Orbit', () {
+    testWidgets('Left and Right spin the dial and the front section changes', (t) async {
+      final (st, app) = await setup({'layout': 'orbit', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      // Starts on Movies: its titles are fanned out.
+      expect(find.text('Salt Road'), findsWidgets);
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await t.pumpAndSettle();
+      expect(find.text('Arena Sports 1'), findsWidgets);
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await t.pumpAndSettle();
+      expect(find.text('Series'), findsWidgets);
+    });
+
+    testWidgets('phone: the dial rises from the bottom without overflow', (t) async {
+      final (st, app) = await setup({'layout': 'orbit'});
+      await pumpApp(t, st, app, const Size(390, 800));
+      expect(find.text('Movies'), findsWidgets);
+      expect(tester(t), isNull);
+    });
+  });
+
+  group('Mood', () {
+    testWidgets('a greeting, six moods and a shelf for the picked one', (t) async {
+      final (st, app) = await setup({'layout': 'mood', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      expect(find.text('What are you in the mood for?'), findsOneWidget);
+      for (final m in ['Something live', 'A movie night', 'A short watch', 'Keep watching', 'Kids', 'Surprise me']) {
+        expect(find.text(m), findsWidgets, reason: m);
+      }
+      // No history yet, so it opens on a movie night with the best rated first.
+      expect(find.text('Salt Road'), findsWidgets);
+      await t.tap(find.text('Kids').first);
+      await t.pumpAndSettle();
+      expect(find.textContaining('Nothing matched'), findsOneWidget);
+    });
+  });
+
+  group('Mosaic', () {
+    testWidgets('four tiles, the first with the sound, and a tray', (t) async {
+      final (st, app) = await setup({'layout': 'mosaic', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      expect(find.text('Arena Sports 1'), findsWidgets);
+      expect(find.text('Metro News 24'), findsWidgets);
+      expect(find.text('Empty'), findsNWidgets(2)); // the test library has two channels
+      expect(find.text('TILE 1'), findsOneWidget);
+    });
+
+    testWidgets('phone: one big tile and a strip of the others', (t) async {
+      final (st, app) = await setup({'layout': 'mosaic'});
+      await pumpApp(t, st, app, const Size(390, 800));
+      expect(find.text('Arena Sports 1'), findsWidgets);
+      expect(tester(t), isNull);
     });
   });
 }
