@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../layouts/ui_layout.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
+import '../services/http_client.dart';
 import '../services/pairing.dart';
 import '../services/provider_url.dart';
 import '../state/app_state.dart';
@@ -22,6 +23,43 @@ class _SetupScreenState extends State<SetupScreen> {
   final _url = TextEditingController();
   final _user = TextEditingController();
   final _pass = TextEditingController();
+
+  /// Checks the address without logging in: DNS, each address, a connection and one request.
+  /// Useful when "it won't load" could be the network, the address or the provider.
+  Future<void> _test() async {
+    var url = _url.text.trim();
+    if (_type == SourceType.xtream) {
+      final login = parseProviderLink(url);
+      if (login != null) url = login.server;
+    } else {
+      url = url.split('\n').first.trim();
+    }
+    final uri = url.isEmpty ? null : Uri.tryParse(url.contains('://') ? url : 'http://$url');
+    if (uri == null || uri.host.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a server address first.')));
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Connection to ${uri.host}'),
+        content: FutureBuilder<String>(
+          future: diagnoseConnection(uri, appHttp),
+          builder: (_, snap) => snap.connectionState != ConnectionState.done
+              ? const Row(children: [
+                  SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+                  SizedBox(width: 14),
+                  Text('Checking...'),
+                ])
+              : SingleChildScrollView(
+                  child: SelectableText(
+                      snap.hasError ? 'The check failed: ${snap.error}' : snap.data ?? '',
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 13, height: 1.4))),
+        ),
+        actions: [TextButton(autofocus: true, onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,6 +189,10 @@ class _SetupScreenState extends State<SetupScreen> {
                           padding: EdgeInsets.all(12),
                           child: Text('Connect'),
                         ),
+                      ),
+                      TextButton(
+                        onPressed: _test,
+                        child: const Text('Test connection'),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreePlaylistsScreen())),

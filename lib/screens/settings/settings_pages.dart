@@ -68,6 +68,14 @@ class SourcePage extends StatelessWidget {
         subtitle: Text('$type\n${lib.live.length} channels · ${lib.movies.length} movies · '
             '${lib.series.length} series${hidden > 0 ? ' · $hidden hidden by filter' : ''}'),
       ),
+      if (s.account != null)
+        ListTile(
+          isThreeLine: true,
+          leading: Icon(Icons.verified_user_outlined,
+              color: (s.account!.daysLeft() ?? 999) <= 7 ? LayoutPalette.of(context).accent2 : null),
+          title: const Text('Account'),
+          subtitle: Text(s.account!.describe().join('\n')),
+        ),
       ActionRow(
         icon: Icons.refresh,
         title: 'Reload library',
@@ -164,6 +172,21 @@ class PlaybackPage extends StatelessWidget {
         subtitle: 'Play continues where you stopped. When off, you choose between starting over and resuming.',
         value: st.autoResume,
         onChanged: (v) => st.set('autoResume', v),
+      ),
+      SwitchRow(
+        icon: Icons.skip_next_outlined,
+        title: 'Play the next episode',
+        subtitle: 'When an episode ends, the next one starts after a 10 second countdown you can cancel',
+        value: st.autoplayNext,
+        onChanged: (v) => st.set('autoplayNext', v),
+      ),
+      ChoiceRow<String>(
+        icon: Icons.aspect_ratio,
+        title: 'Picture shape',
+        subtitle: 'How video fills the screen. The player button changes it for the video you are watching.',
+        value: st.aspect,
+        options: const [('auto', 'Auto'), ('16:9', '16:9'), ('4:3', '4:3'), ('fill', 'Fill the screen'), ('stretch', 'Stretch')],
+        onChanged: (v) => st.set('aspect', v),
       ),
       ChoiceRow<double>(
         icon: Icons.speed,

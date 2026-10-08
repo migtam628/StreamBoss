@@ -17,6 +17,8 @@ class SettingsState extends ChangeNotifier {
     'bufferSecs': 20, // low 5 / normal 20 / high 60 (native only)
     'speed': 1.0,
     'autoResume': true,
+    'autoplayNext': true, // start the next episode when one ends
+    'aspect': 'auto', // picture shape in the player: auto | 16:9 | 4:3 | fill | stretch
     'seekSecs': 10,
     'skipSecs': 90,
     'controlsHideSecs': 5, // 0 = never
@@ -68,6 +70,8 @@ class SettingsState extends ChangeNotifier {
   int get bufferSecs => _g('bufferSecs');
   double get speed => _g('speed');
   bool get autoResume => _g('autoResume');
+  bool get autoplayNext => _g('autoplayNext');
+  String get aspect => _g('aspect');
   int get seekSecs => _g('seekSecs');
   int get skipSecs => _g('skipSecs');
   int get controlsHideSecs => _g('controlsHideSecs');

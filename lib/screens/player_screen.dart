@@ -7,8 +7,10 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/media.dart';
+import '../services/channel_number.dart';
 import '../services/crash_guard.dart';
 import '../services/mpv_props.dart';
+import '../services/next_episode.dart';
 import '../services/pip.dart';
 import '../services/provider_url.dart';
 import '../services/xtream_client.dart';
@@ -31,6 +33,9 @@ class PlayerScreen extends StatefulWidget {
   /// Where to start (movies/episodes). Null = from the beginning.
   final Duration? startAt;
 
+  /// The episodes of the series this one belongs to, in order, so the next one can start by itself.
+  final List<MediaItem>? episodes;
+
   const PlayerScreen({
     super.key,
     required this.title,
@@ -38,6 +43,7 @@ class PlayerScreen extends StatefulWidget {
     required this.item,
     this.queue,
     this.startAt,
+    this.episodes,
   });
 
   @override
@@ -58,10 +64,17 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   final _pos = ValueNotifier(Duration.zero);
 
   final _subs = <StreamSubscription>[];
-  Timer? _hideTimer, _saveTimer, _sleepTimer, _statsTimer;
+  Timer? _hideTimer, _saveTimer, _sleepTimer, _statsTimer, _typeTimer, _toastTimer, _nextTimer;
   DateTime? _sleepAt;
 
   late int _index;
+  int? _lastIndex; // the channel before this one, for the Last channel key
+  String _typed = ''; // digits typed on the remote for a channel number
+  String? _toast;
+  late MediaItem _vod = widget.item; // the movie or episode playing (changes when the next episode starts)
+  late String _vodTitle = widget.title;
+  MediaItem? _upNext;
+  int _nextIn = 0;
   bool _controls = true;
   bool _stats = false;
   bool _playing = true;
@@ -74,8 +87,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   bool _reportedPlaying = false;
 
   List<MediaItem>? get _queue => widget.queue;
-  MediaItem get _cur => _queue != null ? _queue![_index] : widget.item;
-  String get _title => _queue != null ? _cur.name : widget.title;
+  MediaItem get _cur => _queue != null ? _queue![_index] : _vod;
+  String get _title => _queue != null ? _cur.name : _vodTitle;
   bool get _live => _cur.kind == MediaKind.live;
 
   @override
@@ -120,9 +133,15 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       }),
       _player.stream.playlist.listen((p) {
         if (_queue != null && p.index != _index && p.index < _queue!.length) {
-          setState(() => _index = p.index);
+          setState(() {
+            _lastIndex = _index;
+            _index = p.index;
+          });
           _onChannelChanged();
         }
+      }),
+      _player.stream.completed.listen((done) {
+        if (done && !_live && mounted) _offerNextEpisode();
       }),
     ]);
     Pip.available.then((v) {
@@ -151,11 +170,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       CrashGuard.mark('open');
       if (_queue != null) {
         await _player.open(Playlist(
-          [for (final q in _queue!) Media(q.streamUrl!)],
+          [for (final q in _queue!) Media(q.streamUrl!, httpHeaders: q.headers)],
           index: _index,
         ));
       } else {
-        await _player.open(Media(widget.url, start: widget.startAt));
+        await _player.open(Media(widget.url, start: widget.startAt, httpHeaders: _vod.headers));
       }
       CrashGuard.mark('opened');
       if (!_live && _settings.speed != 1) await _player.setRate(_settings.speed);
@@ -190,7 +209,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   void _savePosition({bool notify = false}) {
     if (!_live) {
-      _app.savePosition(widget.item, _player.state.position, _player.state.duration, notify: notify);
+      _app.savePosition(_vod, _player.state.position, _player.state.duration, notify: notify);
     }
   }
 
@@ -206,6 +225,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _saveTimer?.cancel();
     _sleepTimer?.cancel();
     _statsTimer?.cancel();
+    _typeTimer?.cancel();
+    _toastTimer?.cancel();
+    _nextTimer?.cancel();
     _root.dispose();
     _playBtn.dispose();
     WakelockPlus.disable().catchError((_) {});
@@ -249,6 +271,114 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _player.seek(target < Duration.zero ? Duration.zero : target);
   }
 
+  void _flash(String text) {
+    _toastTimer?.cancel();
+    setState(() => _toast = text);
+    _toastTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _toast = null);
+    });
+  }
+
+  static String? _digit(LogicalKeyboardKey k) {
+    final label = k.keyLabel;
+    if (label.length == 1 && '0123456789'.contains(label)) return label;
+    return null;
+  }
+
+  /// A digit on the remote or keyboard: collect "2", "0", "7" and jump to channel 207 once typing pauses.
+  void _typeDigit(String d) {
+    if (_queue == null) return;
+    if (_controls) _hideControls();
+    _typeTimer?.cancel();
+    setState(() => _typed = (_typed + d).length > 4 ? d : _typed + d);
+    _typeTimer = Timer(const Duration(milliseconds: 1800), _commitTyped);
+  }
+
+  void _commitTyped() {
+    _typeTimer?.cancel();
+    final typed = _typed;
+    if (typed.isEmpty) return;
+    final at = channelIndexForDigits(typed, _queue?.length ?? 0);
+    setState(() => _typed = '');
+    if (at == null) {
+      _flash('No channel $typed');
+    } else if (at != _index) {
+      _player.jump(at);
+    }
+  }
+
+  void _goLast() {
+    final at = _lastIndex;
+    if (_queue == null || at == null || at >= _queue!.length) {
+      _flash('No previous channel yet');
+      return;
+    }
+    _player.jump(at);
+  }
+
+  // Up next: when an episode ends, count down and start the following one.
+  void _offerNextEpisode() {
+    if (!_settings.autoplayNext || _upNext != null) return;
+    final n = nextEpisodeAfter(widget.episodes, _vod);
+    if (n == null || n.streamUrl == null) return;
+    _nextTimer?.cancel();
+    setState(() {
+      _upNext = n;
+      _nextIn = 10;
+    });
+    _nextTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return;
+      if (_nextIn <= 1) {
+        _playNext();
+      } else {
+        setState(() => _nextIn--);
+      }
+    });
+  }
+
+  void _cancelNext() {
+    _nextTimer?.cancel();
+    if (_upNext != null) setState(() => _upNext = null);
+  }
+
+  Future<void> _playNext() async {
+    _nextTimer?.cancel();
+    final n = _upNext;
+    if (n == null) return;
+    _savePosition();
+    setState(() {
+      _upNext = null;
+      _vod = n;
+      _vodTitle = n.name;
+      _error = null;
+    });
+    try {
+      await _player.open(Media(n.streamUrl!, httpHeaders: n.headers));
+      _onChannelChanged();
+    } catch (e) {
+      if (mounted) setState(() => _error = redactUrls('$e'));
+    }
+  }
+
+  // Picture shape: the player button cycles through these and remembers the last one.
+  static const _shapes = <(String, String, BoxFit, double?)>[
+    ('auto', 'Auto', BoxFit.contain, null),
+    ('16:9', '16:9', BoxFit.fill, 16 / 9),
+    ('4:3', '4:3', BoxFit.fill, 4 / 3),
+    ('fill', 'Fill the screen', BoxFit.cover, null),
+    ('stretch', 'Stretch', BoxFit.fill, null),
+  ];
+
+  (String, String, BoxFit, double?) get _shape =>
+      _shapes.firstWhere((s) => s.$1 == _settings.aspect, orElse: () => _shapes.first);
+
+  void _cycleShape() {
+    final at = _shapes.indexWhere((s) => s.$1 == _shape.$1);
+    final next = _shapes[(at + 1) % _shapes.length];
+    _settings.set('aspect', next.$1);
+    _flash('Picture: ${next.$2}');
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
     if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
     final k = e.logicalKey;
@@ -269,6 +399,20 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }
     if (k == LogicalKeyboardKey.mediaTrackPrevious) {
       _live ? _player.previous() : _seekBy(-30);
+      return KeyEventResult.handled;
+    }
+
+    final d = _digit(k);
+    if (d != null && _queue != null) {
+      _typeDigit(d);
+      return KeyEventResult.handled;
+    }
+    if (_typed.isNotEmpty && (k == LogicalKeyboardKey.select || k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter)) {
+      _commitTyped();
+      return KeyEventResult.handled;
+    }
+    if ((k == LogicalKeyboardKey.mediaLast || k == LogicalKeyboardKey.keyL) && _queue != null) {
+      _goLast();
       return KeyEventResult.handled;
     }
 
@@ -500,6 +644,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               Video(
                 controller: _controller,
                 controls: NoVideoControls,
+                fit: _shape.$3,
+                aspectRatio: _shape.$4,
                 subtitleViewConfiguration: SubtitleViewConfiguration(
                   style: TextStyle(
                     fontSize: st.subSize,
@@ -514,6 +660,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               if (_buffering && _error == null) const Center(child: CircularProgressIndicator()),
               if (_error != null) _errorBanner(),
               if (_stats) _statsOverlay(),
+              if (_typed.isNotEmpty) _typedOverlay(),
+              if (_toast != null) _toastBar(),
+              if (_upNext != null) _upNextCard(),
               if (_controls) _overlay(),
             ]),
           ),
@@ -546,6 +695,62 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           ]),
         ),
       );
+  }
+
+  /// The number being typed, with the channel it would open.
+  Widget _typedOverlay() {
+    final at = channelIndexForDigits(_typed, _queue?.length ?? 0);
+    return Positioned(
+      top: 24,
+      right: 28,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(14)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+          Text(_typed, style: const TextStyle(fontSize: 56, fontWeight: FontWeight.w800, height: 1, color: Boss.accent2)),
+          Text(at == null ? 'No such channel' : _queue![at].name,
+              maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+          const Text('OK to go now', style: TextStyle(fontSize: 12, color: Colors.white54)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _toastBar() => Positioned(
+        bottom: 96,
+        left: 0,
+        right: 0,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(24)),
+            child: Text(_toast!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          ),
+        ),
+      );
+
+  Widget _upNextCard() {
+    final n = _upNext!;
+    return Positioned(
+      right: 24,
+      bottom: 24,
+      child: Container(
+        width: 340,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.88), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white24)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text('UP NEXT  ·  $_nextIn', style: const TextStyle(color: Boss.accent2, fontWeight: FontWeight.w800, letterSpacing: 1.4, fontSize: 13)),
+          const SizedBox(height: 6),
+          Text(n.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 12),
+          Row(children: [
+            FilledButton(autofocus: true, onPressed: _playNext, child: const Text('Play now')),
+            const SizedBox(width: 10),
+            TextButton(onPressed: _cancelNext, child: const Text('Cancel')),
+          ]),
+        ]),
+      ),
+    );
   }
 
   Widget _statsOverlay() {
@@ -667,8 +872,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 if (!_live)
                   _btn(_seekIcon(true), 'Forward ${_settings.seekSecs}s', () => _seekBy(_settings.seekSecs)),
                 if (_queue != null) _btn(Icons.skip_next, 'Next channel', _player.next),
+                if (_queue != null) _btn(Icons.swap_horiz, 'Last channel', _goLast),
                 if (!_live)
                   _btn(Icons.fast_forward, 'Skip ahead (+${_settings.skipSecs}s)', () => _seekBy(_settings.skipSecs)),
+                _btn(Icons.aspect_ratio, 'Picture shape (${_shape.$2})', _cycleShape, on: _shape.$1 != 'auto'),
                 _btn(Icons.audiotrack, 'Audio', _pickAudio),
                 _btn(Icons.subtitles, 'Subtitles', _pickSubtitle),
                 if (!_live) _btn(Icons.speed, 'Speed', _pickSpeed, on: _rate != 1),

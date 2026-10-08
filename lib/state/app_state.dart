@@ -73,6 +73,9 @@ class AppState extends ChangeNotifier {
   /// True when an M3U-style link was upgraded to the provider's Xtream API.
   bool get usingXtreamApi => _xtream != null;
 
+  /// The provider's account details (expiry, connections) when an Xtream login is in use.
+  AccountInfo? get account => _xtream?.account;
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;

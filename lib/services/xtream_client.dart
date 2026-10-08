@@ -5,11 +5,57 @@ import 'http_client.dart';
 import 'net_config.dart';
 import 'tmdb.dart';
 
+/// What the provider says about the account: how long it lasts and how many screens it allows.
+class AccountInfo {
+  final String status; // Active, Expired, Disabled ...
+  final DateTime? expires;
+  final int? maxConnections, activeConnections;
+  final bool trial;
+  const AccountInfo({required this.status, this.expires, this.maxConnections, this.activeConnections, this.trial = false});
+
+  static AccountInfo fromUserInfo(Map info) {
+    int? i(dynamic v) => int.tryParse('$v');
+    final exp = i(info['exp_date']);
+    return AccountInfo(
+      status: '${info['status'] ?? 'Active'}',
+      // Providers send unix seconds; 0 or missing means no expiry.
+      expires: exp == null || exp <= 0 ? null : DateTime.fromMillisecondsSinceEpoch(exp * 1000),
+      maxConnections: i(info['max_connections']),
+      activeConnections: i(info['active_cons']),
+      trial: '${info['is_trial']}' == '1',
+    );
+  }
+
+  int? daysLeft([DateTime? now]) => expires?.difference(now ?? DateTime.now()).inDays;
+
+  /// Short lines for the Source settings page.
+  List<String> describe([DateTime? now]) {
+    final d = daysLeft(now);
+    final e = expires;
+    String date(DateTime t) =>
+        '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+    return [
+      '$status${trial ? ' (trial)' : ''}',
+      if (e == null)
+        'No expiry date'
+      else if (d != null && d < 0)
+        'Expired on ${date(e)}'
+      else
+        'Expires ${date(e)}${d == null ? '' : ' (${d == 0 ? 'today' : d == 1 ? 'in 1 day' : 'in $d days'})'}',
+      if (maxConnections != null)
+        '${activeConnections ?? 0} of $maxConnections ${maxConnections == 1 ? 'connection' : 'connections'} in use',
+    ];
+  }
+}
+
 class XtreamClient {
   final String base;
   final String user;
   final String pass;
   final http.Client _http;
+
+  /// Filled in by [authenticate].
+  AccountInfo? account;
 
   XtreamClient(String server, this.user, this.pass, {http.Client? client})
       : base = server.trim().replaceAll(RegExp(r'/+$'), ''),
@@ -40,6 +86,7 @@ class XtreamClient {
     if (auth is! Map || '${auth['auth']}' != '1') {
       throw Exception('Invalid credentials');
     }
+    account = AccountInfo.fromUserInfo(auth);
   }
 
   List<Category> _cats(dynamic j) => [

@@ -17,6 +17,9 @@ class MediaItem {
   final String? plot;
   final String? epgId; // XMLTV channel id (tvg-id / epg_channel_id)
 
+  /// HTTP headers this stream needs (Referer, User-Agent, Origin), from #EXTVLCOPT lines in a playlist.
+  final Map<String, String>? headers;
+
   const MediaItem({
     required this.id,
     required this.name,
@@ -27,6 +30,7 @@ class MediaItem {
     this.rating,
     this.plot,
     this.epgId,
+    this.headers,
   });
 
   String get key => '${kind.name}:$id';
@@ -41,6 +45,7 @@ class MediaItem {
         'rating': rating,
         'plot': plot,
         'epg': epgId,
+        if (headers != null && headers!.isNotEmpty) 'hdr': headers,
       };
 
   factory MediaItem.fromJson(Map<String, dynamic> j) => MediaItem(
@@ -53,6 +58,7 @@ class MediaItem {
         rating: j['rating'] as String?,
         plot: j['plot'] as String?,
         epgId: j['epg'] as String?,
+        headers: (j['hdr'] as Map?)?.map((k, v) => MapEntry('$k', '$v')),
       );
 }
 

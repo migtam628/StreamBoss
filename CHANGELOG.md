@@ -4,6 +4,15 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b8 - 2026-10-08
+- Type a channel number. While watching live TV with a channel list, press digits on the remote or keyboard (2, 0, 7) and the player jumps to channel 207 when you pause, or at once on OK. A number with no channel says so.
+- Last channel. A Last channel button in the player (and the L key, or the Last key on remotes that have one) goes back to the channel before this one.
+- Play the next episode. When an episode ends, "Up next" counts down from 10 and starts the following episode, with Play now and Cancel. Turn it off in Settings > Playback > Play the next episode.
+- Picture shape. A new player button cycles Auto, 16:9, 4:3, Fill the screen and Stretch, and remembers the choice (also in Settings > Playback > Picture shape). On Android TV's hardware surface output the device may ignore the shape.
+- Account info. For Xtream sources, Settings > Source & library > Account shows the status, the expiry date with the days left (highlighted in the last week) and how many connections are in use.
+- Free channels that need a Referer, User-Agent or Origin header (iptv-org lists name them in `#EXTVLCOPT` lines, about 6% of channels) now send them, so they can play.
+- A Test connection button on the connect screen checks the address without logging in: DNS, each address, a connection and one request. Handy for telling a network problem from a wrong address.
+
 ## 0.3.0b7 - 2026-10-08
 - Three more layouts join the twelve in Settings > Appearance > Layout (now fifteen cards): **Orbit**, **Mood** and **Mosaic**.
   - Orbit puts the sections on a big dial: Live, Movies, Series, Guide, My list, Search and Settings. Left and Right (or a swipe, or a tap on a label) spin it, Up and Down pick one of the titles fanned out beside it, and OK opens that title or, with none picked, the section. On a phone the dial rises from the bottom and a slim bar returns to it from inside a section.

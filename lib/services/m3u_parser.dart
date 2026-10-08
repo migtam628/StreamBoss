@@ -13,6 +13,7 @@ Catalog parseM3u(String body) {
   Map<String, String> attrs = {};
   String name = '';
   var n = 0;
+  var hdrs = <String, String>{};
 
   for (final raw in body.split(RegExp(r'\r?\n'))) {
     final line = raw.trim();
@@ -26,6 +27,20 @@ Catalog parseM3u(String body) {
       final comma = _titleComma(line);
       name = comma >= 0 ? line.substring(comma + 1).trim() : '';
       if (name.isEmpty) name = attrs['tvg-name'] ?? 'Channel ${n + 1}';
+    } else if (line.startsWith('#EXTVLCOPT:')) {
+      // Some streams only answer with the right Referer or User-Agent; iptv-org lists say so here.
+      final eq = line.indexOf('=');
+      if (eq > 0) {
+        final key = line.substring('#EXTVLCOPT:'.length, eq).trim().toLowerCase();
+        final val = line.substring(eq + 1).trim();
+        final header = switch (key) {
+          'http-referrer' || 'http-referer' => 'Referer',
+          'http-user-agent' => 'User-Agent',
+          'http-origin' => 'Origin',
+          _ => null,
+        };
+        if (header != null && val.isNotEmpty) hdrs[header] = val;
+      }
     } else if (!line.startsWith('#')) {
       final group = attrs['group-title']?.trim();
       final catId = (group == null || group.isEmpty) ? 'Other' : group;
@@ -39,9 +54,11 @@ Catalog parseM3u(String body) {
         poster: attrs['tvg-logo'],
         categoryId: catId,
         epgId: attrs['tvg-id'],
+        headers: hdrs.isEmpty ? null : hdrs,
       );
       (isVod ? movies : live).add(item);
       attrs = {};
+      hdrs = <String, String>{};
       name = '';
     }
   }
@@ -75,6 +92,7 @@ Catalog mergeCatalogs(List<Catalog> parts) {
         rating: e.rating,
         plot: e.plot,
         epgId: e.epgId,
+        headers: e.headers,
       );
   for (var p = 0; p < parts.length; p++) {
     epg ??= parts[p].epgUrl;

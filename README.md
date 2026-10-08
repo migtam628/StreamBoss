@@ -113,12 +113,15 @@ every release. The first build signed with your key has to be installed after un
 - Home shelves: Continue watching, My List (long-press to favorite; on TV use the button on the movie page)
 - TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
 - Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header; D-pad friendly) with a now/next list fallback
+- Xtream account details (status, expiry, connections in use) under Settings > Source & library
 - Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
   - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel
   - controls visible: arrows move between buttons, Back hides them
   - audio and subtitle track pickers, speed, sleep timer, skip-intro (+90s), stats overlay
   - resume position for movies and episodes, per-episode "continue watching"
+  - type a channel number to jump to it, a Last channel button, "Up next" after an episode (auto-plays the next one),
+    and a picture shape button (Auto, 16:9, 4:3, Fill, Stretch)
 - Settings: hardware/software decoder, network buffer presets (low/normal/high),
   subtitle size/color/background with live preview, default speed
 - Picture-in-picture on Android (button in the player)
