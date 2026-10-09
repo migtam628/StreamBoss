@@ -7,6 +7,7 @@ import '../services/time_format.dart';
 import '../services/xtream_client.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../widgets/live_preview.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
@@ -16,8 +17,8 @@ const _mono = 'monospace';
 
 /// Cable Box's Home: the channel you were last on, with a big channel number and a banner showing
 /// what is on now and next, like a cable box. Up and Down (or a swipe) change channel, Right reaches
-/// the categories and the channel strip, OK plays full screen. The picture itself opens in the
-/// player; this screen shows the banner, not live video.
+/// the categories and the channel strip, OK plays full screen. The picture behind the number is the
+/// channel, live and muted (see [LivePreview]; the Live pictures setting turns it off).
 class CableHome extends StatefulWidget {
   const CableHome({super.key});
 
@@ -179,13 +180,31 @@ class _Picture extends StatelessWidget {
           maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _mono, color: p.muted, fontSize: 15)),
     ]);
     final body = Stack(fit: StackFit.expand, children: [
-      const DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0.35, -0.2),
-            radius: 1.0,
-            colors: [Color(0xFF1F7C86), Color(0xFF0D3446), Color(0xFF05070A)],
-            stops: [0.0, 0.45, 1.0],
+      LivePreview(
+        // A new key per channel so zapping starts a fresh picture instead of fading from the last one.
+        key: ValueKey(channel?.key),
+        channel: channel ?? const MediaItem(id: '', name: '', kind: MediaKind.live),
+        fallback: const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0.35, -0.2),
+              radius: 1.0,
+              colors: [Color(0xFF1F7C86), Color(0xFF0D3446), Color(0xFF05070A)],
+              stops: [0.0, 0.45, 1.0],
+            ),
+          ),
+        ),
+      ),
+      // Keeps the big number and the clock readable over a moving picture.
+      const IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x99000000), Color(0x00000000), Color(0x00000000), Color(0x99000000)],
+              stops: [0.0, 0.35, 0.65, 1.0],
+            ),
           ),
         ),
       ),

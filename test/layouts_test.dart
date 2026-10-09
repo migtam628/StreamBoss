@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_kit_video/media_kit_video.dart' show Video;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streamboss/layouts/shell_nav.dart';
@@ -12,6 +13,7 @@ import 'package:streamboss/screens/shell.dart';
 import 'package:streamboss/state/app_state.dart';
 import 'package:streamboss/state/settings_state.dart';
 import 'package:streamboss/theme.dart';
+import 'package:streamboss/widgets/live_preview.dart';
 import 'package:streamboss/widgets/tv.dart';
 
 const _catalog = Catalog(
@@ -399,6 +401,13 @@ void main() {
   });
 
   group('Cable Box', () {
+    testWidgets('has a live picture behind the channel number, which starts nothing in a test', (t) async {
+      final (st, app) = await setup({'layout': 'cable', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      expect(find.byType(LivePreview), findsOneWidget);
+      expect(find.byType(Video), findsNothing);
+    });
+
     testWidgets('Down and Up change channel and the banner follows',
         (t) async {
       final (st, app) = await setup({'layout': 'cable', 'tvMode': 'on'});
@@ -547,6 +556,21 @@ void main() {
       expect(find.text('Metro News 24'), findsWidgets);
       expect(find.text('Empty'), findsNWidgets(2)); // the test library has two channels
       expect(find.text('TILE 1'), findsOneWidget);
+    });
+
+    testWidgets('every filled tile asks for a live picture, but nothing plays without the video library', (t) async {
+      final (st, app) = await setup({'layout': 'mosaic', 'tvMode': 'on'});
+      await pumpApp(t, st, app, const Size(1280, 720));
+      expect(find.byType(LivePreview), findsNWidgets(2)); // two channels in the test library
+      expect(find.byType(Video), findsNothing);
+      expect(find.text('Arena Sports 1'), findsWidgets); // the tile text still shows over the fallback
+    });
+
+    testWidgets('phone: only the big tile gets a live picture', (t) async {
+      final (st, app) = await setup({'layout': 'mosaic'});
+      await pumpApp(t, st, app, const Size(390, 800));
+      expect(find.byType(LivePreview), findsOneWidget);
+      expect(tester(t), isNull);
     });
 
     testWidgets('phone: one big tile and a strip of the others', (t) async {

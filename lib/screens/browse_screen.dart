@@ -107,6 +107,7 @@ class _MarqueeBrowseState extends State<_MarqueeBrowse> {
             return MediaTile(
               item: it,
               favorite: s.isFavorite(it),
+              offline: live && s.isDead(it),
               onTap: () => openItem(context, it, queue: items),
               onLongPress: () => s.toggleFavorite(it),
             );

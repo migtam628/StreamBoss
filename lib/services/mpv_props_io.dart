@@ -57,3 +57,13 @@ Future<void> applyPlaybackPrefs(
   if (!subsOn) await set('sid', 'no');
   if (userAgent.isNotEmpty) await set('user-agent', userAgent);
 }
+
+/// Makes a small preview cheap: the lowest-bitrate version of an adaptive stream and a short cache.
+Future<void> applyPreview(Player player) async {
+  final plat = player.platform;
+  if (plat is NativePlayer) {
+    await plat.setProperty('hls-bitrate', 'min');
+    await plat.setProperty('cache', 'yes');
+    await plat.setProperty('cache-secs', '6');
+  }
+}

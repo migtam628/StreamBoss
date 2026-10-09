@@ -4,6 +4,13 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b11 - 2026-10-09
+- **Channel check.** Settings > Source & library > Check live channels tests every channel and remembers the ones that do not answer (an error page, a 404, nothing back, a timeout). They show as OFFLINE in the Live list, and "Hide offline channels" removes them everywhere. It reads only the first couple of kilobytes of each stream and hangs up straight away. On a provider login it checks two at a time, because logins limit how many streams may be open; on a public list it checks ten. Apps only: a browser cannot read other sites' streams.
+- **Profiles and a PIN lock.** Settings > Profiles & PIN. Each profile keeps its own My List, history and resume positions (the first one, Main, keeps everything you already had). A **Kids** profile shows only categories that look made for children, by name. With more than one profile the app asks "Who's watching?" when it starts. Set a four-digit PIN to lock Settings while a Kids profile is in use, to ask for it when leaving a Kids profile, and to lock any profile you choose. Five wrong tries lock the PIN for 30 seconds. It is a family lock for a shared screen, not high security.
+- **Live pictures.** Cable Box shows the channel behind its big number, and every Mosaic tile plays its channel (only the tile with the sound is audible; on a phone only the big tile plays). They play only while you can see them, wait a moment after you change channel, and fall back to the old look if anything fails. Settings > Appearance > Live pictures turns them off.
+- **Gzipped guides.** `.xml.gz` XMLTV guides are unpacked and read in the background, so large guides load faster and more providers' guides work.
+- Free-list and provider fix from 0.3.0b10 is unchanged.
+
 ## 0.3.0b10 - 2026-10-08
 - Fix: the free public channels (and any other `https://` playlist or provider) failed on phones, tablets, TVs and desktops with "Invalid request method". The connection helper that tries IPv4 first handed Dart a plain socket and never started TLS, so servers received unencrypted data on port 443 and refused it. HTTPS now does its TLS handshake. Plain `http://` addresses and the web build were not affected.
 - A test now runs a real local HTTPS server so this cannot come back.

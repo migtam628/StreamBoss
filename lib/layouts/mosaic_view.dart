@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../screens/open_item.dart';
 import '../state/app_state.dart';
+import '../widgets/live_preview.dart';
 import '../widgets/tv.dart';
 import 'bento_view.dart' show NowNext;
 import 'cable_view.dart' show SoftKeys;
@@ -32,8 +33,9 @@ class MosaicBackdrop extends StatelessWidget {
 }
 
 /// Mosaic's Home: four channel tiles with one holding the "audio" (the focused tile), a tray to
-/// choose what fills it, and OK for full screen. The tiles show the channel and what is on, not
-/// live video: playing four streams at once needs more decoders than most TV sticks have.
+/// choose what fills it, and OK for full screen. Each tile plays its channel live, only the one with
+/// the sound is audible (see [LivePreview]). Four streams at once is a lot for a small TV stick, so
+/// the Live pictures setting turns them all off, and on a phone only the big tile plays.
 class MosaicHome extends StatefulWidget {
   const MosaicHome({super.key});
 
@@ -79,6 +81,7 @@ class _MosaicHomeState extends State<MosaicHome> {
           slot: t + 1,
           audio: _audio == t,
           big: big,
+          live: wide || big,
           autofocus: tv && t == 0,
           onFocus: () {
             if (_audio != t) setState(() => _audio = t);
@@ -143,7 +146,7 @@ class _MosaicHomeState extends State<MosaicHome> {
 class _Tile extends StatelessWidget {
   final MediaItem? channel;
   final int number, slot;
-  final bool audio, big, autofocus;
+  final bool audio, big, live, autofocus;
   final VoidCallback onFocus, onTap;
   const _Tile({
     required this.channel,
@@ -151,6 +154,7 @@ class _Tile extends StatelessWidget {
     required this.slot,
     required this.audio,
     required this.big,
+    required this.live,
     required this.autofocus,
     required this.onFocus,
     required this.onTap,
@@ -168,38 +172,70 @@ class _Tile extends StatelessWidget {
         if (f) onFocus();
       },
       onTap: onTap,
-      builder: (_, __) => Container(
-        width: double.infinity,
-        height: double.infinity,
-        padding: EdgeInsets.all(small ? 8 : 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-              begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0D3A20), Color(0xFF0B1F4D)]),
-          border: Border.all(color: audio ? p.accent : p.line, width: audio ? 4 : 1),
-        ),
-        child: channel == null
-            ? Center(child: Text('Empty', style: TextStyle(color: p.muted, fontSize: small ? 13 : 18)))
-            : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text('$number',
-                      style: TextStyle(color: p.accent, fontSize: small ? 22 : (big ? 44 : 34), fontWeight: FontWeight.w900, height: 1)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: Text(channel!.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: p.text, fontSize: small ? 13 : (big ? 26 : 20), fontWeight: FontWeight.w800))),
-                  Icon(audio ? Icons.volume_up : Icons.volume_off, color: audio ? p.accent : p.muted, size: small ? 16 : 24),
-                ]),
-                const Spacer(),
-                if (!small)
-                  NowNext(
-                    channel: channel!,
-                    builder: (now, _) => Text(now?.title ?? 'Live',
-                        maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: big ? 20 : 16, fontWeight: FontWeight.w600)),
+      builder: (_, __) {
+        const bg = DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0D3A20), Color(0xFF0B1F4D)]),
+          ),
+        );
+        final playing = channel != null && live;
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(border: Border.all(color: audio ? p.accent : p.line, width: audio ? 4 : 1)),
+          child: Stack(fit: StackFit.expand, children: [
+            if (playing)
+              LivePreview(key: ValueKey(channel!.key), channel: channel!, sound: audio, fallback: bg)
+            else
+              bg,
+            // Keeps the number, name and what is on readable over a moving picture.
+            if (playing)
+              const IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xAA000000), Color(0x00000000), Color(0x00000000), Color(0xAA000000)],
+                      stops: [0.0, 0.3, 0.7, 1.0],
+                    ),
                   ),
-              ]),
-      ),
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.all(small ? 8 : 14),
+              child: channel == null
+                  ? Center(child: Text('Empty', style: TextStyle(color: p.muted, fontSize: small ? 13 : 18)))
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Text('$number',
+                            style: TextStyle(
+                                color: p.accent, fontSize: small ? 22 : (big ? 44 : 34), fontWeight: FontWeight.w900, height: 1)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: Text(channel!.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: p.text, fontSize: small ? 13 : (big ? 26 : 20), fontWeight: FontWeight.w800))),
+                        Icon(audio ? Icons.volume_up : Icons.volume_off,
+                            color: audio ? p.accent : p.muted, size: small ? 16 : 24),
+                      ]),
+                      const Spacer(),
+                      if (!small)
+                        NowNext(
+                          channel: channel!,
+                          builder: (now, _) => Text(now?.title ?? 'Live',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: p.text, fontSize: big ? 20 : 16, fontWeight: FontWeight.w600)),
+                        ),
+                    ]),
+            ),
+          ]),
+        );
+      },
     );
   }
 }

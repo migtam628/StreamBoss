@@ -19,7 +19,11 @@ import '../../services/http_client.dart';
 import '../../services/mpv_props.dart';
 import '../../services/net_config.dart';
 import '../../services/update_check.dart';
+import '../../models/profile.dart';
 import '../../state/app_state.dart';
+import '../../state/profiles_state.dart';
+import '../../widgets/pin_dialog.dart';
+import '../profile_picker_screen.dart';
 import '../../state/settings_state.dart';
 import '../shader_screen.dart';
 import 'settings_widgets.dart';
@@ -39,6 +43,7 @@ final settingsSections = <SettingsSection>[
   SettingsSection('Subtitles', 'Size, color, position', Icons.subtitles_outlined, (_) => const SubtitlesPage()),
   SettingsSection('Appearance', 'Text size, posters, start screen', Icons.palette_outlined, (_) => const AppearancePage()),
   SettingsSection('Library & guide', 'Filters, sorting, clock', Icons.video_library_outlined, (_) => const LibraryPage()),
+  SettingsSection('Profiles & PIN', 'Who is watching, Kids profiles, PIN lock', Icons.family_restroom, (_) => const ProfilesPage()),
   SettingsSection('Network & metadata', 'User-Agent, TMDB', Icons.public, (_) => const NetworkPage()),
   SettingsSection('Data & backup', 'Backup, history, reset', Icons.storage_outlined, (_) => const DataPage()),
   SettingsSection('About', 'Version, updates, support', Icons.info_outline, (_) => const AboutPage()),
@@ -95,6 +100,53 @@ class SourcePage extends StatelessWidget {
               }
             : null,
       ),
+      const SettingsHeader('Channel check'),
+      if (kIsWeb)
+        const ListTile(
+          leading: Icon(Icons.fact_check_outlined),
+          title: Text('Check live channels'),
+          subtitle: Text('Needs the app. A browser cannot test other sites\' streams.'),
+          enabled: false,
+        )
+      else if (s.checking)
+        ListTile(
+          isThreeLine: true,
+          leading: const Icon(Icons.fact_check_outlined),
+          title: Text('Checking… ${s.checkDone} of ${s.checkTotal}'),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              LinearProgressIndicator(value: s.checkTotal == 0 ? null : s.checkDone / s.checkTotal),
+              const SizedBox(height: 6),
+              Text('${s.checkDeadSoFar} offline so far'),
+            ]),
+          ),
+          trailing: TextButton(onPressed: s.cancelCheck, child: const Text('Stop')),
+        )
+      else
+        ActionRow(
+          icon: Icons.fact_check_outlined,
+          title: s.checkedCount == 0 ? 'Check live channels' : 'Check live channels again',
+          subtitle: s.checkedCount == 0
+              ? 'Tests every channel and flags the ones that do not answer. '
+                  '${s.catalog.live.length} channels${s.usingXtreamApi || active?.type == SourceType.xtream ? ', two at a time because logins limit simultaneous streams' : ''}'
+              : 'Last check: ${s.checkedCount} channels, ${s.deadKeys.length} offline',
+          onTap: s.canCheck ? s.checkLive : null,
+        ),
+      SwitchRow(
+        icon: Icons.visibility_off_outlined,
+        title: 'Hide offline channels',
+        subtitle: s.deadKeys.isEmpty ? 'Run a check first' : 'Removes the ${s.deadKeys.length} channels that failed the last check',
+        value: context.watch<SettingsState>().hideDead,
+        onChanged: s.deadKeys.isEmpty ? (_) {} : (v) => context.read<SettingsState>().set('hideDead', v),
+      ),
+      if (s.checkedCount > 0 && !s.checking)
+        ActionRow(
+          icon: Icons.restart_alt,
+          title: 'Forget check results',
+          subtitle: 'Shows every channel again',
+          onTap: s.forgetCheck,
+        ),
       const SettingsHeader('Saved sources'),
       if (s.sources.isEmpty)
         ListTile(title: Text('No saved sources', style: TextStyle(color: LayoutPalette.of(context).muted))),
@@ -387,6 +439,14 @@ class AppearancePage extends StatelessWidget {
         const SettingsHeader('App icon'),
         const AppIconPicker(),
       ],
+      SwitchRow(
+        icon: Icons.live_tv,
+        title: 'Live pictures',
+        subtitle: 'Cable Box and Mosaic play their channels right on the home screen. '
+            'Turn this off if your device stutters.',
+        value: st.livePreview,
+        onChanged: (v) => st.set('livePreview', v),
+      ),
       const SettingsHeader('Size'),
       ChoiceRow<double>(
         icon: Icons.text_fields,
@@ -470,6 +530,216 @@ class LibraryPage extends StatelessWidget {
       ),
     ]);
   }
+}
+
+// ---------------------------------------------------------------------------------------
+
+class ProfilesPage extends StatelessWidget {
+  const ProfilesPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ps = Provider.of<ProfilesState?>(context);
+    if (ps == null) return const SizedBox.shrink();
+    final app = context.read<AppState>();
+    final p = LayoutPalette.of(context);
+    return ListView(children: [
+      const SettingsHeader('Profiles'),
+      for (final pr in ps.profiles)
+        ListTile(
+          leading: ProfileAvatar(pr, size: 40),
+          title: Text('${pr.name}${pr.id == ps.currentId ? '  ·  in use' : ''}'),
+          subtitle: Text([
+            if (pr.kids) 'Kids',
+            if (pr.locked && ps.hasPin) 'PIN to open',
+            if (!pr.kids && !(pr.locked && ps.hasPin)) 'Own My List, history and resume positions',
+          ].join(' · ')),
+          trailing: const Icon(Icons.more_horiz),
+          onTap: () => _editProfile(context, ps, app, pr),
+        ),
+      ActionRow(
+        icon: Icons.person_add_alt_1,
+        title: 'Add a profile',
+        subtitle: ps.canAdd ? 'Each profile keeps its own My List, history and resume positions' : 'The limit is eight profiles',
+        onTap: ps.canAdd ? () => _addProfile(context, ps) : null,
+      ),
+      if (ps.multiple)
+        ActionRow(
+          icon: Icons.switch_account_outlined,
+          title: "Who's watching?",
+          subtitle: 'Switch to another profile',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePickerScreen())),
+        ),
+      const SettingsHeader('PIN lock'),
+      if (!ps.hasPin)
+        ActionRow(
+          icon: Icons.lock_outline,
+          title: 'Set a PIN',
+          subtitle: 'Four digits. Locks Settings while a Kids profile is in use',
+          onTap: () async {
+            final pin = await askNewPin(context);
+            if (pin != null) {
+              ps.setPin(pin);
+              if (context.mounted) toast(context, 'PIN set');
+            }
+          },
+        )
+      else ...[
+        ActionRow(
+          icon: Icons.password,
+          title: 'Change PIN',
+          onTap: () async {
+            if (!await askPin(context, ps, title: 'Current PIN') || !context.mounted) return;
+            final pin = await askNewPin(context, title: 'Choose a new PIN');
+            if (pin != null) {
+              ps.setPin(pin);
+              if (context.mounted) toast(context, 'PIN changed');
+            }
+          },
+        ),
+        ActionRow(
+          icon: Icons.lock_open,
+          title: 'Remove PIN',
+          subtitle: 'Kids profiles stay, but nothing is locked any more',
+          destructive: true,
+          onTap: () async {
+            if (!await askPin(context, ps, title: 'Current PIN') || !context.mounted) return;
+            ps.clearPin();
+            toast(context, 'PIN removed');
+          },
+        ),
+      ],
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: Text(
+          'With a PIN set: Settings are locked while a Kids profile is in use, leaving a Kids profile asks for the PIN, '
+          'and a profile marked "Needs PIN" asks for it too. A Kids profile shows only categories that look made for '
+          'children, judged by their names. This is a family lock for a shared screen, not high security.',
+          style: TextStyle(color: p.muted, height: 1.4),
+        ),
+      ),
+    ]);
+  }
+}
+
+Future<String?> _askText(BuildContext context, String title, String initial, {String confirm = 'Save'}) {
+  final c = TextEditingController(text: initial);
+  return showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: c,
+        autofocus: true,
+        maxLength: 20,
+        textCapitalization: TextCapitalization.words,
+        onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: Text(confirm)),
+      ],
+    ),
+  );
+}
+
+Future<void> _addProfile(BuildContext context, ProfilesState ps) async {
+  var kids = false;
+  final c = TextEditingController();
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setS) => AlertDialog(
+        title: const Text('New profile'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+              controller: c,
+              autofocus: true,
+              maxLength: 20,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Name')),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Kids profile'),
+            subtitle: const Text('Only child-friendly categories'),
+            value: kids,
+            onChanged: (v) => setS(() => kids = v),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add')),
+        ],
+      ),
+    ),
+  );
+  if (ok == true) {
+    ps.add(c.text, kids: kids);
+    if (kids && !ps.hasPin && context.mounted) {
+      toast(context, 'Set a PIN below so children cannot leave this profile');
+    }
+  }
+}
+
+Future<void> _editProfile(BuildContext context, ProfilesState ps, AppState app, Profile pr) {
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+      final cur = ps.profiles.firstWhere((e) => e.id == pr.id, orElse: () => pr);
+      return SimpleDialog(
+        title: Text(cur.name),
+        children: [
+          if (cur.id != ps.currentId)
+            SimpleDialogOption(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await switchProfile(context, ps, cur);
+              },
+              child: const Text('Use this profile'),
+            ),
+          SimpleDialogOption(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final n = await _askText(context, 'Rename profile', cur.name);
+              if (n != null && n.isNotEmpty) ps.update(cur.copyWith(name: n));
+            },
+            child: const Text('Rename'),
+          ),
+          SwitchListTile(
+            title: const Text('Kids profile'),
+            subtitle: const Text('Only child-friendly categories'),
+            value: cur.kids,
+            onChanged: (v) {
+              ps.update(cur.copyWith(kids: v));
+              setS(() {});
+            },
+          ),
+          if (ps.hasPin)
+            SwitchListTile(
+              title: const Text('Needs PIN to open'),
+              value: cur.locked,
+              onChanged: (v) {
+                ps.update(cur.copyWith(locked: v));
+                setS(() {});
+              },
+            ),
+          if (ps.profiles.length > 1)
+            SimpleDialogOption(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                if (await confirmDialog(context,
+                    title: 'Delete "${cur.name}"?',
+                    body: 'Its My List, history and resume positions are deleted from this device.',
+                    confirm: 'Delete')) {
+                  if (ps.remove(cur.id)) await app.forgetProfile(cur.id);
+                }
+              },
+              child: Text('Delete', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+            ),
+        ],
+      );
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------------------

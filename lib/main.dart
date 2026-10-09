@@ -2,26 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/profile_picker_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/crash_guard.dart';
 import 'services/device.dart';
 import 'screens/shell.dart';
 import 'state/app_state.dart';
 import 'services/app_icon.dart';
+import 'state/profiles_state.dart';
 import 'state/settings_state.dart';
 import 'theme.dart';
+import 'widgets/live_preview.dart';
 import 'widgets/tv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  LivePreview.ready = true;
   await CrashGuard.init();
   await DeviceInfo.init();
   SettingsState.detectedTv = DeviceInfo.isTv;
   final settings = SettingsState();
   await settings.init();
+  final profiles = ProfilesState();
+  await profiles.init();
   final state = AppState();
   state.bindSettings(settings);
+  state.bindProfiles(profiles);
   await state.init();
   // Someone who already has a provider has been through setup, whichever version they came from.
   if (state.sources.isNotEmpty && !settings.onboarded) settings.set('onboarded', true);
@@ -30,6 +37,7 @@ Future<void> main() async {
     providers: [
       ChangeNotifierProvider.value(value: state),
       ChangeNotifierProvider.value(value: settings),
+      ChangeNotifierProvider.value(value: profiles),
     ],
     child: const StreamBossApp(),
   ));
@@ -42,6 +50,7 @@ class StreamBossApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final st = context.watch<SettingsState>();
+    final profiles = context.watch<ProfilesState>();
     final scale = st.textScale;
     final tv = st.isTv;
     return MaterialApp(
@@ -61,7 +70,9 @@ class StreamBossApp extends StatelessWidget {
       ),
       home: needsOnboarding(st, s)
           ? OnboardingScreen(onDone: () => st.set('onboarded', true))
-          : s.active == null || s.error != null || s.loading
+          : profiles.needsPick
+              ? const ProfilePickerScreen()
+              : s.active == null || s.error != null || s.loading
               ? const SetupScreen()
               : const Shell(),
     );

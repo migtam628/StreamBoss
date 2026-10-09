@@ -112,10 +112,16 @@ every release. The first build signed with your key has to be installed after un
 - Live TV, Movies, Series (with episodes), categories, search
 - Home shelves: Continue watching, My List (long-press to favorite; on TV use the button on the movie page)
 - TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
-- Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header; D-pad friendly) with a now/next list fallback
+- Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header, plain or gzipped `.xml.gz`; D-pad friendly) with a now/next list fallback
 - Four app icons (Crown, Bold B, Signal, Screen) to switch between at will: Settings > Appearance > App icon (Android, Android TV
   and macOS; other platforms use the Crown icon). Drawings and generator in `design/`
 - Xtream account details (status, expiry, connections in use) under Settings > Source & library
+- Channel check: Settings > Source & library tests every live channel (two at a time on a provider login, ten at a time on a
+  public list, only the start of each stream is read) and flags the ones that do not answer; a switch hides them. Apps only
+- Profiles and a PIN lock: each profile has its own My List, history and resume positions; a Kids profile shows only
+  categories that look made for children; a four-digit PIN (stored salted and hashed, five wrong tries lock it for 30
+  seconds) locks Settings while a Kids profile is in use, guards leaving a Kids profile and any profile marked "Needs PIN".
+  A family lock for a shared screen, not high security. Settings > Profiles & PIN
 - Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
   - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel
@@ -141,7 +147,9 @@ every release. The first build signed with your key has to be installed after un
   now/next banner; Up and Down change channel), **Index** (big type, almost no posters, the lightest to run), **Glass** (frosted panels over a soft
   backdrop, with a dock), **Bento** (a board of flat colored tiles), **Library** (a tree on the left and dense rows,
   like a media server), **Orbit** (sections on a big dial that you spin), **Mood** (asks what you feel like watching, then
-  shows a shelf) and **Mosaic** (four channel tiles at once with the sound on one). Each has its own colors and a phone version
+  shows a shelf) and **Mosaic** (four channel tiles at once with the sound on one). Each has its own colors and a phone version.
+  Cable Box and Mosaic play their channels live on the home screen (muted, except the Mosaic tile that has the sound; only
+  while visible; Settings > Appearance > Live pictures turns it off)
 - Free public channels: Settings > Source (or the connect screen) can browse the public iptv-org and Free-TV playlist
   directories by category, country, language or the full index, and save any number of them as one combined source. The
   app does not host or vouch for these lists; you can still paste any M3U link you choose
@@ -173,5 +181,5 @@ Linux desktop needs `libmpv-dev libsecret-1-dev` installed.
 ## Status / roadmap
 
 Not done yet: tvOS and Roku are leaner than the Flutter app (no TMDB, EPG or shaders; see their READMEs),
-gzipped (.xml.gz) XMLTV guides, iOS picture-in-picture, shader file import,
+iOS picture-in-picture, shader file import,
 intro/outro detection (skip-intro is a fixed +90s jump).

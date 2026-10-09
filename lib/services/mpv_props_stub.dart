@@ -16,3 +16,6 @@ Future<void> applyPlaybackPrefs(
   required bool subsOn,
   required String userAgent,
 }) async {}
+
+/// Web: the browser picks the quality.
+Future<void> applyPreview(Player player) async {}

@@ -1,4 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../state/profiles_state.dart';
+import '../widgets/pin_dialog.dart';
+import 'profile_picker_screen.dart';
+import '../layouts/common.dart';
 import '../layouts/ui_layout.dart';
 import 'settings/settings_pages.dart';
 
@@ -13,6 +19,23 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   int _sel = 0;
+  Timer? _relock;
+
+  @override
+  void dispose() {
+    _relock?.cancel();
+    super.dispose();
+  }
+
+  /// Shuts Settings again once the time after the PIN runs out, even if nothing else rebuilds.
+  void _watchLock(ProfilesState ps) {
+    _relock?.cancel();
+    if (ps.hasPin && ps.current.kids && !ps.settingsLocked) {
+      _relock = Timer(ProfilesState.settingsWindow + const Duration(seconds: 1), () {
+        if (mounted) setState(() {});
+      });
+    }
+  }
 
   Widget _tile(int i, {required bool wide}) {
     final sec = settingsSections[i];
@@ -47,6 +70,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ps = Provider.of<ProfilesState?>(context);
+    if (ps != null) {
+      if (ps.settingsLocked) return _Locked(ps);
+      _watchLock(ps);
+    }
     return LayoutBuilder(builder: (context, c) {
       final wide = c.maxWidth >= 860;
       const header = Padding(
@@ -64,5 +92,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Expanded(child: KeyedSubtree(key: ValueKey(_sel), child: settingsSections[_sel].builder(context))),
       ]);
     });
+  }
+}
+
+/// Shown instead of Settings while a Kids profile with a PIN is in use.
+class _Locked extends StatelessWidget {
+  final ProfilesState ps;
+  const _Locked(this.ps);
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    Widget button(String label, IconData icon, VoidCallback onTap, {bool autofocus = false}) => FocusSurface(
+          radius: 26,
+          autofocus: autofocus,
+          semanticLabel: label,
+          onTap: onTap,
+          builder: (_, __) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+            color: autofocus ? p.accent : p.wash(),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, color: autofocus ? p.onAccent : p.text),
+              const SizedBox(width: 10),
+              Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: autofocus ? p.onAccent : p.text)),
+            ]),
+          ),
+        );
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.lock_outline, size: 56, color: p.muted),
+        const SizedBox(height: 14),
+        const Text('Settings are locked', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 6),
+        Text('This is a Kids profile. Enter the PIN to change anything.', style: TextStyle(color: p.muted)),
+        const SizedBox(height: 22),
+        Wrap(spacing: 12, runSpacing: 12, alignment: WrapAlignment.center, children: [
+          button('Enter PIN', Icons.pin_outlined, () async {
+            if (await askPin(context, ps)) ps.openSettings();
+          }, autofocus: true),
+          button("Who's watching?", Icons.switch_account_outlined,
+              () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePickerScreen()))),
+        ]),
+      ]),
+    );
   }
 }

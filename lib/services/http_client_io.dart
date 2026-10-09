@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'provider_url.dart';
+import 'url_peek.dart';
 
 /// Dart races IPv4 and IPv6 and, when everything fails, reports the *first* error, which is
 /// usually the instant "Network is unreachable" from a missing IPv6 route and hides what
@@ -96,4 +97,25 @@ Future<String> diagnoseConnection(Uri url, http.Client client) async {
     out.writeln('HTTP GET /: failed, ${_err(e)}');
   }
   return out.toString().trimRight();
+}
+
+/// Fetches just the start of [uri] and then hangs up for real. `package:http` can only close a
+/// client politely, which leaves a live stream connected and counted against a provider's
+/// connection limit, so this uses [HttpClient] directly and force-closes it.
+Future<UrlPeek> peekUrl(Uri uri, Map<String, String> headers, Duration timeout) async {
+  final client = HttpClient()
+    ..connectionFactory = ipv4FirstConnect
+    ..connectionTimeout = timeout;
+  try {
+    final req = await client.getUrl(uri).timeout(timeout);
+    headers.forEach(req.headers.set);
+    final res = await req.close().timeout(timeout);
+    final head = await res
+        .take(1)
+        .fold<List<int>>(const [], (_, chunk) => chunk)
+        .timeout(timeout, onTimeout: () => const <int>[]);
+    return UrlPeek(res.statusCode, res.headers.contentType?.mimeType ?? '', head);
+  } finally {
+    client.close(force: true);
+  }
 }

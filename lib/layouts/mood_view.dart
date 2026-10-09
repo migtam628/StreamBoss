@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../screens/open_item.dart';
+import '../services/library_view.dart';
 import '../state/app_state.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/tv.dart';
@@ -49,8 +50,6 @@ const _moods = [
   _Mood('Surprise me', Icons.auto_awesome_outlined),
 ];
 
-final _kids = RegExp(r'(\bkids?\b|child|cartoon|animat|famil|junior|toddler|disney|nick)', caseSensitive: false);
-
 /// The titles behind a mood, drawn from whatever the provider's data supports.
 List<MediaItem> moodShelf(String mood, AppState s, {int surprise = 0}) {
   final c = s.shown;
@@ -69,7 +68,7 @@ List<MediaItem> moodShelf(String mood, AppState s, {int surprise = 0}) {
     case 'Kids':
       final kidsCats = <String>{
         for (final cat in [...c.liveCategories, ...c.movieCategories, ...c.seriesCategories])
-          if (_kids.hasMatch(cat.name)) cat.id
+          if (isKidsCategory(cat.name)) cat.id
       };
       return [
         ...c.live.where((e) => kidsCats.contains(e.categoryId)),

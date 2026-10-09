@@ -43,6 +43,8 @@ class SettingsState extends ChangeNotifier {
     // library & guide
     'hideAdult': false,
     'sortAz': false,
+    'hideDead': false, // hide live channels that failed a check
+    'livePreview': true, // show a live picture in the Cable Box and Mosaic layouts
     'use24h': true,
     // network & metadata
     'userAgent': '',
@@ -118,6 +120,8 @@ class SettingsState extends ChangeNotifier {
   double get posterScale => posterSize;
   bool get hideAdult => _g('hideAdult');
   bool get sortAz => _g('sortAz');
+  bool get hideDead => _g('hideDead');
+  bool get livePreview => _g('livePreview');
   bool get use24h => _g('use24h');
   String get userAgent => _g('userAgent');
   String get tmdbKey => _g('tmdbKey');

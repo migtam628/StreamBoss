@@ -8,6 +8,9 @@ import 'tv.dart';
 class MediaTile extends StatelessWidget {
   final MediaItem item;
   final bool favorite;
+
+  /// A live channel that failed the last check.
+  final bool offline;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final ValueChanged<bool>? onFocus;
@@ -18,6 +21,7 @@ class MediaTile extends StatelessWidget {
     required this.item,
     required this.onTap,
     this.favorite = false,
+    this.offline = false,
     this.onLongPress,
     this.onFocus,
     this.autofocus = false,
@@ -62,6 +66,20 @@ class MediaTile extends StatelessWidget {
                   style: TextStyle(color: Colors.white, fontSize: tv ? 15 : 12, fontWeight: FontWeight.w600)),
             ),
           ),
+          if (offline)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.55),
+                child: const Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: EdgeInsets.all(6),
+                    child: Text('OFFLINE',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                  ),
+                ),
+              ),
+            ),
           if (favorite)
             Positioned(
               top: 6,

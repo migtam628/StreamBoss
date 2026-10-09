@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
 
 class Programme {
@@ -66,9 +68,18 @@ XmltvData parseXmltv(String xml, {required DateTime from, required DateTime to})
   return XmltvData(progs, names);
 }
 
-/// Top-level wrapper so it can run via `compute`.
-XmltvData parseXmltvJob(List<Object> args) => parseXmltv(
-      args[0] as String,
+/// True when [b] starts with the gzip magic number. Guides are often served as `.xml.gz`
+/// without a `Content-Encoding` header, so a client never unpacks them by itself.
+bool isGzip(List<int> b) => b.length > 2 && b[0] == 0x1f && b[1] == 0x8b;
+
+/// The text of a downloaded guide, unpacked first when it is gzipped.
+String decodeXmltvBytes(List<int> b) =>
+    utf8.decode(isGzip(b) ? const GZipDecoder().decodeBytes(b) : b, allowMalformed: true);
+
+/// Top-level wrapper so it can run via `compute`: takes the raw download, so unpacking and parsing
+/// both happen off the UI thread. Args: bytes, from (ms), to (ms).
+XmltvData parseXmltvBytesJob(List<Object> args) => parseXmltv(
+      decodeXmltvBytes(args[0] as List<int>),
       from: DateTime.fromMillisecondsSinceEpoch(args[1] as int),
       to: DateTime.fromMillisecondsSinceEpoch(args[2] as int),
     );
