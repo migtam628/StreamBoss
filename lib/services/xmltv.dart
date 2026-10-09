@@ -89,3 +89,20 @@ XmltvData parseXmltvBytesJob(List<Object> args) => parseXmltv(
       from: DateTime.fromMillisecondsSinceEpoch(args[1] as int),
       to: DateTime.fromMillisecondsSinceEpoch(args[2] as int),
     );
+
+/// One guide out of several (a second provider's, say). Programmes of a channel id that two guides
+/// share are put together in time order.
+XmltvData mergeXmltv(List<XmltvData> parts) {
+  if (parts.isEmpty) return XmltvData.empty;
+  if (parts.length == 1) return parts.single;
+  final progs = <String, List<Programme>>{};
+  final names = <String, String>{};
+  for (final p in parts) {
+    p.programmes.forEach((k, v) => (progs[k] ??= []).addAll(v));
+    p.nameToId.forEach((k, v) => names.putIfAbsent(k, () => v));
+  }
+  for (final l in progs.values) {
+    l.sort((a, b) => a.start.compareTo(b.start));
+  }
+  return XmltvData(progs, names);
+}

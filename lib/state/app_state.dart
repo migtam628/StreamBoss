@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
+import '../services/combine_sources.dart';
 import '../services/demo_catalog.dart';
 import '../services/library_view.dart';
 import '../services/m3u_parser.dart';
@@ -102,7 +103,7 @@ class AppState extends ChangeNotifier {
 
   /// Removes everything a deleted profile saved.
   Future<void> forgetProfile(String id) async {
-    for (final base in const ['favorites', 'positions', 'recents']) {
+    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings']) {
       await _prefs?.remove('$base:$id');
     }
   }
@@ -189,6 +190,7 @@ class AppState extends ChangeNotifier {
     }
     _loadPersonal();
     _loadDead();
+    extraSources.addAll(p.getStringList('extraSources') ?? const []);
     final last = p.getString('active');
     if (last != null) {
       final match = sources.where((s) => s.name == last);
@@ -231,6 +233,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> removeSource(Source s) async {
     sources = sources.where((e) => e.name != s.name).toList();
+    if (extraSources.remove(s.name)) await _prefs?.setStringList('extraSources', extraSources.toList());
     await _writeSecret(s.name, null);
     await _saveSources();
     if (active?.name == s.name) {
@@ -241,51 +244,68 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Loads one source on its own: its library, and the Xtream client when it has one.
+  Future<({Catalog catalog, XtreamClient? client})> _load(Source s) async {
+    switch (s.type) {
+      case SourceType.demo:
+        return (catalog: demoCatalog(), client: null);
+      case SourceType.m3u:
+        // Several playlist addresses, one per line, load and merge into one library.
+        final urls = s.url.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        if (urls.length > 1) return (catalog: await loadMergedPlaylists(urls), client: null);
+        // A provider's get.php?username=..&password=.. link is the Xtream panel in disguise.
+        // Its API gives proper movies, series, posters and guide data, so prefer it and
+        // fall back to the plain playlist when the panel doesn't answer.
+        final login = parseProviderLink(s.url);
+        if (login != null && Uri.tryParse(s.url)?.path.endsWith('get.php') == true) {
+          try {
+            final api = XtreamClient(login.server, login.username, login.password);
+            await api.authenticate();
+            return (catalog: await api.loadCatalog(), client: api);
+          } catch (_) {}
+        }
+        final res = await appHttp.get(Uri.parse(s.url), headers: NetConfig.headers).timeout(const Duration(seconds: 60));
+        if (res.statusCode != 200) throw Exception('Playlist returned ${res.statusCode}');
+        return (catalog: parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true)), client: null);
+      case SourceType.xtream:
+        final c = XtreamClient(s.url, s.username, s.password);
+        await c.authenticate();
+        return (catalog: await c.loadCatalog(), client: c);
+    }
+  }
+
   Future<void> activate(Source s) async {
     loading = true;
     error = null;
     active = s;
     notifyListeners();
     try {
-      switch (s.type) {
-        case SourceType.demo:
-          catalog = demoCatalog();
-          _xtream = null;
-        case SourceType.m3u:
-          {
-            _xtream = null;
-            // Several playlist addresses, one per line, load and merge into one library.
-            final urls = s.url.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-            if (urls.length > 1) {
-              catalog = await loadMergedPlaylists(urls);
-              break;
-            }
-            // A provider's get.php?username=..&password=.. link is the Xtream panel in disguise.
-            // Its API gives proper movies, series, posters and guide data, so prefer it and
-            // fall back to the plain playlist when the panel doesn't answer.
-            final login = parseProviderLink(s.url);
-            if (login != null && Uri.tryParse(s.url)?.path.endsWith('get.php') == true) {
-              try {
-                final api = XtreamClient(login.server, login.username, login.password);
-                await api.authenticate();
-                catalog = await api.loadCatalog();
-                _xtream = api;
-              } catch (_) {
-                _xtream = null;
-              }
-            }
-            if (_xtream == null) {
-              final res = await appHttp.get(Uri.parse(s.url), headers: NetConfig.headers).timeout(const Duration(seconds: 60));
-              if (res.statusCode != 200) throw Exception('Playlist returned ${res.statusCode}');
-              catalog = parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true));
-            }
-          }
-        case SourceType.xtream:
-          final c = XtreamClient(s.url, s.username, s.password);
-          await c.authenticate();
-          catalog = await c.loadCatalog();
-          _xtream = c;
+      final main = await _load(s);
+      _xtream = main.client;
+      _clients.clear();
+      _extraGuides.clear();
+      extraErrors.clear();
+      // The other sources that are switched on join the library; one that fails is skipped and reported.
+      final extras = <(String, Catalog)>[];
+      final want = [for (final src in sources) if (src.name != s.name && extraSources.contains(src.name)) src];
+      final loaded = await Future.wait(want.map((src) async {
+        try {
+          return (src, await _load(src), null as Object?);
+        } catch (e) {
+          return (src, null, e as Object?);
+        }
+      }));
+      for (final (src, r, err) in loaded) {
+        if (r == null) {
+          extraErrors[src.name] = friendlyError(err!);
+          continue;
+        }
+        extras.add((src.name, r.catalog));
+        if (r.client != null) _clients[src.name] = r.client!;
+        final g = r.client?.xmltvUri ?? (r.catalog.epgUrl == null ? null : Uri.tryParse(r.catalog.epgUrl!));
+        if (g != null) _extraGuides.add(g);
       }
+      catalog = combineSources(main.catalog, extras);
       _guideLoaded = false;
       guide = XmltvData.empty;
       await _prefs?.setString('active', s.name);
@@ -297,6 +317,34 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- More than one source at once ----------------------------------------------------------
+
+  /// Names of the saved sources, besides the main one, that are part of the library too.
+  final Set<String> extraSources = {};
+
+  /// Why a source that is switched on could not be loaded (by source name).
+  final Map<String, String> extraErrors = {};
+
+  final Map<String, XtreamClient> _clients = {};
+  final List<Uri> _extraGuides = [];
+
+  /// How many sources the library is made of now (the main one and the loaded extras).
+  int get sourceCount => active == null ? 0 : 1 + extraSources.where((n) => sources.any((s) => s.name == n) && n != active!.name).length;
+
+  Future<void> setExtraSource(String name, bool on) async {
+    if (on ? !extraSources.add(name) : !extraSources.remove(name)) return;
+    await _prefs?.setStringList('extraSources', extraSources.toList());
+    final a = active;
+    if (a != null) {
+      await activate(a);
+    } else {
+      notifyListeners();
+    }
+  }
+
+  /// The Xtream client that serves [i]: the main source's, or the one of the source it came from.
+  XtreamClient? _clientOf(MediaItem i) => i.src == null ? _xtream : _clients[i.src];
+
   void signOut() {
     active = null;
     error = null;
@@ -307,7 +355,7 @@ class AppState extends ChangeNotifier {
 
   /// Provider-side details for the movie / series page (null without an Xtream source).
   Future<TmdbInfo?> providerInfo(MediaItem i) async {
-    final c = _xtream;
+    final c = _clientOf(i);
     if (c == null || i.kind == MediaKind.live || i.id.startsWith('ep')) return null;
     try {
       return i.kind == MediaKind.series ? await c.seriesInfo(i.id) : await c.vodInfo(i.id);
@@ -316,8 +364,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<List<Episode>> episodes(MediaItem series) async =>
-      _xtream?.episodes(series.id) ?? [];
+  Future<List<Episode>> episodes(MediaItem series) async => _clientOf(series)?.episodes(series.id) ?? [];
 
   /// Other copies of a merged channel, best first (empty for anything else).
   List<MediaItem> alternatesFor(MediaItem i) {
@@ -393,7 +440,7 @@ class AppState extends ChangeNotifier {
   // --- EPG --------------------------------------------------------------
 
   Future<List<EpgEntry>> epg(MediaItem live) async =>
-      _xtream == null ? const [] : _xtream!.shortEpg(live.id);
+      _clientOf(live) == null ? const [] : _clientOf(live)!.shortEpg(live.id);
 
   // --- Backup / restore ---------------------------------------------------
 
@@ -563,7 +610,7 @@ class AppState extends ChangeNotifier {
   void useXtreamForTest(XtreamClient c) => _xtream = c;
 
   /// True when [ch] keeps an archive and this source can play it.
-  bool canCatchUp(MediaItem ch) => ch.kind == MediaKind.live && ch.archiveDays > 0 && _xtream != null;
+  bool canCatchUp(MediaItem ch) => ch.kind == MediaKind.live && ch.archiveDays > 0 && _clientOf(ch) != null;
 
   /// Whether [p] on [ch] can be watched from the archive: it has started and is within the days kept.
   bool catchUpFor(MediaItem ch, Programme p, {DateTime? now}) {
@@ -575,7 +622,7 @@ class AppState extends ChangeNotifier {
   /// The archive stream of [p] on [ch] (the whole programme, from its start), or null.
   String? catchUpUrl(MediaItem ch, Programme p) {
     if (!canCatchUp(ch)) return null;
-    return _xtream!.timeshiftUrl(ch.id, p.start, p.end.difference(p.start));
+    return _clientOf(ch)!.timeshiftUrl(ch.id, p.start, p.end.difference(p.start));
   }
 
   // --- Search -------------------------------------------------------------------------------
@@ -659,7 +706,7 @@ class AppState extends ChangeNotifier {
     var lastNotify = DateTime.now();
     // A login usually allows only a couple of streams at once, so go slowly there. A public list
     // has no such limit.
-    final parallel = _xtream != null || src.type == SourceType.xtream ? 2 : 10;
+    final parallel = _xtream != null || _clients.isNotEmpty || src.type == SourceType.xtream ? 2 : 10;
     await checkStreams(items, parallel: parallel, cancelled: () => _cancelCheck,
         onResult: (item, problem, done) {
       if (problem != null) dead.add(item.key);
@@ -706,30 +753,41 @@ class AppState extends ChangeNotifier {
   String? guideError;
   bool _guideLoaded = false;
 
-  Uri? get _guideUri =>
-      _xtream?.xmltvUri ?? (catalog.epgUrl == null ? null : Uri.tryParse(catalog.epgUrl!));
+  List<Uri> get _guideUris => [
+        if (_xtream?.xmltvUri ?? (catalog.epgUrl == null ? null : Uri.tryParse(catalog.epgUrl!)) case final u?) u,
+        ..._extraGuides,
+      ];
 
-  bool get hasGuideSource => _guideUri != null;
+  bool get hasGuideSource => _guideUris.isNotEmpty;
 
-  /// Loads and parses the XMLTV guide once per library load: the last day (for catch-up) and the next 8 hours.
+  /// Loads and parses the XMLTV guide(s) once per library load: the last day (for catch-up) and the next 8 hours.
   Future<void> loadGuide({bool force = false}) async {
-    final uri = _guideUri;
-    if (uri == null || guideLoading || (_guideLoaded && !force)) return;
+    final uris = _guideUris;
+    if (uris.isEmpty || guideLoading || (_guideLoaded && !force)) return;
     guideLoading = true;
     guideError = null;
     notifyListeners();
-    try {
-      final res = await appHttp.get(uri, headers: NetConfig.headers).timeout(const Duration(seconds: 90));
-      if (res.statusCode != 200) throw Exception('Guide returned ${res.statusCode}');
-      final now = DateTime.now();
-      guide = await compute(parseXmltvBytesJob, <Object>[
-        res.bodyBytes,
-        now.subtract(const Duration(hours: 24)).millisecondsSinceEpoch,
-        now.add(const Duration(hours: 8)).millisecondsSinceEpoch,
-      ]);
+    final now = DateTime.now();
+    final parts = <XmltvData>[];
+    Object? firstError;
+    for (final uri in uris) {
+      try {
+        final res = await appHttp.get(uri, headers: NetConfig.headers).timeout(const Duration(seconds: 90));
+        if (res.statusCode != 200) throw Exception('Guide returned ${res.statusCode}');
+        parts.add(await compute(parseXmltvBytesJob, <Object>[
+          res.bodyBytes,
+          now.subtract(const Duration(hours: 24)).millisecondsSinceEpoch,
+          now.add(const Duration(hours: 8)).millisecondsSinceEpoch,
+        ]));
+      } catch (e) {
+        firstError ??= e;
+      }
+    }
+    if (parts.isEmpty) {
+      guideError = firstError.toString().replaceFirst('Exception: ', '');
+    } else {
+      guide = mergeXmltv(parts);
       _guideLoaded = true;
-    } catch (e) {
-      guideError = e.toString().replaceFirst('Exception: ', '');
     }
     guideLoading = false;
     notifyListeners();

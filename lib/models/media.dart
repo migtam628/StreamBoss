@@ -23,6 +23,9 @@ class MediaItem {
   /// How many days of past programmes the provider keeps for this channel (Xtream catch-up). 0 = none.
   final int archiveDays;
 
+  /// The saved source this came from, when several are in the library at once. Null for the main one.
+  final String? src;
+
   const MediaItem({
     required this.id,
     required this.name,
@@ -35,9 +38,10 @@ class MediaItem {
     this.epgId,
     this.headers,
     this.archiveDays = 0,
+    this.src,
   });
 
-  String get key => '${kind.name}:$id';
+  String get key => src == null ? '${kind.name}:$id' : '${kind.name}:$src:$id';
 
   MediaItem copyWith({String? epgId, String? poster, String? plot, String? rating}) => MediaItem(
         id: id,
@@ -51,6 +55,7 @@ class MediaItem {
         epgId: epgId ?? this.epgId,
         headers: headers,
         archiveDays: archiveDays,
+        src: src,
       );
 
   Map<String, dynamic> toJson() => {
@@ -65,6 +70,7 @@ class MediaItem {
         'epg': epgId,
         if (headers != null && headers!.isNotEmpty) 'hdr': headers,
         if (archiveDays > 0) 'arch': archiveDays,
+        if (src != null) 'src': src,
       };
 
   factory MediaItem.fromJson(Map<String, dynamic> j) => MediaItem(
@@ -79,6 +85,7 @@ class MediaItem {
         epgId: j['epg'] as String?,
         headers: (j['hdr'] as Map?)?.map((k, v) => MapEntry('$k', '$v')),
         archiveDays: (j['arch'] as num?)?.toInt() ?? 0,
+        src: j['src'] as String?,
       );
 }
 

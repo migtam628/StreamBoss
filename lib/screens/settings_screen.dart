@@ -77,9 +77,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     return LayoutBuilder(builder: (context, c) {
       final wide = c.maxWidth >= 860;
-      const header = Padding(
-        padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
-        child: Text('Settings', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+      final own = ps != null && ps.current.ownSettings;
+      final header = Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Settings', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+          if (own)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('Layout, text, language, subtitle and filter changes apply to ${ps.current.name} only.',
+                  style: TextStyle(color: LayoutPalette.of(context).accent2, fontSize: 13)),
+            ),
+        ]),
       );
       final list = ListView(children: [
         header,

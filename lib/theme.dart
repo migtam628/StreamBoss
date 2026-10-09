@@ -12,8 +12,15 @@ class Boss {
 
   /// [tv] switches on the 10-foot styling: a bold white focus outline on every control (a
   /// remote has no pointer, so focus is the only cursor) and a larger navigation rail.
-  static ThemeData theme({bool tv = false, UiLayout layout = UiLayout.marquee}) {
-    final p = LayoutPalette.forLayout(layout);
+  static ThemeData theme({
+    bool tv = false,
+    UiLayout layout = UiLayout.marquee,
+    Color? accent,
+    String background = 'layout',
+  }) {
+    // Glass, Mood and Mosaic paint their own backdrop, so only the accent applies to them.
+    final paints = layout == UiLayout.glass || layout == UiLayout.mood || layout == UiLayout.mosaic;
+    final p = LayoutPalette.forLayout(layout).customized(accent: accent, background: background, keepBackground: paints);
     final base = p.light ? ThemeData.light(useMaterial3: true) : ThemeData.dark(useMaterial3: true);
 
     // Buttons get a white outline while focused so the selection is visible from the couch.

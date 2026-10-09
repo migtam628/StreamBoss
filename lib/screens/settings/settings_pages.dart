@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import '../../services/app_icon.dart';
+import '../../widgets/screensaver.dart';
 import '../../layouts/common.dart';
 import '../../layouts/ui_layout.dart';
 import '../../layouts/layout_picker.dart';
+import '../../layouts/theme_picker.dart';
 import '../collections_screen.dart';
 import '../free_playlists_screen.dart';
 import '../onboarding_screen.dart';
@@ -73,7 +75,7 @@ class SourcePage extends StatelessWidget {
         isThreeLine: true,
         leading: const Icon(Icons.dns),
         title: Text(active?.name ?? 'None'),
-        subtitle: Text('$type\n${lib.live.length} channels · ${lib.movies.length} movies · '
+        subtitle: Text('$type${s.sourceCount > 1 ? ' + ${s.sourceCount - 1} more' : ''}\n${lib.live.length} channels · ${lib.movies.length} movies · '
             '${lib.series.length} series${hidden > 0 ? ' · $hidden hidden by filter' : ''}'),
       ),
       if (s.account != null)
@@ -153,24 +155,48 @@ class SourcePage extends StatelessWidget {
         ListTile(title: Text('No saved sources', style: TextStyle(color: LayoutPalette.of(context).muted))),
       for (final src in s.sources)
         ListTile(
+          isThreeLine: s.extraErrors.containsKey(src.name),
           leading: Icon(
             active?.name == src.name ? Icons.radio_button_checked : Icons.radio_button_off,
             color: active?.name == src.name ? LayoutPalette.of(context).accent : null,
           ),
           title: Text(src.name),
-          subtitle: Text(src.type.name.toUpperCase()),
+          subtitle: Text([
+            src.type.name.toUpperCase(),
+            if (active?.name == src.name) 'main source' else if (s.extraSources.contains(src.name)) 'also in the library',
+            if (s.extraErrors[src.name] != null) '\nCould not load: ${s.extraErrors[src.name]}',
+          ].join(' · ').replaceAll(' · \n', '\n')),
           onTap: active?.name == src.name ? null : () => s.activate(src),
-          trailing: IconButton(
-            tooltip: 'Remove',
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              if (await confirmDialog(context,
-                  title: 'Remove "${src.name}"?',
-                  body: 'The saved login is deleted from this device.',
-                  confirm: 'Remove')) {
-                s.removeSource(src);
-              }
-            },
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (active != null && active.name != src.name)
+              Tooltip(
+                message: 'Also show this source in the library',
+                child: Switch(
+                  value: s.extraSources.contains(src.name),
+                  onChanged: (v) => s.setExtraSource(src.name, v),
+                ),
+              ),
+            IconButton(
+              tooltip: 'Remove',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () async {
+                if (await confirmDialog(context,
+                    title: 'Remove "${src.name}"?',
+                    body: 'The saved login is deleted from this device.',
+                    confirm: 'Remove')) {
+                  s.removeSource(src);
+                }
+              },
+            ),
+          ]),
+        ),
+      if (s.sources.length > 1)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Text(
+            'Tap a source to make it the main one. The switch on the others adds them to the same library, '
+            'so channels, movies and guides from all of them are listed together. My List and history stay with the main source.',
+            style: TextStyle(color: LayoutPalette.of(context).muted, fontSize: 13, height: 1.4),
           ),
         ),
       ActionRow(
@@ -436,6 +462,8 @@ class AppearancePage extends StatelessWidget {
     return ListView(children: [
       const SettingsHeader('Layout'),
       const LayoutPicker(),
+      const SettingsHeader('Colors'),
+      const ThemePicker(),
       if (AppIconService.supported) ...[
         const SettingsHeader('App icon'),
         const AppIconPicker(),
@@ -447,6 +475,21 @@ class AppearancePage extends StatelessWidget {
             'Turn this off if your device stutters.',
         value: st.livePreview,
         onChanged: (v) => st.set('livePreview', v),
+      ),
+      ChoiceRow<String>(
+        icon: Icons.nightlight_outlined,
+        title: 'Screensaver',
+        subtitle: 'Drifting posters when nothing has been pressed for a while and nothing is playing. '
+            'Auto is 10 minutes on a TV and off elsewhere.',
+        value: st.screensaver,
+        options: const [('auto', 'Auto'), ('off', 'Off'), ('2', '2 min'), ('5', '5 min'), ('10', '10 min'), ('20', '20 min'), ('30', '30 min')],
+        onChanged: (v) => st.set('screensaver', v),
+      ),
+      ActionRow(
+        icon: Icons.slideshow_outlined,
+        title: 'Preview the screensaver',
+        subtitle: 'Press any key or touch the screen to come back',
+        onTap: () => Screensaver.preview.value++,
       ),
       const SettingsHeader('Size'),
       ChoiceRow<double>(
@@ -567,7 +610,8 @@ class ProfilesPage extends StatelessWidget {
           subtitle: Text([
             if (pr.kids) 'Kids',
             if (pr.locked && ps.hasPin) 'PIN to open',
-            if (!pr.kids && !(pr.locked && ps.hasPin)) 'Own My List, history and resume positions',
+            if (pr.ownSettings) 'Own settings',
+            if (!pr.kids && !(pr.locked && ps.hasPin) && !pr.ownSettings) 'Own My List, history and resume positions',
           ].join(' · ')),
           trailing: const Icon(Icons.more_horiz),
           onTap: () => _editProfile(context, ps, app, pr),
@@ -729,6 +773,15 @@ Future<void> _editProfile(BuildContext context, ProfilesState ps, AppState app, 
               setS(() {});
             },
           ),
+          SwitchListTile(
+            title: const Text('Own settings'),
+            subtitle: const Text('Its own layout, text size, languages, subtitles and filters'),
+            value: cur.ownSettings,
+            onChanged: (v) {
+              ps.update(cur.copyWith(ownSettings: v));
+              setS(() {});
+            },
+          ),
           if (ps.hasPin)
             SwitchListTile(
               title: const Text('Needs PIN to open'),
@@ -776,6 +829,34 @@ class NetworkPage extends StatelessWidget {
       ),
     );
     if (v != null) st.set('userAgent', v);
+  }
+
+  Future<void> _osLogin(BuildContext context, SettingsState st) async {
+    final key = TextEditingController(text: st.osKey);
+    final user = TextEditingController(text: st.osUser);
+    final pass = TextEditingController(text: st.osPass);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('OpenSubtitles'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: key, autofocus: true, decoration: const InputDecoration(labelText: 'API key')),
+            TextField(controller: user, decoration: const InputDecoration(labelText: 'Username (needed to download)')),
+            TextField(controller: pass, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      st.set('osKey', key.text.trim());
+      st.set('osUser', user.text.trim());
+      st.set('osPass', pass.text);
+    }
   }
 
   Future<void> _tmdbKey(BuildContext context, SettingsState st) async {
@@ -881,6 +962,24 @@ class NetworkPage extends StatelessWidget {
           onPressed: () => st.set('tmdbKey', ''),
         ),
         onTap: () => _tmdbKey(context, st),
+      ),
+      ListTile(
+        leading: const Icon(Icons.subtitles_outlined),
+        title: const Text('OpenSubtitles'),
+        subtitle: Text(st.osKey.isEmpty
+            ? 'Optional. Lets you search for subtitles from the player. Needs your own free API key; '
+                'downloading also needs your account. Not included in backups.'
+            : 'Saved on this device. Not included in backups.'),
+        trailing: st.osKey.isEmpty ? null : IconButton(
+          tooltip: 'Remove',
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            st.set('osKey', '');
+            st.set('osUser', '');
+            st.set('osPass', '');
+          },
+        ),
+        onTap: () => _osLogin(context, st),
       ),
       SwitchRow(
         icon: Icons.image_outlined,

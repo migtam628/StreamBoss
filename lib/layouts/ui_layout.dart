@@ -252,6 +252,28 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).
+  /// Background looks the viewer can pick over a layout's own: key, label, and the colors.
+  static const backgrounds = <String, (String, Color bg, Color surface, Color surfaceHi, Color text, Color muted, Color line, Brightness)>{
+    'black': ('Black', Color(0xFF000000), Color(0xFF0B0B0B), Color(0xFF181818), Color(0xFFF2F2F2), Color(0xFF8A8A8A), Color(0x1FFFFFFF), Brightness.dark),
+    'charcoal': ('Charcoal', Color(0xFF121212), Color(0xFF1C1C1E), Color(0xFF2A2A2D), Color(0xFFF2F2F2), Color(0xFF9A9AA0), Color(0x1FFFFFFF), Brightness.dark),
+    'midnight': ('Midnight', Color(0xFF0A0F1F), Color(0xFF111A33), Color(0xFF1B2850), Color(0xFFEEF2FB), Color(0xFF93A3C8), Color(0x1FFFFFFF), Brightness.dark),
+    'forest': ('Forest', Color(0xFF08120D), Color(0xFF0F1F17), Color(0xFF18362A), Color(0xFFEAF5EE), Color(0xFF8DAA9A), Color(0x1FFFFFFF), Brightness.dark),
+    'plum': ('Plum', Color(0xFF140A18), Color(0xFF21122A), Color(0xFF341C42), Color(0xFFF6EEFA), Color(0xFFB6A3C4), Color(0x1FFFFFFF), Brightness.dark),
+    'paper': ('Paper', Color(0xFFF7F5F0), Color(0xFFFFFFFF), Color(0xFFECE8DF), Color(0xFF1B1B1F), Color(0xFF6B6B76), Color(0x1A000000), Brightness.light),
+  };
+
+  /// This palette with the viewer's accent color and background look on top. [background] is a key of
+  /// [backgrounds]; anything else (or [keepBackground]) leaves the layout's own colors.
+  LayoutPalette customized({Color? accent, String background = 'layout', bool keepBackground = false}) {
+    var p = this;
+    final b = keepBackground ? null : backgrounds[background];
+    if (b != null) {
+      p = p.copyWith(bg: b.$2, surface: b.$3, surfaceHi: b.$4, text: b.$5, muted: b.$6, line: b.$7, brightness: b.$8);
+    }
+    if (accent != null) p = p.copyWith(accent: accent);
+    return p;
+  }
+
   static LayoutPalette of(BuildContext context) =>
       Theme.of(context).extension<LayoutPalette>() ?? marquee;
 

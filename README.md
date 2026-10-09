@@ -131,6 +131,9 @@ every release. The first build signed with your key has to be installed after un
   categories that look made for children; a four-digit PIN (stored salted and hashed, five wrong tries lock it for 30
   seconds) locks Settings while a Kids profile is in use, guards leaving a Kids profile and any profile marked "Needs PIN".
   A family lock for a shared screen, not high security. Settings > Profiles & PIN
+- Profiles can have their own settings (layout, colours, languages, subtitles, filters); several saved sources can be
+  shown in the library at once; custom accent colour and background; an idle screensaver of drifting posters
+  (Auto: 10 minutes on a TV); subtitle search from the player with your own OpenSubtitles key
 - Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
   - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel

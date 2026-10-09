@@ -19,7 +19,9 @@ import '../state/app_state.dart';
 import '../services/time_format.dart';
 import 'open_item.dart';
 import '../state/settings_state.dart';
+import '../services/subtitle_search.dart';
 import '../theme.dart';
+import '../widgets/screensaver.dart';
 
 /// Full-screen player. Remote / keyboard behaviour (mpvNova-style):
 ///  * controls hidden: OK = pause + show controls, Left/Right = seek 10s (VOD),
@@ -125,6 +127,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   @override
   void initState() {
     super.initState();
+    Screensaver.busy.value++;
     _index = _queue == null ? 0 : _queue!.indexWhere((e) => e.key == widget.item.key).clamp(0, _queue!.length - 1);
     WidgetsBinding.instance.addObserver(this);
     final surface = _settings.surfaceOutput;
@@ -295,6 +298,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    Screensaver.busy.value--;
     CrashGuard.mark('closing');
     _savePosition(notify: true);
     for (final s in _subs) {
@@ -776,10 +780,69 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     ]);
   }
 
+  /// Looks the title up on OpenSubtitles and offers the best matches; the chosen one is loaded as a track.
+  Future<void> _findSubtitles() async {
+    final st = context.read<SettingsState>();
+    final messenger = ScaffoldMessenger.of(context);
+    void say(String m) => messenger.showSnackBar(SnackBar(content: Text(m)));
+    if (st.osKey.isEmpty) {
+      say('Add your OpenSubtitles API key under Settings > Playback first.');
+      return;
+    }
+    final item = _cur;
+    final se = parseSeasonEpisode(item.name);
+    final svc = SubtitleSearch(st.osKey, username: st.osUser, password: st.osPass);
+    final lang = st.subLang.length == 2 || st.subLang.length == 3 ? st.subLang : '';
+    List<SubtitleHit> hits;
+    try {
+      hits = await svc.search(SubtitleSearch.queryFor(item, season: se?.$1, episode: se?.$2, language: lang));
+    } catch (e) {
+      say('$e');
+      return;
+    }
+    if (!mounted) return;
+    if (hits.isEmpty) {
+      say('No subtitles found for ${item.name}.');
+      return;
+    }
+    await _sheet('Subtitles for ${item.name}', [
+      for (final h in hits.take(25))
+        ListTile(
+          title: Text(h.name.isEmpty ? 'Subtitle ${h.fileId}' : h.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+          subtitle: Text([
+            h.language.toUpperCase(),
+            if (h.hearingImpaired) 'for the deaf and hard of hearing',
+            if (h.downloads > 0) '${h.downloads} downloads',
+          ].where((e) => e.isNotEmpty).join('  ·  ')),
+          onTap: () async {
+            Navigator.pop(context);
+            try {
+              final text = await svc.download(h);
+              if (!mounted) return;
+              await _player.setSubtitleTrack(SubtitleTrack.data(text, title: h.name, language: h.language));
+              say('Subtitles loaded.');
+            } catch (e) {
+              say('$e');
+            }
+          },
+        ),
+    ]);
+  }
+
   void _pickSubtitle() {
     final tracks = _player.state.tracks.subtitle;
     final cur = _player.state.track.subtitle;
     _sheet('Subtitles', [
+      if (_cur.kind != MediaKind.live)
+        ListTile(
+          leading: const Icon(Icons.search),
+          title: const Text('Search online'),
+          subtitle: const Text('OpenSubtitles'),
+          onTap: () {
+            Navigator.pop(context);
+            _findSubtitles();
+          },
+        ),
       for (final t in tracks)
         ListTile(
           title: Text(_trackLabel(t)),

@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layouts/ui_layout.dart';
 import '../services/net_config.dart';
 import '../services/shaders.dart';
+import 'profiles_state.dart';
 
 /// All user preferences. Every key has a typed default; [set] validates the type, persists,
 /// applies side effects and notifies. Storage keys are stable (older versions' values keep working).
@@ -39,6 +41,9 @@ class SettingsState extends ChangeNotifier {
     'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
     'onboarded': false, // the first-run setup has been done or skipped (this device)
     'layout': 'marquee', // marquee | control | spotlight
+    'screensaver': 'auto', // auto | off | 2 | 5 | 10 | 20 | 30 (minutes idle). Auto is 10 on a TV, off elsewhere
+    'accentColor': 0, // 0 = the layout's own accent, else an ARGB color
+    'background': 'layout', // layout | black | charcoal | midnight | forest | plum | paper
     'appIcon': 'crown', // crown | bold | signal | screen (this device)
     // library & guide
     'hideAdult': false,
@@ -50,11 +55,14 @@ class SettingsState extends ChangeNotifier {
     // network & metadata
     'userAgent': '',
     'tmdbKey': '',
+    'osKey': '', // OpenSubtitles API key, username and password (subtitle search)
+    'osUser': '',
+    'osPass': '',
     'realPosters': true, // fill in missing posters from TMDB (needs the key)
   };
 
   /// Keys that must never leave the device (backups, diagnostics).
-  static const secretKeys = {'tmdbKey'};
+  static const secretKeys = {'tmdbKey', 'osKey', 'osUser', 'osPass'};
 
   /// Describes this device rather than the user's taste, so backups don't carry it over.
   static const deviceKeys = {'tvMode', 'tvWidth', 'layout', 'videoOutput', 'onboarded', 'appIcon'};
@@ -69,7 +77,64 @@ class SettingsState extends ChangeNotifier {
   List<String> shaderOrder = [];
   Set<String> shaderEnabled = {};
 
-  T _g<T>(String k) => _v[k] as T;
+  /// The settings a profile can have of its own (see [Profile.ownSettings]): how it looks, what it reads
+  /// and hears, and what it hides. Everything else is about the device and stays shared.
+  static const profileKeys = {
+    'layout', 'accentColor', 'background', 'uiScale', 'posterSize', 'startTab', 'audioLang', 'subLang', 'subsOn', 'subSize', 'subColor',
+    'subBg', 'subBold', 'subBottom', 'hideAdult', 'sortAz', 'use24h', 'mergeDuplicates', 'livePreview',
+  };
+
+  // The values of the profile in use when it has its own settings; they win over the shared ones.
+  Map<String, Object>? _o;
+  String? _oId;
+
+  T _g<T>(String k) => ((_o != null && _o!.containsKey(k)) ? _o![k] : _v[k]) as T;
+
+  /// True while the profile in use has settings of its own.
+  bool get hasProfileOverlay => _o != null;
+
+  /// Follows the profile in use: one that has its own settings gets them, others get the shared ones.
+  void bindProfiles(ProfilesState p) {
+    _syncProfile(p, notify: false);
+    p.addListener(() => _syncProfile(p));
+  }
+
+  void _syncProfile(ProfilesState p, {bool notify = true}) {
+    final cur = p.current;
+    if (!cur.ownSettings) {
+      // Turning it off forgets the own settings; just moving to another profile keeps them.
+      if (_oId == cur.id && _o != null) _p?.remove('profileSettings:$_oId');
+      final had = _o != null;
+      _o = null;
+      _oId = null;
+      if (had && notify) notifyListeners();
+      return;
+    }
+    if (_o != null && _oId == cur.id) return;
+    Map<String, Object>? loaded;
+    try {
+      final raw = _p?.getString('profileSettings:${cur.id}');
+      if (raw != null) {
+        loaded = {};
+        (jsonDecode(raw) as Map<String, dynamic>).forEach((k, v) {
+          final c = profileKeys.contains(k) ? _coerce(k, v as Object) : null;
+          if (c != null) loaded![k] = c;
+        });
+      }
+    } catch (_) {
+      loaded = null;
+    }
+    // First time: start from what is in use now, so turning it on changes nothing you can see.
+    _o = loaded ?? {for (final k in profileKeys) k: _v[k]!};
+    _oId = cur.id;
+    if (loaded == null) _saveOverlay();
+    if (notify) notifyListeners();
+  }
+
+  void _saveOverlay() {
+    if (_o == null || _oId == null) return;
+    _p?.setString('profileSettings:$_oId', jsonEncode(_o));
+  }
 
   String get decoder => _g('decoder');
   int get bufferSecs => _g('bufferSecs');
@@ -117,6 +182,18 @@ class SettingsState extends ChangeNotifier {
 
   UiLayout get layout => UiLayout.fromKey(_g<String>('layout'));
 
+  /// The accent the viewer picked, or null to keep the layout's own.
+  Color? get accent => _g<int>('accentColor') == 0 ? null : Color(_g<int>('accentColor'));
+  String get background => _g('background');
+  String get screensaver => _g('screensaver');
+
+  /// Minutes without input before the screensaver starts; 0 = never.
+  int get screensaverMinutes {
+    final v = _g<String>('screensaver');
+    if (v == 'auto') return isTv ? 10 : 0;
+    return int.tryParse(v) ?? 0;
+  }
+
   /// Text and poster scales as applied. TV mode no longer adds to them: the TV canvas sets the size.
   double get textScale => uiScale;
   double get posterScale => posterSize;
@@ -128,6 +205,9 @@ class SettingsState extends ChangeNotifier {
   bool get use24h => _g('use24h');
   String get userAgent => _g('userAgent');
   String get tmdbKey => _g('tmdbKey');
+  String get osKey => _g('osKey');
+  String get osUser => _g('osUser');
+  String get osPass => _g('osPass');
   bool get realPosters => _g('realPosters');
 
   /// All shaders in pipeline order.
@@ -190,19 +270,28 @@ class SettingsState extends ChangeNotifier {
   void set(String key, Object value, {bool notify = true}) {
     final v = _coerce(key, value);
     if (v == null) throw ArgumentError('Bad setting $key=$value');
-    _v[key] = v;
-    _persist(key, v);
+    if (_o != null && profileKeys.contains(key)) {
+      _o![key] = v;
+      _saveOverlay();
+    } else {
+      _v[key] = v;
+      _persist(key, v);
+    }
     if (key == 'userAgent') NetConfig.userAgent = v as String;
     if (notify) notifyListeners();
   }
 
-  bool isDefault(String key) => _v[key] == defaults[key];
+  bool isDefault(String key) => _g<Object>(key) == defaults[key];
 
   /// Restores every preference (and the shader toggles) to its default. Sources,
   /// My List and resume positions are not touched.
   void resetAll() {
     for (final k in defaults.keys) {
       _p?.remove(k);
+    }
+    if (_o != null) {
+      _o = {for (final k in profileKeys) k: defaults[k]!};
+      _saveOverlay();
     }
     _v
       ..clear()
