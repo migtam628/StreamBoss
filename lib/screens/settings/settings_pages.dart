@@ -5,6 +5,7 @@ import '../../services/app_icon.dart';
 import '../../layouts/common.dart';
 import '../../layouts/ui_layout.dart';
 import '../../layouts/layout_picker.dart';
+import '../collections_screen.dart';
 import '../free_playlists_screen.dart';
 import '../onboarding_screen.dart';
 import 'package:flutter/services.dart';
@@ -514,11 +515,25 @@ class LibraryPage extends StatelessWidget {
         onChanged: (v) => st.set('hideAdult', v),
       ),
       SwitchRow(
+        icon: Icons.merge_type,
+        title: 'Merge duplicate channels',
+        subtitle: 'Shows one entry when a channel is listed several times (HD, SD, a backup). '
+            'The best copy plays, and the others take over if it fails.',
+        value: st.mergeDuplicates,
+        onChanged: (v) => st.set('mergeDuplicates', v),
+      ),
+      SwitchRow(
         icon: Icons.sort_by_alpha,
         title: 'Sort A–Z',
         subtitle: 'Alphabetical channels, movies, series and categories instead of the provider\'s order',
         value: st.sortAz,
         onChanged: (v) => st.set('sortAz', v),
+      ),
+      ActionRow(
+        icon: Icons.collections_bookmark_outlined,
+        title: 'Collections',
+        subtitle: 'Lists you name, like "Friday movie night". Add to one from a movie or series page.',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionsScreen())),
       ),
       const SettingsHeader('TV guide'),
       SwitchRow(
@@ -866,6 +881,15 @@ class NetworkPage extends StatelessWidget {
           onPressed: () => st.set('tmdbKey', ''),
         ),
         onTap: () => _tmdbKey(context, st),
+      ),
+      SwitchRow(
+        icon: Icons.image_outlined,
+        title: 'Fill in missing posters',
+        subtitle: st.tmdbKey.isEmpty
+            ? 'Needs the TMDB key above. Looks up a poster for movies and series your provider has none for.'
+            : 'Looks up a poster for movies and series your provider has none for, and remembers it.',
+        value: st.realPosters,
+        onChanged: (v) => st.set('realPosters', v),
       ),
       ActionRow(
         icon: Icons.open_in_new,

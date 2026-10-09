@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
 import '../services/demo_catalog.dart';
 import '../services/library_view.dart';
 import '../services/m3u_parser.dart';
+import '../services/recommend.dart';
+import '../services/search.dart';
 import '../services/stream_check.dart';
 import '../services/net_config.dart';
 import '../services/provider_url.dart';
@@ -41,9 +45,10 @@ class AppState extends ChangeNotifier {
 
   SettingsState? _settings;
   ProfilesState? _profiles;
-  bool _lastAdult = false, _lastSort = false, _lastHideDead = false;
+  bool _lastAdult = false, _lastSort = false, _lastHideDead = false, _lastMerge = true;
   Catalog? _viewSrc;
-  bool _viewAdult = false, _viewSort = false, _viewHideDead = false, _viewKids = false;
+  bool _viewAdult = false, _viewSort = false, _viewHideDead = false, _viewKids = false, _viewMerge = false;
+  final Map<String, List<MediaItem>> _alternates = {};
   int _viewVer = -1, _ver = 0;
   Catalog _view = const Catalog();
 
@@ -53,11 +58,16 @@ class AppState extends ChangeNotifier {
     _lastAdult = s.hideAdult;
     _lastSort = s.sortAz;
     _lastHideDead = s.hideDead;
+    _lastMerge = s.mergeDuplicates;
     s.addListener(() {
-      if (s.hideAdult != _lastAdult || s.sortAz != _lastSort || s.hideDead != _lastHideDead) {
+      if (s.hideAdult != _lastAdult ||
+          s.sortAz != _lastSort ||
+          s.hideDead != _lastHideDead ||
+          s.mergeDuplicates != _lastMerge) {
         _lastAdult = s.hideAdult;
         _lastSort = s.sortAz;
         _lastHideDead = s.hideDead;
+        _lastMerge = s.mergeDuplicates;
         notifyListeners();
       }
     });
@@ -102,7 +112,16 @@ class AppState extends ChangeNotifier {
     favorites.clear();
     recents.clear();
     positions.clear();
+    recentSearches.clear();
+    collections.clear();
     if (p == null) return;
+    try {
+      final raw = p.getString(_k('collections'));
+      if (raw != null) {
+        (jsonDecode(raw) as Map<String, dynamic>).forEach((k, v) => collections[k] = [for (final e in (v as List)) '$e']);
+      }
+    } catch (_) {}
+    recentSearches.addAll(p.getStringList(_k('searches')) ?? const []);
     final pos = p.getString(_k('positions'));
     if (pos != null) {
       positions.addAll((jsonDecode(pos) as Map<String, dynamic>).map((k, v) => MapEntry(k, v as int)));
@@ -120,14 +139,24 @@ class AppState extends ChangeNotifier {
     final sort = _settings?.sortAz ?? false;
     final hideDead = (_settings?.hideDead ?? false) && deadKeys.isNotEmpty;
     final kids = _profiles?.current.kids ?? false;
+    final merge = _settings?.mergeDuplicates ?? false;
     if (!identical(_viewSrc, catalog) ||
         adult != _viewAdult ||
         sort != _viewSort ||
         hideDead != _viewHideDead ||
         kids != _viewKids ||
+        merge != _viewMerge ||
         _ver != _viewVer) {
+      _alternates.clear();
       _view = buildView(catalog,
-          hideAdult: adult, sortAz: sort, hideKeys: hideDead ? deadKeys : const {}, kidsOnly: kids);
+          hideAdult: adult,
+          sortAz: sort,
+          hideKeys: hideDead ? deadKeys : const {},
+          kidsOnly: kids,
+          mergeDuplicates: merge,
+          deadKeys: deadKeys,
+          alternatesOut: _alternates);
+      _viewMerge = merge;
       _viewSrc = catalog;
       _viewAdult = adult;
       _viewSort = sort;
@@ -290,7 +319,14 @@ class AppState extends ChangeNotifier {
   Future<List<Episode>> episodes(MediaItem series) async =>
       _xtream?.episodes(series.id) ?? [];
 
-  bool isFavorite(MediaItem i) => favorites.contains(i.key);
+  /// Other copies of a merged channel, best first (empty for anything else).
+  List<MediaItem> alternatesFor(MediaItem i) {
+    shown; // makes sure the merge is current
+    return _alternates[i.key] ?? const [];
+  }
+
+  bool isFavorite(MediaItem i) =>
+      favorites.contains(i.key) || (i.kind == MediaKind.live && alternatesFor(i).any((a) => favorites.contains(a.key)));
 
   void toggleFavorite(MediaItem i) {
     if (!favorites.remove(i.key)) favorites.add(i.key);
@@ -388,6 +424,194 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- Posters from TMDB --------------------------------------------------------------------
+
+  Map<String, String>? _posterCache; // item key -> poster address, '' = TMDB has none
+  final Map<String, Future<String?>> _posterFutures = {};
+  int _posterBusy = 0;
+  final List<void Function()> _posterWaiting = [];
+  http.Client? _tmdbClient; // tests
+
+  @visibleForTesting
+  void useTmdbClientForTest(http.Client c) => _tmdbClient = c;
+
+  /// Missing posters can be filled in: there is a TMDB key and the setting is on.
+  bool get canResolvePosters => (_settings?.tmdbKey.isNotEmpty ?? false) && (_settings?.realPosters ?? true);
+
+  Map<String, String> get _posters {
+    if (_posterCache != null) return _posterCache!;
+    final out = <String, String>{};
+    try {
+      final raw = _prefs?.getString('posterCache');
+      if (raw != null) (jsonDecode(raw) as Map<String, dynamic>).forEach((k, v) => out[k] = '$v');
+    } catch (_) {}
+    return _posterCache = out;
+  }
+
+  /// The poster of [i]: its own, else one from TMDB (asked for politely, three at a time, and remembered).
+  Future<String?> posterFor(MediaItem i) {
+    final own = i.poster;
+    if (own != null && own.isNotEmpty) return Future.value(own);
+    if (!canResolvePosters || i.kind == MediaKind.live) return Future.value(null);
+    final cached = _posters[i.key];
+    if (cached != null) return Future.value(cached.isEmpty ? null : cached);
+    return _posterFutures.putIfAbsent(i.key, () => _askTmdb(i));
+  }
+
+  Future<String?> _askTmdb(MediaItem i) async {
+    while (_posterBusy >= 3) {
+      final turn = Completer<void>();
+      _posterWaiting.add(turn.complete);
+      await turn.future;
+    }
+    _posterBusy++;
+    try {
+      final url = await TmdbService(_settings!.tmdbKey, client: _tmdbClient).posterFor(i);
+      if (url == null) return null;
+      final c = _posters;
+      c[i.key] = url;
+      if (c.length > 4000) c.remove(c.keys.first);
+      _prefs?.setString('posterCache', jsonEncode(c));
+      return url.isEmpty ? null : url;
+    } finally {
+      _posterBusy--;
+      if (_posterWaiting.isNotEmpty) _posterWaiting.removeAt(0)();
+    }
+  }
+
+  // --- Recommendations ----------------------------------------------------------------------
+
+  Recommendation? _rec;
+  String? _recKey;
+
+  /// A shelf of unseen movies and series that fit what was watched and saved (null without any history).
+  Recommendation? get recommendation {
+    final c = shown;
+    final key = '${identityHashCode(c)}|${recents.map((e) => e.key).join(',')}|${favorites.length}|${positions.length}';
+    if (key != _recKey) {
+      _recKey = key;
+      _rec = recommend(catalog: c, recents: recents, favorites: favorites, positions: positions);
+    }
+    return _rec;
+  }
+
+  // --- Collections --------------------------------------------------------------------------
+
+  /// Named lists the viewer makes (beyond My List): name to the keys of the items in it, in the order added.
+  /// Kept per profile. An item that is not in the library on screen is simply not shown.
+  final Map<String, List<String>> collections = {};
+
+  Map<String, MediaItem>? _keyIndex;
+  Catalog? _keyIndexSrc;
+
+  MediaItem? _byKey(String key) {
+    final c = shown;
+    if (_keyIndex == null || !identical(_keyIndexSrc, c)) {
+      _keyIndex = {for (final i in c.all) i.key: i};
+      _keyIndexSrc = c;
+    }
+    return _keyIndex![key];
+  }
+
+  void _saveCollections() {
+    _prefs?.setString(_k('collections'), jsonEncode(collections));
+    notifyListeners();
+  }
+
+  /// Makes a collection. False when the name is blank or taken.
+  bool createCollection(String name) {
+    final n = name.trim();
+    if (n.isEmpty || collections.keys.any((k) => k.toLowerCase() == n.toLowerCase())) return false;
+    collections[n] = [];
+    _saveCollections();
+    return true;
+  }
+
+  bool renameCollection(String from, String to) {
+    final n = to.trim();
+    if (!collections.containsKey(from) || n.isEmpty) return false;
+    if (n.toLowerCase() != from.toLowerCase() && collections.keys.any((k) => k.toLowerCase() == n.toLowerCase())) return false;
+    final items = collections.remove(from)!;
+    collections[n] = items;
+    _saveCollections();
+    return true;
+  }
+
+  void deleteCollection(String name) {
+    if (collections.remove(name) != null) _saveCollections();
+  }
+
+  bool inCollection(String name, MediaItem i) => collections[name]?.contains(i.key) ?? false;
+
+  /// Adds [i] to [name], or takes it out if it is there.
+  void toggleInCollection(String name, MediaItem i) {
+    final l = collections[name];
+    if (l == null) return;
+    if (!l.remove(i.key)) l.add(i.key);
+    _saveCollections();
+  }
+
+  /// The items of [name] that are in the library now, in the order they were added.
+  List<MediaItem> collectionItems(String name) => [
+        for (final k in collections[name] ?? const <String>[])
+          if (_byKey(k) case final it?) it,
+      ];
+
+  // --- Catch-up (provider archive) ----------------------------------------------------------
+
+  @visibleForTesting
+  void useXtreamForTest(XtreamClient c) => _xtream = c;
+
+  /// True when [ch] keeps an archive and this source can play it.
+  bool canCatchUp(MediaItem ch) => ch.kind == MediaKind.live && ch.archiveDays > 0 && _xtream != null;
+
+  /// Whether [p] on [ch] can be watched from the archive: it has started and is within the days kept.
+  bool catchUpFor(MediaItem ch, Programme p, {DateTime? now}) {
+    if (!canCatchUp(ch)) return false;
+    final n = now ?? DateTime.now();
+    return !p.start.isAfter(n) && p.start.isAfter(n.subtract(Duration(days: ch.archiveDays)));
+  }
+
+  /// The archive stream of [p] on [ch] (the whole programme, from its start), or null.
+  String? catchUpUrl(MediaItem ch, Programme p) {
+    if (!canCatchUp(ch)) return null;
+    return _xtream!.timeshiftUrl(ch.id, p.start, p.end.difference(p.start));
+  }
+
+  // --- Search -------------------------------------------------------------------------------
+
+  SearchIndex? _searchIdx;
+  Catalog? _searchSrc;
+
+  /// The searchable form of what is on screen (built once per library and filter change).
+  SearchIndex get searchIndex {
+    final c = shown;
+    if (_searchIdx == null || !identical(_searchSrc, c)) {
+      _searchIdx = SearchIndex.of(c);
+      _searchSrc = c;
+    }
+    return _searchIdx!;
+  }
+
+  /// What was searched for lately, newest first. Kept per profile.
+  final List<String> recentSearches = [];
+
+  void rememberSearch(String q) {
+    final t = q.trim();
+    if (t.length < 2) return;
+    recentSearches.removeWhere((e) => e.toLowerCase() == t.toLowerCase());
+    recentSearches.insert(0, t);
+    if (recentSearches.length > 8) recentSearches.removeLast();
+    _prefs?.setStringList(_k('searches'), recentSearches);
+    notifyListeners();
+  }
+
+  void clearSearches() {
+    recentSearches.clear();
+    _prefs?.remove(_k('searches'));
+    notifyListeners();
+  }
+
   // --- Dead-stream check -------------------------------------------------------------------
 
   /// Per source: keys of live channels that failed a check, and how many channels were checked.
@@ -458,6 +682,13 @@ class AppState extends ChangeNotifier {
 
   void cancelCheck() => _cancelCheck = true;
 
+  @visibleForTesting
+  Future<void> setDeadForTest(Set<String> keys) async {
+    _dead[active!.name] = keys;
+    _ver++;
+    notifyListeners();
+  }
+
   void forgetCheck() {
     final n = active?.name;
     if (n == null) return;
@@ -480,7 +711,7 @@ class AppState extends ChangeNotifier {
 
   bool get hasGuideSource => _guideUri != null;
 
-  /// Loads and parses the XMLTV guide once per library load (8h window).
+  /// Loads and parses the XMLTV guide once per library load: the last day (for catch-up) and the next 8 hours.
   Future<void> loadGuide({bool force = false}) async {
     final uri = _guideUri;
     if (uri == null || guideLoading || (_guideLoaded && !force)) return;
@@ -493,7 +724,7 @@ class AppState extends ChangeNotifier {
       final now = DateTime.now();
       guide = await compute(parseXmltvBytesJob, <Object>[
         res.bodyBytes,
-        now.subtract(const Duration(hours: 1)).millisecondsSinceEpoch,
+        now.subtract(const Duration(hours: 24)).millisecondsSinceEpoch,
         now.add(const Duration(hours: 8)).millisecondsSinceEpoch,
       ]);
       _guideLoaded = true;

@@ -1,4 +1,5 @@
 import 'package:media_kit/media_kit.dart';
+import 'chapters.dart';
 
 /// Web: libmpv properties are not available.
 Future<void> applyBuffer(Player player, int cacheSecs) async {}
@@ -19,3 +20,9 @@ Future<void> applyPlaybackPrefs(
 
 /// Web: the browser picks the quality.
 Future<void> applyPreview(Player player) async {}
+
+/// Web: the browser keeps what it keeps.
+Future<void> allowRewind(Player player, int megabytes) async {}
+
+/// Web: the browser does not tell us about chapters.
+Future<List<Chapter>> readChapters(Player player) async => const [];

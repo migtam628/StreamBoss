@@ -5,7 +5,10 @@ import 'package:xml/xml.dart';
 class Programme {
   final String title;
   final DateTime start, end;
-  const Programme(this.title, this.start, this.end);
+
+  /// What the guide says the programme is about (cut to 300 characters), if it says.
+  final String? desc;
+  const Programme(this.title, this.start, this.end, {this.desc});
 
   bool get isNow {
     final n = DateTime.now();
@@ -60,7 +63,10 @@ XmltvData parseXmltv(String xml, {required DateTime from, required DateTime to})
     if (id == null || start == null || end == null) continue;
     if (!end.isAfter(from) || !start.isBefore(to)) continue;
     final title = p.getElement('title')?.innerText.trim() ?? '';
-    (progs[id] ??= []).add(Programme(title.isEmpty ? 'Untitled' : title, start, end));
+    var desc = p.getElement('desc')?.innerText.trim();
+    if (desc != null && desc.length > 300) desc = '${desc.substring(0, 297)}...';
+    (progs[id] ??= []).add(Programme(title.isEmpty ? 'Untitled' : title, start, end,
+        desc: desc == null || desc.isEmpty ? null : desc));
   }
   for (final l in progs.values) {
     l.sort((a, b) => a.start.compareTo(b.start));

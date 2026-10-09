@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
 import '../models/media.dart';
 import '../layouts/ui_layout.dart';
 import 'focus_card.dart';
@@ -42,10 +44,7 @@ class MediaTile extends StatelessWidget {
         children: [
           Container(
             color: pal.surfaceHi,
-            child: item.poster == null
-                ? _fallback(pal)
-                : NetImage(item.poster!,
-                    fit: landscape ? BoxFit.contain : BoxFit.cover, fallback: () => _fallback(pal)),
+            child: _Art(item: item, fit: landscape ? BoxFit.contain : BoxFit.cover, fallback: () => _fallback(pal)),
           ),
           Positioned(
             left: 0,
@@ -102,4 +101,55 @@ class MediaTile extends StatelessWidget {
           size: 36,
         ),
       );
+}
+
+/// The poster of [item], or, when it has none and there is a TMDB key, the one TMDB has.
+class _Art extends StatefulWidget {
+  final MediaItem item;
+  final BoxFit fit;
+  final Widget Function() fallback;
+  const _Art({required this.item, required this.fit, required this.fallback});
+
+  @override
+  State<_Art> createState() => _ArtState();
+}
+
+class _ArtState extends State<_Art> {
+  Future<String?>? _future;
+
+  void _ask() {
+    final i = widget.item;
+    if (i.poster != null || i.kind == MediaKind.live) {
+      _future = null;
+      return;
+    }
+    _future = Provider.of<AppState?>(context, listen: false)?.posterFor(i);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ask();
+  }
+
+  @override
+  void didUpdateWidget(_Art old) {
+    super.didUpdateWidget(old);
+    if (old.item.key != widget.item.key) _ask();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final i = widget.item;
+    if (i.poster != null) return NetImage(i.poster!, fit: widget.fit, fallback: widget.fallback);
+    final f = _future;
+    if (f == null) return widget.fallback();
+    return FutureBuilder<String?>(
+      future: f,
+      builder: (_, snap) {
+        final url = snap.data;
+        return url == null || url.isEmpty ? widget.fallback() : NetImage(url, fit: widget.fit, fallback: widget.fallback);
+      },
+    );
+  }
 }

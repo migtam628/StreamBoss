@@ -43,12 +43,14 @@ class SettingsState extends ChangeNotifier {
     // library & guide
     'hideAdult': false,
     'sortAz': false,
+    'mergeDuplicates': true, // show one entry for the same channel offered several times
     'hideDead': false, // hide live channels that failed a check
     'livePreview': true, // show a live picture in the Cable Box and Mosaic layouts
     'use24h': true,
     // network & metadata
     'userAgent': '',
     'tmdbKey': '',
+    'realPosters': true, // fill in missing posters from TMDB (needs the key)
   };
 
   /// Keys that must never leave the device (backups, diagnostics).
@@ -121,10 +123,12 @@ class SettingsState extends ChangeNotifier {
   bool get hideAdult => _g('hideAdult');
   bool get sortAz => _g('sortAz');
   bool get hideDead => _g('hideDead');
+  bool get mergeDuplicates => _g('mergeDuplicates');
   bool get livePreview => _g('livePreview');
   bool get use24h => _g('use24h');
   String get userAgent => _g('userAgent');
   String get tmdbKey => _g('tmdbKey');
+  bool get realPosters => _g('realPosters');
 
   /// All shaders in pipeline order.
   List<ShaderDef> get shaders {

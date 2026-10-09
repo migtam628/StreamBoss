@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:media_kit/media_kit.dart';
+import 'chapters.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Native platforms: tune libmpv's demuxer cache from the buffer preset.
@@ -65,5 +66,24 @@ Future<void> applyPreview(Player player) async {
     await plat.setProperty('hls-bitrate', 'min');
     await plat.setProperty('cache', 'yes');
     await plat.setProperty('cache-secs', '6');
+  }
+}
+
+/// Keeps [megabytes] of what has already been played, so a live channel can be rewound that far.
+Future<void> allowRewind(Player player, int megabytes) async {
+  final plat = player.platform;
+  if (plat is NativePlayer) {
+    await plat.setProperty('demuxer-max-back-bytes', '${megabytes * 1024 * 1024}');
+  }
+}
+
+/// The chapters of what is playing (empty when the file has none). They may take a moment to appear.
+Future<List<Chapter>> readChapters(Player player) async {
+  final plat = player.platform;
+  if (plat is! NativePlayer) return const [];
+  try {
+    return parseChapters(await plat.getProperty('chapter-list'));
+  } catch (_) {
+    return const [];
   }
 }

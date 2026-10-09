@@ -1,4 +1,5 @@
 import '../models/media.dart';
+import 'channel_merge.dart';
 
 final _adult = RegExp(r'(\badult\b|\bxxx\b|\bporn|\b18\s*\+|\berotic|\bsex\b)', caseSensitive: false);
 
@@ -19,8 +20,11 @@ Catalog buildView(Catalog c,
     {required bool hideAdult,
     required bool sortAz,
     Set<String> hideKeys = const {},
-    bool kidsOnly = false}) {
-  if (!hideAdult && !sortAz && hideKeys.isEmpty && !kidsOnly) return c;
+    bool kidsOnly = false,
+    bool mergeDuplicates = false,
+    Set<String> deadKeys = const {},
+    Map<String, List<MediaItem>>? alternatesOut}) {
+  if (!hideAdult && !sortAz && hideKeys.isEmpty && !kidsOnly && !mergeDuplicates) return c;
 
   Set<String> blocked(List<Category> cs) => {
         for (final x in cs)
@@ -51,11 +55,18 @@ Catalog buildView(Catalog c,
   final bl = blocked(c.liveCategories);
   final bm = blocked(c.movieCategories);
   final bs = blocked(c.seriesCategories);
+  var live = keepListed(c.live, c.liveCategories, bl);
+  if (mergeDuplicates) {
+    // Merge before sorting so the shown copy keeps its place in the provider's order.
+    final m = mergeDuplicateChannels(live, deadKeys: deadKeys);
+    live = m.channels;
+    alternatesOut?.addAll(m.alternates);
+  }
   return Catalog(
     liveCategories: cats(c.liveCategories, bl),
     movieCategories: cats(c.movieCategories, bm),
     seriesCategories: cats(c.seriesCategories, bs),
-    live: keepListed(c.live, c.liveCategories, bl),
+    live: live,
     movies: keepListed(c.movies, c.movieCategories, bm),
     series: keepListed(c.series, c.seriesCategories, bs),
     epgUrl: c.epgUrl,

@@ -52,15 +52,38 @@ String cleanTitle(String raw) {
 
 class TmdbService {
   final String apiKey;
-  TmdbService(this.apiKey);
+  final http.Client? _client;
+  TmdbService(this.apiKey, {http.Client? client}) : _client = client;
 
   static const _img = 'https://image.tmdb.org/t/p';
 
   Future<Map<String, dynamic>?> _json(String path, Map<String, String> q) async {
     final uri = Uri.https('api.themoviedb.org', '/3/$path', {'api_key': apiKey, ...q});
-    final res = await http.get(uri).timeout(const Duration(seconds: 15));
+    final res = await (_client?.get(uri) ?? http.get(uri)).timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) return null;
     return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// A poster address for a movie or series that came without one: '' when TMDB has none for it,
+  /// null when it could not be asked (no key, no network), so a later try is allowed.
+  Future<String?> posterFor(MediaItem item) async {
+    if (apiKey.isEmpty || item.kind == MediaKind.live) return null;
+    final type = item.kind == MediaKind.series ? 'tv' : 'movie';
+    final year = RegExp(r'\b(19|20)\d{2}\b').firstMatch(item.name)?.group(0);
+    try {
+      final search = await _json('search/$type', {
+        'query': cleanTitle(item.name),
+        if (year != null) (type == 'tv' ? 'first_air_date_year' : 'primary_release_year'): year,
+      });
+      if (search == null) return null;
+      for (final r in (search['results'] as List? ?? const [])) {
+        final path = r['poster_path'] as String?;
+        if (path != null && path.isNotEmpty) return '$_img/w342$path';
+      }
+      return '';
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<TmdbInfo?> lookup(MediaItem item) async {

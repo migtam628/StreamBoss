@@ -88,6 +88,15 @@ class Shelf extends StatelessWidget {
   }
 }
 
+/// The shelves that belong to this viewer: what to watch next, then each collection they made.
+List<Widget> personalShelves(AppState s, {bool dense = false}) {
+  final r = s.recommendation;
+  return [
+    if (r != null) Shelf(title: r.reason, items: r.items, dense: dense),
+    for (final n in s.collections.keys) Shelf(title: n, items: s.collectionItems(n), dense: dense),
+  ];
+}
+
 /// Marquee's opening feature: big artwork, title, Play focused on a TV.
 class FeatureHero extends StatelessWidget {
   final MediaItem item;
@@ -221,6 +230,7 @@ class LayoutHome extends StatelessWidget {
               if (feature != null) FeatureHero(item: feature),
               Shelf(title: 'Continue watching', items: s.recents),
               Shelf(title: 'My list', items: s.favoriteItems),
+              ...personalShelves(s),
               Shelf(title: 'Live now', items: c.live.take(20).toList()),
               Shelf(title: 'Movies', items: c.movies.take(30).toList()),
               Shelf(title: 'Series', items: c.series.take(30).toList()),
@@ -235,6 +245,7 @@ class LayoutHome extends StatelessWidget {
                   items: c.live.take(20).toList()),
               Shelf(dense: true, title: 'Continue watching', items: s.recents),
               Shelf(dense: true, title: 'My list', items: s.favoriteItems),
+              ...personalShelves(s, dense: true),
               Shelf(
                   dense: true,
                   title: 'Movies',
@@ -262,6 +273,7 @@ class LayoutHome extends StatelessWidget {
             ('All', mix),
             if (s.recents.isNotEmpty) ('Continue', s.recents),
             if (s.favoriteItems.isNotEmpty) ('My list', s.favoriteItems),
+            ..._personalSections(s),
             if (c.movies.isNotEmpty) ('Movies', c.movies.take(60).toList()),
             if (c.series.isNotEmpty) ('Series', c.series.take(60).toList()),
             if (c.live.isNotEmpty) ('Live', c.live.take(60).toList()),
@@ -308,10 +320,21 @@ class LayoutHome extends StatelessWidget {
           ),
           if (s.recents.isNotEmpty) ('Continue', s.recents),
           if (s.favoriteItems.isNotEmpty) ('My list', s.favoriteItems),
+          ..._personalSections(s),
           if (c.movies.isNotEmpty) ('Movies', c.movies.take(60).toList()),
           if (c.series.isNotEmpty) ('Series', c.series.take(60).toList()),
           if (c.live.isNotEmpty) ('Live', c.live.take(60).toList()),
         ]);
     }
   }
+}
+
+/// [personalShelves] as the (title, items) pairs that Spotlight and Coverflow use. Empty ones are left out.
+List<(String, List<MediaItem>)> _personalSections(AppState s) {
+  final r = s.recommendation;
+  return [
+    if (r != null && r.items.isNotEmpty) (r.reason, r.items),
+    for (final n in s.collections.keys)
+      if (s.collectionItems(n).isNotEmpty) (n, s.collectionItems(n)),
+  ];
 }

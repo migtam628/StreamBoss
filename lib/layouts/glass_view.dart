@@ -134,6 +134,7 @@ class GlassHome extends StatelessWidget {
       _Strip(title: 'Live now', items: c.live.take(12).toList(), queue: c.live),
       _Strip(title: 'Continue watching', items: s.recents.take(12).toList()),
       Shelf(title: 'My list', items: s.favoriteItems),
+      ...personalShelves(s),
       Shelf(title: 'Movies', items: c.movies.take(30).toList()),
       Shelf(title: 'Series', items: c.series.take(30).toList()),
     ]);

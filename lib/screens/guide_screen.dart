@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../layouts/ui_layout.dart';
 import '../widgets/focus_card.dart';
+import '../widgets/programme_sheet.dart';
 import 'open_item.dart';
 
 enum _Mode { grid, list }
@@ -260,7 +261,9 @@ class _GuideGridState extends State<GuideGrid> {
             widget.onFocusProgramme?.call(ch, p);
           }
         },
-        onTap: () => openItem(context, ch, queue: widget.channels),
+        // The programme on now opens the channel; any other one shows what it is (and its catch-up).
+        onTap: () => p.isNow ? openItem(context, ch, queue: widget.channels) : showProgrammeSheet(context, ch, p, queue: widget.channels),
+        onLongPress: () => showProgrammeSheet(context, ch, p, queue: widget.channels),
         child: Container(
           color: p.isNow ? LayoutPalette.of(context).accent.withValues(alpha: 0.35) : LayoutPalette.of(context).surfaceHi,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

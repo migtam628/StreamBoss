@@ -39,6 +39,7 @@ class DaylightHome extends StatelessWidget {
       _LiveNow(items: c.live.take(20).toList()),
       Shelf(title: 'Continue watching', items: s.recents),
       Shelf(title: 'My list', items: s.favoriteItems),
+      ...personalShelves(s),
       Shelf(title: 'Movies', items: c.movies.take(30).toList()),
       Shelf(title: 'Series', items: c.series.take(30).toList()),
     ]);

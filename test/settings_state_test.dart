@@ -85,6 +85,9 @@ void main() {
     expect(fmtTime(DateTime(2024, 1, 1, 18, 5), use24h: false), '6:05 PM');
     expect(fmtTime(DateTime(2024, 1, 1, 0, 0), use24h: false), '12:00 AM');
     expect(fmtTime(DateTime(2024, 1, 1, 12, 30), use24h: false), '12:30 PM');
+    // Guide times are UTC; they show in the device's own time zone.
+    final utc = DateTime.utc(2024, 7, 1, 18, 5);
+    expect(fmtTime(utc, use24h: true), fmtTime(utc.toLocal(), use24h: true));
   });
 
   group('surfaceOutput (Android TV hardware surface)', () {

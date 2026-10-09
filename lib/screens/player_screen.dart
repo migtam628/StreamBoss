@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/media.dart';
 import '../services/channel_number.dart';
+import '../services/chapters.dart';
 import '../services/crash_guard.dart';
 import '../services/mpv_props.dart';
 import '../services/next_episode.dart';
@@ -15,6 +16,8 @@ import '../services/pip.dart';
 import '../services/provider_url.dart';
 import '../services/xtream_client.dart';
 import '../state/app_state.dart';
+import '../services/time_format.dart';
+import 'open_item.dart';
 import '../state/settings_state.dart';
 import '../theme.dart';
 
@@ -36,6 +39,9 @@ class PlayerScreen extends StatefulWidget {
   /// The episodes of the series this one belongs to, in order, so the next one can start by itself.
   final List<MediaItem>? episodes;
 
+  /// Playing a past programme from the provider's archive: nothing is added to history or resume positions.
+  final bool catchUp;
+
   const PlayerScreen({
     super.key,
     required this.title,
@@ -44,6 +50,7 @@ class PlayerScreen extends StatefulWidget {
     this.queue,
     this.startAt,
     this.episodes,
+    this.catchUp = false,
   });
 
   @override
@@ -64,7 +71,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   final _pos = ValueNotifier(Duration.zero);
 
   final _subs = <StreamSubscription>[];
-  Timer? _hideTimer, _saveTimer, _sleepTimer, _statsTimer, _typeTimer, _toastTimer, _nextTimer;
+  Timer? _hideTimer, _saveTimer, _sleepTimer, _statsTimer, _typeTimer, _toastTimer, _nextTimer, _stallTimer;
   DateTime? _sleepAt;
 
   late int _index;
@@ -85,6 +92,30 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   bool _canPip = false;
   String? _error;
   bool _reportedPlaying = false;
+
+  // How far behind the live picture this is. The live edge is where the first picture was, moving on
+  // with the clock, so a pause, a stall or a rewind all show up as time behind.
+  Duration? _anchorPos;
+  DateTime? _anchorAt;
+  Timer? _lagTimer;
+
+  // Chapters (movies and episodes): a Skip intro or Skip credits button when the one playing is named so.
+  List<Chapter> _chapters = const [];
+  SkipHint? _skip;
+  int _chapterGen = 0;
+
+  Duration get _behind {
+    final a = _anchorPos, at = _anchorAt;
+    if (!_live || a == null || at == null) return Duration.zero;
+    final b = a + DateTime.now().difference(at) - _pos.value;
+    return b.isNegative ? Duration.zero : b;
+  }
+
+  // A merged channel has other copies. When the one playing fails, the next one is tried.
+  final _override = <int, MediaItem>{}; // queue position -> the copy playing instead
+  final _altTried = <String, int>{}; // channel key -> copies tried so far
+
+  MediaItem _source(int i) => _override[i] ?? (_queue != null ? _queue![i] : widget.item);
 
   List<MediaItem>? get _queue => widget.queue;
   MediaItem get _cur => _queue != null ? _queue![_index] : _vod;
@@ -117,6 +148,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _player.stream.log.listen((l) => CrashGuard.log('${l.level} ${l.prefix}: ${redactUrls(l.text)}')),
       _player.stream.error.listen((e) {
         CrashGuard.log('error ${redactUrls(e)}');
+        if (_failover()) return;
         if (mounted) setState(() => _error = redactUrls(e));
       }),
       _player.stream.buffering.listen((v) => setState(() => _buffering = v)),
@@ -124,6 +156,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _player.stream.rate.listen((v) => setState(() => _rate = v)),
       _player.stream.position.listen((v) {
         _pos.value = v;
+        if (_anchorPos == null && v > Duration.zero) {
+          _anchorPos = v;
+          _anchorAt = DateTime.now();
+        }
+        if (_chapters.isNotEmpty) {
+          final h = skipHintAt(_chapters, v, _dur);
+          if (h?.kind != _skip?.kind || h?.to != _skip?.to) setState(() => _skip = h);
+        }
         // Time moving means the stream opened and the video path is working; later deaths are not startup failures.
         if (v > Duration.zero && !_reportedPlaying) {
           _reportedPlaying = true;
@@ -151,6 +191,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       if (inPip) _hideControls();
     }));
     _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) => _savePosition());
+    // The "behind live" figure moves with the clock, so redraw it while the controls are showing.
+    _lagTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _live && _controls) setState(() {});
+    });
     _start();
     _scheduleHide();
   }
@@ -158,6 +202,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   Future<void> _start() async {
     try {
       await applyBuffer(_player, _settings.bufferSecs);
+      if (_live) await allowRewind(_player, _settings.isTv ? 24 : 48);
       await applyPlaybackPrefs(
         _player,
         audioLang: _settings.audioLang,
@@ -169,14 +214,13 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       CrashGuard.mark('props');
       CrashGuard.mark('open');
       if (_queue != null) {
-        await _player.open(Playlist(
-          [for (final q in _queue!) Media(q.streamUrl!, httpHeaders: q.headers)],
-          index: _index,
-        ));
+        await _openQueue();
       } else {
         await _player.open(Media(widget.url, start: widget.startAt, httpHeaders: _vod.headers));
       }
       CrashGuard.mark('opened');
+      _armStall();
+      _loadChapters();
       if (!_live && _settings.speed != 1) await _player.setRate(_settings.speed);
       _onChannelChanged();
     } catch (e) {
@@ -184,6 +228,40 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       CrashGuard.log('exception ${redactUrls('$e')}');
       if (mounted) setState(() => _error = redactUrls('$e'));
     }
+  }
+
+  Future<void> _openQueue() => _player.open(Playlist(
+        [for (var i = 0; i < _queue!.length; i++) Media(_source(i).streamUrl!, httpHeaders: _source(i).headers)],
+        index: _index,
+      ));
+
+  /// A live channel that has not started after a while counts as failed, like one that errors.
+  void _armStall() {
+    _stallTimer?.cancel();
+    if (!_live) return;
+    _stallTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted && !_reportedPlaying) _failover();
+    });
+  }
+
+  /// Moves to the next copy of the channel that is playing. False when there is none left (or
+  /// this is not a live channel), so the caller shows the error instead.
+  bool _failover() {
+    if (!_live || !mounted) return false;
+    final shown = _cur;
+    final alts = _app.alternatesFor(shown);
+    var n = _altTried[shown.key] ?? 0;
+    while (n < alts.length && alts[n].streamUrl == null) {
+      n++;
+    }
+    if (n >= alts.length) return false;
+    _altTried[shown.key] = n + 1;
+    _override[_index] = alts[n];
+    _reportedPlaying = false;
+    _flash('Trying another copy of ${shown.name}');
+    final alt = alts[n];
+    (_queue != null ? _openQueue() : _player.open(Media(alt.streamUrl!, httpHeaders: alt.headers))).then((_) => _armStall()).catchError((_) {});
+    return true;
   }
 
   @override
@@ -198,7 +276,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       ]);
 
   void _onChannelChanged() {
-    _app.markWatched(_cur);
+    _anchorPos = null; // a new channel starts a new "live edge"
+    if (!widget.catchUp) _app.markWatched(_cur);
     _epg = const [];
     if (_live) {
       _app.epg(_cur).then((e) {
@@ -208,7 +287,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   void _savePosition({bool notify = false}) {
-    if (!_live) {
+    if (!_live && !widget.catchUp) {
       _app.savePosition(_vod, _player.state.position, _player.state.duration, notify: notify);
     }
   }
@@ -228,6 +307,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _typeTimer?.cancel();
     _toastTimer?.cancel();
     _nextTimer?.cancel();
+    _stallTimer?.cancel();
+    _lagTimer?.cancel();
     _root.dispose();
     _playBtn.dispose();
     WakelockPlus.disable().catchError((_) {});
@@ -269,6 +350,178 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void _seekBy(int secs) {
     final target = _player.state.position + Duration(seconds: secs);
     _player.seek(target < Duration.zero ? Duration.zero : target);
+  }
+
+  /// Live rewind: goes back [secs] in what the player has kept. A stream that keeps nothing cannot.
+  Future<void> _rewindLive(int secs) async {
+    final before = _player.state.position;
+    await _player.seek(before - Duration(seconds: secs));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    if (_player.state.position >= before - const Duration(seconds: 1)) {
+      _flash('Nothing earlier is saved for this channel');
+    } else {
+      _flash('${_fmt(_behind)} behind live');
+    }
+  }
+
+  void _forwardLive(int secs) {
+    if (_behind < const Duration(seconds: 2)) {
+      _flash('Already live');
+      return;
+    }
+    _seekBy(secs);
+  }
+
+  /// Back to the live picture: the channel is opened again, which starts at the live edge.
+  Future<void> _goLive() async {
+    if (_behind < const Duration(seconds: 2)) return;
+    _anchorPos = null;
+    _reportedPlaying = true;
+    if (_queue != null) {
+      await _player.jump(_index);
+    } else {
+      await _player.open(Media(_source(0).streamUrl!, httpHeaders: _source(0).headers));
+    }
+    if (!_player.state.playing) await _player.play();
+    _flash('Back to live');
+  }
+
+  /// Reads the chapters once the file has told libmpv about them (that takes a moment).
+  Future<void> _loadChapters() async {
+    if (_live) return;
+    final mine = ++_chapterGen;
+    for (final secs in const [2, 5, 12]) {
+      await Future<void>.delayed(Duration(seconds: secs));
+      if (!mounted || mine != _chapterGen) return;
+      final c = await readChapters(_player);
+      if (c.isNotEmpty) {
+        if (mounted) setState(() => _chapters = c);
+        return;
+      }
+    }
+  }
+
+  void _doSkip() {
+    final h = _skip;
+    if (h == null) return;
+    _player.seek(h.to >= _dur - const Duration(seconds: 2) ? _dur : h.to);
+    setState(() => _skip = null);
+  }
+
+  void _pickChapter() {
+    final pos = _pos.value;
+    var now = 0;
+    for (var i = 0; i < _chapters.length; i++) {
+      if (_chapters[i].start <= pos) now = i;
+    }
+    _sheet('Chapters', [
+      for (var i = 0; i < _chapters.length; i++)
+        ListTile(
+          selected: i == now,
+          leading: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
+          title: Text(_chapters[i].title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: Text(_fmt(_chapters[i].start), style: const TextStyle(color: Boss.muted)),
+          onTap: () {
+            Navigator.pop(context);
+            _player.seek(_chapters[i].start);
+          },
+        ),
+    ]);
+  }
+
+  /// A list of every channel in the zapping queue to jump to; typing filters it by name or number.
+  Future<void> _pickChannel() {
+    final q = _queue;
+    if (q == null) return Future.value();
+    _hideTimer?.cancel();
+    final ctl = TextEditingController();
+    final scroll = ScrollController(initialScrollOffset: (_index * 56.0 - 120).clamp(0, double.infinity));
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Boss.surface,
+      isScrollControlled: true,
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85, maxWidth: 560),
+      builder: (sheet) => StatefulBuilder(builder: (_, setS) {
+        final f = ctl.text.trim().toLowerCase();
+        final rows = [
+          for (var i = 0; i < q.length; i++)
+            if (f.isEmpty || q[i].name.toLowerCase().contains(f) || '${i + 1}' == f) i,
+        ];
+        return SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: TextField(
+                controller: ctl,
+                decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Channel name or number'),
+                onChanged: (_) => setS(() {}),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                controller: scroll,
+                itemExtent: 56,
+                itemCount: rows.length,
+                itemBuilder: (_, k) {
+                  final i = rows[k];
+                  final c = q[i];
+                  return ListTile(
+                    selected: i == _index,
+                    autofocus: i == _index && f.isEmpty,
+                    leading: SizedBox(
+                        width: 40,
+                        child: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+                    title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: _app.isDead(c) ? const Text('Offline at the last check') : null,
+                    onTap: () {
+                      Navigator.pop(sheet);
+                      if (i != _index) _player.jump(i);
+                    },
+                  );
+                },
+              ),
+            ),
+          ]),
+        );
+      }),
+    ).whenComplete(() {
+      ctl.dispose();
+      scroll.dispose();
+      _scheduleHide();
+    });
+  }
+
+  /// Past programmes of this channel that the provider still has.
+  Future<void> _pickCatchUp() async {
+    _hideTimer?.cancel();
+    await _app.loadGuide();
+    if (!mounted) return;
+    final now = DateTime.now();
+    final past = [
+      for (final p in _app.programmesFor(_cur))
+        if (_app.catchUpFor(_cur, p, now: now)) p,
+    ].reversed.take(40).toList();
+    _sheet('Catch-up: ${_cur.name}', [
+      if (past.isEmpty)
+        const ListTile(
+          leading: Icon(Icons.info_outline),
+          title: Text('No past programmes in the guide yet'),
+          subtitle: Text('The TV guide has to be loaded, and the provider has to keep an archive for this channel.'),
+        ),
+      for (final p in past)
+        ListTile(
+          leading: Icon(p.end.isAfter(now) ? Icons.replay : Icons.history),
+          title: Text(p.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text(
+              '${fmtTime(p.start, use24h: _settings.use24h)} to ${fmtTime(p.end, use24h: _settings.use24h)}'
+              '${p.end.isAfter(now) ? '  ·  on now, from the start' : ''}'),
+          onTap: () {
+            Navigator.pop(context);
+            openCatchUp(context, _cur, p, replace: true);
+          },
+        ),
+    ]);
   }
 
   void _flash(String text) {
@@ -351,10 +604,13 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _vod = n;
       _vodTitle = n.name;
       _error = null;
+      _chapters = const [];
+      _skip = null;
     });
     try {
       await _player.open(Media(n.streamUrl!, httpHeaders: n.headers));
       _onChannelChanged();
+      _loadChapters();
     } catch (e) {
       if (mounted) setState(() => _error = redactUrls('$e'));
     }
@@ -415,6 +671,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _goLast();
       return KeyEventResult.handled;
     }
+    if (k == LogicalKeyboardKey.keyC && _queue != null && _queue!.length > 1) {
+      _pickChannel();
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.keyS && _skip != null) {
+      _doSkip();
+      return KeyEventResult.handled;
+    }
 
     if (_controls) {
       _scheduleHide();
@@ -424,16 +688,21 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (k == LogicalKeyboardKey.select ||
         k == LogicalKeyboardKey.enter ||
         k == LogicalKeyboardKey.space) {
+      // While Skip intro / Skip credits is on screen, OK takes it.
+      if (_skip != null) {
+        _doSkip();
+        return KeyEventResult.handled;
+      }
       _player.playOrPause();
       _showControls();
       return KeyEventResult.handled;
     }
-    if (k == LogicalKeyboardKey.arrowLeft && !_live) {
-      _seekBy(-_settings.seekSecs);
+    if (k == LogicalKeyboardKey.arrowLeft) {
+      _live ? _rewindLive(_settings.seekSecs) : _seekBy(-_settings.seekSecs);
       return KeyEventResult.handled;
     }
-    if (k == LogicalKeyboardKey.arrowRight && !_live) {
-      _seekBy(_settings.seekSecs);
+    if (k == LogicalKeyboardKey.arrowRight) {
+      _live ? _forwardLive(_settings.seekSecs) : _seekBy(_settings.seekSecs);
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.arrowUp && _queue != null) {
@@ -663,6 +932,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               if (_typed.isNotEmpty) _typedOverlay(),
               if (_toast != null) _toastBar(),
               if (_upNext != null) _upNextCard(),
+              if (_skip != null && !_controls && _upNext == null) _skipChip(),
               if (_controls) _overlay(),
             ]),
           ),
@@ -715,6 +985,29 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       ),
     );
   }
+
+  Widget _skipChip() => Positioned(
+        right: 24,
+        bottom: 56,
+        child: Material(
+          color: Colors.black.withValues(alpha: 0.8),
+          shape: const StadiumBorder(side: BorderSide(color: Colors.white54)),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: _doSkip,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.skip_next, size: 20),
+                const SizedBox(width: 8),
+                Text(_skip!.label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const SizedBox(width: 10),
+                const Text('OK', style: TextStyle(color: Boss.muted, fontSize: 12)),
+              ]),
+            ),
+          ),
+        ),
+      );
 
   Widget _toastBar() => Positioned(
         bottom: 96,
@@ -824,6 +1117,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                         style: const TextStyle(color: Boss.muted, fontSize: 13)),
                 ]),
               ),
+              if (_live && _behind >= const Duration(seconds: 2))
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Text('-${_fmt(_behind)} behind live',
+                      style: const TextStyle(color: Boss.accent2, fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
               if (_sleepAt != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -865,14 +1164,20 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               spacing: 4,
               children: [
                 if (_queue != null) _btn(Icons.skip_previous, 'Previous channel', _player.previous),
-                if (!_live)
-                  _btn(_seekIcon(false), 'Back ${_settings.seekSecs}s', () => _seekBy(-_settings.seekSecs)),
+                _btn(_seekIcon(false), 'Back ${_settings.seekSecs}s',
+                    () => _live ? _rewindLive(_settings.seekSecs) : _seekBy(-_settings.seekSecs)),
                 _btn(_playing ? Icons.pause : Icons.play_arrow, 'Play / pause', _player.playOrPause,
                     node: _playBtn),
-                if (!_live)
-                  _btn(_seekIcon(true), 'Forward ${_settings.seekSecs}s', () => _seekBy(_settings.seekSecs)),
+                _btn(_seekIcon(true), 'Forward ${_settings.seekSecs}s',
+                    () => _live ? _forwardLive(_settings.seekSecs) : _seekBy(_settings.seekSecs)),
+                if (_live && _behind >= const Duration(seconds: 2))
+                  _btn(Icons.sensors, 'Back to live (${_fmt(_behind)} behind)', _goLive, on: true),
+                if (_live && _app.canCatchUp(_cur)) _btn(Icons.history, 'Catch-up', _pickCatchUp),
                 if (_queue != null) _btn(Icons.skip_next, 'Next channel', _player.next),
                 if (_queue != null) _btn(Icons.swap_horiz, 'Last channel', _goLast),
+                if (_queue != null && _queue!.length > 1) _btn(Icons.format_list_numbered, 'Channels', _pickChannel),
+                if (_skip != null) _btn(Icons.skip_next, _skip!.label, _doSkip, on: true),
+                if (_chapters.length > 1) _btn(Icons.bookmarks_outlined, 'Chapters', _pickChapter),
                 if (!_live)
                   _btn(Icons.fast_forward, 'Skip ahead (+${_settings.skipSecs}s)', () => _seekBy(_settings.skipSecs)),
                 _btn(Icons.aspect_ratio, 'Picture shape (${_shape.$2})', _cycleShape, on: _shape.$1 != 'auto'),

@@ -6,6 +6,28 @@ import 'net_config.dart';
 import 'tmdb.dart';
 
 /// What the provider says about the account: how long it lasts and how many screens it allows.
+/// Days of archive for a channel from the provider's `tv_archive` (0/1) and `tv_archive_duration`.
+int archiveDaysOf(dynamic flag, dynamic days) {
+  if ('$flag' != '1') return 0;
+  final d = int.tryParse('$days') ?? 0;
+  return d > 0 ? d : 1;
+}
+
+/// The difference between the provider's clock and UTC, from `server_info` (`timestamp_now` is
+/// UTC seconds, `time_now` the same moment as the provider writes it). Zero when it does not say.
+Duration serverClockOffset(dynamic serverInfo) {
+  if (serverInfo is! Map) return Duration.zero;
+  final ts = int.tryParse('${serverInfo['timestamp_now']}');
+  final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})').firstMatch('${serverInfo['time_now']}');
+  if (ts == null || m == null) return Duration.zero;
+  final local = DateTime.utc(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!), int.parse(m[4]!),
+      int.parse(m[5]!), int.parse(m[6]!));
+  final secs = local.millisecondsSinceEpoch ~/ 1000 - ts;
+  // Clocks drift by seconds; real offsets are whole quarter hours.
+  final q = (secs / 900).round() * 900;
+  return Duration(seconds: q.abs() > 14 * 3600 ? 0 : q);
+}
+
 class AccountInfo {
   final String status; // Active, Expired, Disabled ...
   final DateTime? expires;
@@ -87,6 +109,19 @@ class XtreamClient {
       throw Exception('Invalid credentials');
     }
     account = AccountInfo.fromUserInfo(auth);
+    serverOffset = serverClockOffset(j is Map ? j['server_info'] : null);
+  }
+
+  /// How far the provider's clock is ahead of UTC. Catch-up times are written in it.
+  Duration serverOffset = Duration.zero;
+
+  /// The address of [length] of channel [streamId] starting at [startUtc], for a channel that keeps an archive.
+  String timeshiftUrl(String streamId, DateTime startUtc, Duration length) {
+    final t = startUtc.toUtc().add(serverOffset);
+    String two(int n) => n.toString().padLeft(2, '0');
+    final at = '${t.year}-${two(t.month)}-${two(t.day)}:${two(t.hour)}-${two(t.minute)}';
+    final mins = length.inMinutes < 1 ? 1 : length.inMinutes;
+    return '$base/timeshift/$user/$pass/$mins/$at/$streamId.ts';
   }
 
   List<Category> _cats(dynamic j) => [
@@ -119,6 +154,7 @@ class XtreamClient {
           poster: s(c['stream_icon']),
           categoryId: '${c['category_id']}',
           epgId: s(c['epg_channel_id']),
+          archiveDays: archiveDaysOf(c['tv_archive'], c['tv_archive_duration']),
         ),
     ];
     final movies = [

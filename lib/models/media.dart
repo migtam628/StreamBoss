@@ -20,6 +20,9 @@ class MediaItem {
   /// HTTP headers this stream needs (Referer, User-Agent, Origin), from #EXTVLCOPT lines in a playlist.
   final Map<String, String>? headers;
 
+  /// How many days of past programmes the provider keeps for this channel (Xtream catch-up). 0 = none.
+  final int archiveDays;
+
   const MediaItem({
     required this.id,
     required this.name,
@@ -31,9 +34,24 @@ class MediaItem {
     this.plot,
     this.epgId,
     this.headers,
+    this.archiveDays = 0,
   });
 
   String get key => '${kind.name}:$id';
+
+  MediaItem copyWith({String? epgId, String? poster, String? plot, String? rating}) => MediaItem(
+        id: id,
+        name: name,
+        kind: kind,
+        streamUrl: streamUrl,
+        poster: poster ?? this.poster,
+        categoryId: categoryId,
+        rating: rating ?? this.rating,
+        plot: plot ?? this.plot,
+        epgId: epgId ?? this.epgId,
+        headers: headers,
+        archiveDays: archiveDays,
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -46,6 +64,7 @@ class MediaItem {
         'plot': plot,
         'epg': epgId,
         if (headers != null && headers!.isNotEmpty) 'hdr': headers,
+        if (archiveDays > 0) 'arch': archiveDays,
       };
 
   factory MediaItem.fromJson(Map<String, dynamic> j) => MediaItem(
@@ -59,6 +78,7 @@ class MediaItem {
         plot: j['plot'] as String?,
         epgId: j['epg'] as String?,
         headers: (j['hdr'] as Map?)?.map((k, v) => MapEntry('$k', '$v')),
+        archiveDays: (j['arch'] as num?)?.toInt() ?? 0,
       );
 }
 

@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/tmdb_header.dart';
 import '../widgets/tv.dart';
+import '../widgets/collections_sheet.dart';
 import 'player_screen.dart';
 
 class DetailScreen extends StatelessWidget {
@@ -24,6 +25,11 @@ class DetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(backgroundColor: LayoutPalette.of(context).bg, actions: [
+        IconButton(
+          icon: const Icon(Icons.collections_bookmark_outlined),
+          tooltip: 'Add to a collection',
+          onPressed: () => showCollectionsSheet(context, item),
+        ),
         IconButton(
           icon: Icon(s.isFavorite(item) ? Icons.favorite : Icons.favorite_border,
               color: LayoutPalette.of(context).accent),
@@ -71,7 +77,13 @@ class DetailScreen extends StatelessWidget {
                 child: Text('Resume from ${stamp(resume)}'),
               ),
             ],
-            // The app-bar heart is awkward with a remote, so TV gets a button beside Play.
+            // The app-bar buttons are awkward with a remote, so TV gets a button beside Play.
+            if (tv)
+              OutlinedButton.icon(
+                onPressed: () => showCollectionsSheet(context, item),
+                icon: const Icon(Icons.collections_bookmark_outlined),
+                label: Text(s.collections.values.any((l) => l.contains(item.key)) ? 'In a collection' : 'Add to collection'),
+              ),
             if (tv)
               OutlinedButton.icon(
                 onPressed: () => s.toggleFavorite(item),

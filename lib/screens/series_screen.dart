@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../widgets/collections_sheet.dart';
 import '../widgets/tmdb_header.dart';
 import '../widgets/tv.dart';
 import 'player_screen.dart';
@@ -16,7 +17,13 @@ class SeriesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.read<AppState>();
     return Scaffold(
-      appBar: AppBar(title: Text(series.name), backgroundColor: LayoutPalette.of(context).bg),
+      appBar: AppBar(title: Text(series.name), backgroundColor: LayoutPalette.of(context).bg, actions: [
+        IconButton(
+          icon: const Icon(Icons.collections_bookmark_outlined),
+          tooltip: 'Add to a collection',
+          onPressed: () => showCollectionsSheet(context, series),
+        ),
+      ]),
       body: FutureBuilder<List<Episode>>(
         future: s.episodes(series),
         builder: (context, snap) {

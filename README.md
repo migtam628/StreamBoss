@@ -116,6 +116,15 @@ every release. The first build signed with your key has to be installed after un
 - Four app icons (Crown, Bold B, Signal, Screen) to switch between at will: Settings > Appearance > App icon (Android, Android TV
   and macOS; other platforms use the Crown icon). Drawings and generator in `design/`
 - Xtream account details (status, expiry, connections in use) under Settings > Source & library
+- Search: several words in any order, word starts, accents ignored, small typos forgiven, results grouped by kind and ranked,
+  filters (kind, category, rating, sort) and recent searches
+- Duplicate channels (HD, SD, backups) are merged into one entry; if the best copy fails the player tries the next
+- Live TV: pause and rewind within the player's cache (Left/Right), a "behind live" indicator and Back to live; Xtream
+  catch-up from the player and the guide for channels that keep an archive; a quick channel switcher (Channels button / C)
+- Guide programme details (description, time, catch-up) on any programme that is not on now, or by long-press
+- Chapters: a chapter list, plus Skip intro / Skip credits when the chapter is named so
+- Collections (your own named lists, per profile) and a "Picked for you" shelf from your history; missing posters are
+  filled in from TMDB when a key is set
 - Channel check: Settings > Source & library tests every live channel (two at a time on a provider login, ten at a time on a
   public list, only the start of each stream is read) and flags the ones that do not answer; a switch hides them. Apps only
 - Profiles and a PIN lock: each profile has its own My List, history and resume positions; a Kids profile shows only
