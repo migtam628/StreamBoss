@@ -311,7 +311,7 @@ void main() {
       expect(app.channelEdits.pins, isEmpty, reason: 'hiding takes the pin away');
     });
 
-    testWidgets('a long press on a movie still toggles My list; on a channel it opens the sheet', (t) async {
+    testWidgets('a long press on a movie opens the quick look; on a channel it opens the sheet', (t) async {
       final (st, app) = await setup(cat);
       late BuildContext ctx;
       await pump(t, st, app, Scaffold(body: Builder(builder: (c) {
@@ -319,7 +319,13 @@ void main() {
         return const SizedBox();
       })));
       itemMenu(ctx, cat.movies[0]);
+      await t.pumpAndSettle();
+      expect(find.text('Full details'), findsOneWidget);
+      await t.tap(find.text('My list'));
+      await t.pumpAndSettle();
       expect(app.isFavorite(cat.movies[0]), isTrue);
+      Navigator.of(ctx).pop();
+      await t.pumpAndSettle();
       itemMenu(ctx, chans[0]);
       await t.pumpAndSettle();
       expect(find.text('Hide this channel'), findsOneWidget);

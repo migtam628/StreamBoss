@@ -857,7 +857,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   /// remote's Menu or Info key, or the Channel options button.
   Future<void> _channelMenu() {
     _hideTimer?.cancel();
-    return showChannelSheet(context, _cur).whenComplete(() {
+    return showChannelSheet(context, _cur, details: false).whenComplete(() {
       _scheduleHide();
       if (mounted) setState(() {});
     });

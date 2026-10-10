@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:streamboss/screens/channel_details_screen.dart';
 import 'package:streamboss/screens/detail_screen.dart';
+import 'package:streamboss/services/xmltv.dart';
+import 'package:streamboss/widgets/channel_sheet.dart';
+import 'package:streamboss/widgets/peek.dart';
 import 'package:streamboss/screens/series_screen.dart';
 import 'package:streamboss/state/app_state.dart';
 import 'package:streamboss/state/settings_state.dart';
@@ -331,6 +335,101 @@ void pageTests() {
     testWidgets('a provider with no episodes says so', (t) async {
       await _pump(t, SeriesScreen(series: series, loadEpisodes: () async => [], loadInfo: () async => null));
       expect(find.text('No episodes listed by your provider.'), findsOneWidget);
+    });
+  });
+
+  group('channel page', () {
+    MediaItem chan(String id, String name, {int archive = 0}) => MediaItem(
+        id: id, name: name, kind: MediaKind.live, categoryId: 'c', streamUrl: 'http://x/$id', epgId: 'sports1', archiveDays: archive);
+
+    Catalog lib() => Catalog(
+          live: [chan('1', 'Sportsline HD'), chan('2', 'Sportsline 2'), chan('3', 'Other')],
+          liveCategories: const [Category('c', 'ES | Sports')],
+        );
+
+    testWidgets('what is on now, next, and the actions', (t) async {
+      final app = await _pump(t, ChannelDetailsScreen(channel: chan('1', 'Sportsline HD')), catalog: lib());
+      final now = DateTime.now();
+      app.guide = XmltvData({
+        'sports1': [
+          Programme('Arsenal v Chelsea', now.subtract(const Duration(minutes: 30)), now.add(const Duration(minutes: 30)), desc: 'Premier League'),
+          Programme('Highlights Reel', now.add(const Duration(minutes: 30)), now.add(const Duration(hours: 1))),
+        ]
+      }, const {});
+      app.setWatched([], false); // notifies
+      await t.pump();
+      expect(find.text('Sportsline HD'), findsOneWidget);
+      expect(find.text('Arsenal v Chelsea'), findsWidgets);
+      expect(find.text('LIVE'), findsOneWidget);
+      expect(find.textContaining('Next: Highlights Reel'), findsOneWidget);
+      expect(find.text('Watch live'), findsOneWidget);
+      expect(find.text('From the start'), findsNothing, reason: 'no archive on this channel');
+      for (final c in ['Sports', 'Spain', 'Spanish']) {
+        expect(find.text(c), findsWidgets, reason: c);
+      }
+      expect(find.text('NOW'), findsOneWidget);
+      expect(find.text('Highlights Reel'), findsOneWidget);
+    });
+
+    testWidgets('details, other copies and similar channels', (t) async {
+      await _pump(t, ChannelDetailsScreen(channel: chan('1', 'Sportsline HD', archive: 2)), catalog: lib());
+      await t.tap(find.text('Details'));
+      await t.pump();
+      expect(find.text('2 days'), findsOneWidget);
+      expect(find.text('sports1'), findsOneWidget);
+      await t.tap(find.text('Similar channels'));
+      await t.pump();
+      expect(find.text('Sportsline 2'), findsOneWidget);
+      expect(find.text('Other'), findsOneWidget);
+      await t.tap(find.text('Other copies'));
+      await t.pump();
+      expect(find.textContaining('No other copies'), findsOneWidget);
+    });
+
+    testWidgets('no guide says how to get one', (t) async {
+      await _pump(t, ChannelDetailsScreen(channel: chan('3', 'Other')), catalog: lib());
+      expect(find.textContaining('No guide for this channel'), findsOneWidget);
+    });
+
+    testWidgets('the channel sheet links to the page', (t) async {
+      await _pump(t, Scaffold(body: Builder(builder: (c) => TextButton(onPressed: () => showChannelSheet(c, chan('1', 'Sportsline HD')), child: const Text('open')))),
+          catalog: lib());
+      await t.tap(find.text('open'));
+      await t.pumpAndSettle();
+      expect(find.text('Channel details'), findsOneWidget);
+      await t.tap(find.text('Channel details'));
+      await t.pumpAndSettle();
+      expect(find.text('Watch live'), findsOneWidget);
+    });
+  });
+
+  group('quick look', () {
+    testWidgets('shows the plot and facts, My list works, Full details opens the page', (t) async {
+      final item = m('1', 'Harbor Lights (2021)');
+      final app = await _pump(
+          t,
+          Scaffold(body: Builder(builder: (c) => TextButton(onPressed: () => showPeek(c, item, loadInfo: () async => _info), child: const Text('peek')))));
+      await t.tap(find.text('peek'));
+      await t.pumpAndSettle();
+      expect(find.text('Harbor Lights (2021)'), findsOneWidget);
+      expect(find.textContaining('Two strangers'), findsOneWidget);
+      expect(find.text('1h 48m'), findsOneWidget);
+      await t.tap(find.text('My list'));
+      await t.pump();
+      expect(app.isFavorite(item), isTrue);
+      expect(find.text('In My list'), findsOneWidget);
+      await t.tap(find.text('Full details'));
+      await t.pumpAndSettle();
+      expect(find.text('Play options'), findsOneWidget);
+    });
+
+    testWidgets('a series offers its episodes', (t) async {
+      final s = m('s', 'The Long Quiet', kind: MediaKind.series);
+      await _pump(t, Scaffold(body: Builder(builder: (c) => TextButton(onPressed: () => showPeek(c, s, loadInfo: () async => null), child: const Text('peek')))));
+      await t.tap(find.text('peek'));
+      await t.pumpAndSettle();
+      expect(find.text('Episodes'), findsOneWidget);
+      expect(find.text('Play'), findsNothing);
     });
   });
 }

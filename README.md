@@ -58,7 +58,8 @@ Order is `0.3.0b1` < `0.3.0b2` < `0.3.0-rc1` < `0.3.0` < `0.3.1b1`. For each ver
    `## 0.2.4 - YYYY-MM-DD` section to `CHANGELOG.md`. A unit test fails if the two disagree or the changelog
    is out of order, and the release workflow refuses a tag that has no changelog section.
 2. Tag that commit (below). The section becomes the release notes, the tag becomes the version shown in
-   **Settings > About**, and **Check for updates** compares against it. Stable builds are only offered stable
+   **Settings > About**, and **Check for updates** compares against it and installs the update from inside the
+   app (Android's installer, or the desktop app replacing its own files). Stable builds are only offered stable
    releases; beta builds are also offered newer betas.
 
 ## Releases
@@ -166,6 +167,10 @@ every release. The first build signed with your key has to be installed after un
 - Cast to TV (experimental): the player's Cast button finds Chromecasts and TVs with Chromecast built in on your Wi-Fi and
   plays the stream there (not on the web build; untested on real hardware). On iPhone and iPad the player also has the system AirPlay
   button: sound goes to the speaker or TV picked, and the picture follows when the screen is mirrored (untested on real hardware)
+- Rich movie, series and channel pages: a big picture, facts, tabs for the plot, cast, similar titles and details (file
+  format, other copies in your library), a Continue button that knows the next episode, per-episode progress and watched
+  marks, Play options (audio, subtitles, speed, which copy), and a quick look when you press and hold a title. Settings >
+  About > Check for updates downloads and installs the new version without leaving the app.
 - On a TV the on-screen keyboard only opens when you press OK on a text box. In the player the star adds a channel to My list and
   Menu/Info open its options (rename, pin, hide). Settings > Startup can open the app when the Fire TV / Android TV starts and
   reopen the last screen or live channel.
