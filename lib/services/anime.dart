@@ -11,10 +11,12 @@ final _animeTitle = RegExp(r'[\[(]\s*anime\s*[\])]', caseSensitive: false);
 
 bool isAnimeCategory(String name) => _animeCategory.hasMatch(name);
 
+/// The anime of one kind: its categories and its titles.
+typedef AnimeFound = ({List<Category> categories, List<MediaItem> items});
+
 /// Where the anime is: the categories of [kind] that look like anime, and every title in them, plus
 /// titles elsewhere that tag themselves "(Anime)".
-({List<Category> categories, List<MediaItem> items}) animeOf(
-    Catalog c, MediaKind kind) {
+AnimeFound animeOf(Catalog c, MediaKind kind) {
   final cats = [
     for (final cat in c.categoriesFor(kind))
       if (isAnimeCategory(cat.name)) cat

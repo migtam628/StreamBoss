@@ -20,6 +20,7 @@ class SettingsState extends ChangeNotifier {
     'speed': 1.0,
     'autoResume': true,
     'autoplayNext': true, // start the next episode when one ends
+    'creditsNext': true, // offer the next episode when the credits start, not only when the file ends
     'aspect': 'auto', // picture shape in the player: auto | 16:9 | 4:3 | fill | stretch
     'seekSecs': 10,
     'skipSecs': 90,
@@ -37,6 +38,7 @@ class SettingsState extends ChangeNotifier {
     'uiScale': 1.0,
     'posterSize': 1.0,
     'startTab': 0,
+    'animePage': 'auto', // auto (when the library has anime) | on | off
     'tvMode': 'auto', // auto | on | off
     'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
     'onboarded': false, // the first-run setup has been done or skipped (this device)
@@ -142,6 +144,8 @@ class SettingsState extends ChangeNotifier {
   double get speed => _g('speed');
   bool get autoResume => _g('autoResume');
   bool get autoplayNext => _g('autoplayNext');
+  bool get creditsNext => _g('creditsNext');
+  String get animePage => _g('animePage');
   String get appIcon => _g('appIcon');
   String get aspect => _g('aspect');
   int get seekSecs => _g('seekSecs');

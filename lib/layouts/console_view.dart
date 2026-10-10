@@ -14,6 +14,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../widgets/channel_sheet.dart';
 
 const _mono = TextStyle(
     fontFamily: 'monospace',
@@ -176,7 +177,7 @@ class _ConsoleHomeState extends State<ConsoleHome> {
                   ? flat.where((x) => x.kind == MediaKind.live).toList()
                   : null);
         },
-        onLongPress: () => s.toggleFavorite(i),
+        onLongPress: () => itemMenu(context, i),
         builder: (ctx, focused) {
           final c = focused ? p.bg : p.text;
           final dim = focused ? p.bg : p.muted;

@@ -12,6 +12,7 @@ import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../widgets/channel_sheet.dart';
 
 /// Lounge's Home: the channel you were on, playing live and muted in the top half, and a strip of
 /// channels under it. Moving along the strip changes the picture (after a short pause, so flicking
@@ -121,6 +122,7 @@ class _LoungeHomeState extends State<LoungeHome> {
           onFocus: (f) {
             if (f && tv && _idx != i) setState(() => _idx = i);
           },
+          onLongPress: () => itemMenu(context, c),
           onTap: () {
             if (i == idx) {
               open();

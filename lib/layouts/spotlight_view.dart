@@ -9,6 +9,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../widgets/channel_sheet.dart';
 
 /// Spotlight: chips along the top pick a section; below, a poster grid. On wide screens the
 /// title you are on gets a details panel on the left; on a phone a search pill sits on top and
@@ -70,7 +71,7 @@ class _SpotlightViewState extends State<SpotlightView> {
                 if (f && _focused != it) setState(() => _focused = it);
               },
               onTap: () => openItem(context, it, queue: live ? items : null),
-              onLongPress: () => s.toggleFavorite(it),
+              onLongPress: () => itemMenu(context, it),
             );
           },
         );

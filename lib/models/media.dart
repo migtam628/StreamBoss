@@ -43,9 +43,9 @@ class MediaItem {
 
   String get key => src == null ? '${kind.name}:$id' : '${kind.name}:$src:$id';
 
-  MediaItem copyWith({String? epgId, String? poster, String? plot, String? rating}) => MediaItem(
+  MediaItem copyWith({String? name, String? epgId, String? poster, String? plot, String? rating}) => MediaItem(
         id: id,
-        name: name,
+        name: name ?? this.name,
         kind: kind,
         streamUrl: streamUrl,
         poster: poster ?? this.poster,

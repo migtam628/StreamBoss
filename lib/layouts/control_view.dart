@@ -14,6 +14,7 @@ import '../widgets/tv.dart';
 import '../widgets/vod_filter_bar.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../widgets/channel_sheet.dart';
 
 /// Control Room: categories on the left, the list in the middle, details of the highlighted
 /// item on the right (wide screens). Live shows a numbered channel list with what is on now;
@@ -85,7 +86,7 @@ class _ControlViewState extends State<ControlView> {
                 }
               },
               onTap: () => openItem(context, items[i], queue: items),
-              onLongPress: () => s.toggleFavorite(items[i]),
+              onLongPress: () => itemMenu(context, items[i]),
               favorite: s.isFavorite(items[i]),
             ),
           )

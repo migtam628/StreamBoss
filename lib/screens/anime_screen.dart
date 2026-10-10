@@ -4,12 +4,12 @@ import '../layouts/common.dart';
 import '../layouts/shell_nav.dart';
 import '../layouts/ui_layout.dart';
 import '../models/media.dart';
-import '../services/anime.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/vod_filter_bar.dart';
 import 'open_item.dart';
+import '../widgets/channel_sheet.dart';
 
 /// Anime: the series, movies and channels in the library that look like anime, found by category names
 /// (Anime, Manga, Donghua, Shonen and so on) and "(Anime)" in a title. It has its own filters, and the
@@ -32,8 +32,7 @@ class _AnimeScreenState extends State<AnimeScreen> {
     final s = context.watch<AppState>();
     final p = LayoutPalette.of(context);
     final size = context.watch<SettingsState>().posterScale;
-    final c = s.shown;
-    final found = {for (final k in MediaKind.values) k: animeOf(c, k)};
+    final found = {for (final k in MediaKind.values) k: s.animeFor(k)};
     final kinds = [for (final k in [MediaKind.series, MediaKind.movie, MediaKind.live]) if (found[k]!.items.isNotEmpty) k];
 
     if (kinds.isEmpty) {
@@ -101,7 +100,7 @@ class _AnimeScreenState extends State<AnimeScreen> {
                   favorite: s.isFavorite(items[i]),
                   offline: live && s.isDead(items[i]),
                   onTap: () => openItem(context, items[i], queue: items),
-                  onLongPress: () => s.toggleFavorite(items[i]),
+                  onLongPress: () => itemMenu(context, items[i]),
                 ),
               ),
       ),

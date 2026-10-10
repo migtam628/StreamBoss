@@ -25,8 +25,8 @@ class Shell extends StatefulWidget {
 }
 
 class _ShellState extends State<Shell> {
-  /// The rail lists Anime after Series; Settings stays last.
-  static const _railOrder = [0, 1, 2, 3, 4, 7, 5, 6];
+  /// The rail lists Anime after Series (when it is shown); Settings stays last.
+  static List<int> _railOrder(bool anime) => [0, 1, 2, 3, 4, if (anime) 7, 5, 6];
 
   late int _i;
   // Tabs are built on first visit only, so e.g. the guide isn't downloaded at login.
@@ -37,6 +37,7 @@ class _ShellState extends State<Shell> {
     super.initState();
     // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings, 7 Anime
     _i = context.read<SettingsState>().startTab.clamp(0, kDests.length - 1);
+    if (_i == 7 && !context.read<AppState>().animeVisible) _i = 0;
     _visited.add(_i);
     WidgetsBinding.instance.addPostFrameCallback((_) => _crashNotice());
   }
@@ -101,11 +102,11 @@ class _ShellState extends State<Shell> {
       if (layout == UiLayout.marquee) {
         chrome = Row(children: [
           NavigationRail(
-            selectedIndex: _railOrder.indexOf(_i),
-            onDestinationSelected: (v) => select(_railOrder[v]),
+            selectedIndex: _railOrder(s.animeVisible).indexOf(_i).clamp(0, 99).toInt(),
+            onDestinationSelected: (v) => select(_railOrder(s.animeVisible)[v]),
             labelType: tv ? NavigationRailLabelType.selected : NavigationRailLabelType.all,
             destinations: [
-              for (final i in _railOrder)
+              for (final i in _railOrder(s.animeVisible))
                 NavigationRailDestination(
                     icon: Icon(kDests[i].icon), selectedIcon: Icon(kDests[i].selectedIcon), label: Text(kDests[i].label)),
             ],

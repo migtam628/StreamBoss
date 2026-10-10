@@ -1,4 +1,5 @@
 import '../models/media.dart';
+import 'channel_edits.dart';
 import 'channel_merge.dart';
 
 final _adult = RegExp(r'(\badult\b|\bxxx\b|\bporn|\b18\s*\+|\berotic|\bsex\b)', caseSensitive: false);
@@ -23,8 +24,10 @@ Catalog buildView(Catalog c,
     bool kidsOnly = false,
     bool mergeDuplicates = false,
     Set<String> deadKeys = const {},
+    ChannelEdits? channelEdits,
     Map<String, List<MediaItem>>? alternatesOut}) {
-  if (!hideAdult && !sortAz && hideKeys.isEmpty && !kidsOnly && !mergeDuplicates) return c;
+  final edited = channelEdits != null && !channelEdits.isEmpty;
+  if (!hideAdult && !sortAz && hideKeys.isEmpty && !kidsOnly && !mergeDuplicates && !edited) return c;
 
   Set<String> blocked(List<Category> cs) => {
         for (final x in cs)
@@ -62,6 +65,8 @@ Catalog buildView(Catalog c,
     live = m.channels;
     alternatesOut?.addAll(m.alternates);
   }
+  // The viewer's own renames, hidden channels and pins come last, so they decide what is shown first.
+  if (edited) live = applyChannelEdits(live, channelEdits);
   return Catalog(
     liveCategories: cats(c.liveCategories, bl),
     movieCategories: cats(c.movieCategories, bm),

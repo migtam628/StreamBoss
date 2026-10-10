@@ -14,6 +14,7 @@ import '../services/mpv_props.dart';
 import '../services/next_episode.dart';
 import '../services/cast_service.dart';
 import '../services/mini_player.dart';
+import '../services/skip_memory.dart';
 import '../services/pip.dart';
 import '../services/provider_url.dart';
 import '../services/xtream_client.dart';
@@ -23,6 +24,7 @@ import 'open_item.dart';
 import '../state/settings_state.dart';
 import '../services/subtitle_search.dart';
 import '../theme.dart';
+import '../widgets/airplay_button.dart';
 import '../widgets/cast_sheet.dart';
 import '../widgets/screensaver.dart';
 
@@ -92,6 +94,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   late MediaItem _vod = widget.item; // the movie or episode playing (changes when the next episode starts)
   late String _vodTitle = widget.title;
   MediaItem? _upNext;
+  bool _creditsOffered = false; // the next episode was offered when the credits began
   int _nextIn = 0;
   bool _controls = true;
   bool _stats = false;
@@ -176,9 +179,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           _anchorPos = v;
           _anchorAt = DateTime.now();
         }
-        if (_chapters.isNotEmpty) {
-          final h = skipHintAt(_chapters, v, _dur);
-          if (h?.kind != _skip?.kind || h?.to != _skip?.to) setState(() => _skip = h);
+        if (!_live) {
+          // A chapter named like an intro or the credits wins; otherwise the skip the viewer made on an
+          // earlier episode of this series.
+          final h = (_chapters.isNotEmpty ? skipHintAt(_chapters, v, _dur) : null) ?? _memoryHint(v);
+          if (h?.kind != _skip?.kind || h?.to != _skip?.to) {
+            setState(() => _skip = h);
+            if (h?.kind == SkipKind.credits) _creditsStarted();
+          }
         }
         // Time moving means the stream opened and the video path is working; later deaths are not startup failures.
         if (v > Duration.zero && !_reportedPlaying) {
@@ -380,6 +388,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   // --- actions ----------------------------------------------------------
 
   void _seekBy(int secs) {
+    final from = _player.state.position;
+    if (secs >= 20) _learnSkip(from, from + Duration(seconds: secs));
     final target = _player.state.position + Duration(seconds: secs);
     _player.seek(target < Duration.zero ? Duration.zero : target);
   }
@@ -434,9 +444,48 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }
   }
 
+  /// The series this episode belongs to, for remembering skips (the first episode's key), or null.
+  String? get _seriesKey => widget.episodes == null || widget.episodes!.isEmpty ? null : widget.episodes!.first.key;
+
+  MediaItem? get _nextEp => _live ? null : nextEpisodeAfter(widget.episodes, _vod);
+
+  SkipHint? _memoryHint(Duration pos) {
+    final k = _seriesKey;
+    final w = k == null ? null : _app.introSkips[k];
+    return w == null ? null : introHintFromMemory(w, pos, _dur);
+  }
+
+  /// Remembers a skip that looks like skipping an opening, so the next episodes offer it too.
+  void _learnSkip(Duration before, Duration after) {
+    final k = _seriesKey;
+    if (k == null || _live || widget.catchUp) return;
+    final w = learnIntro(before, after, _dur);
+    if (w == null || _app.introSkips[k] == w) return;
+    final first = !_app.introSkips.containsKey(k);
+    _app.rememberIntro(k, w);
+    if (first) _flash('Skip remembered for the next episodes');
+  }
+
+  /// The credits chapter began: offer the next episode now instead of when the file ends.
+  void _creditsStarted() {
+    if (_creditsOffered || !_settings.creditsNext || _nextEp == null) return;
+    _creditsOffered = true;
+    _offerNextEpisode();
+  }
+
   void _doSkip() {
     final h = _skip;
     if (h == null) return;
+    if (h.kind == SkipKind.credits) {
+      final n = _nextEp;
+      if (n != null && n.streamUrl != null) {
+        setState(() => _upNext = n);
+        _playNext();
+        return;
+      }
+    } else {
+      _learnSkip(_pos.value, h.to);
+    }
     _player.seek(h.to >= _dur - const Duration(seconds: 2) ? _dur : h.to);
     setState(() => _skip = null);
   }
@@ -638,6 +687,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _error = null;
       _chapters = const [];
       _skip = null;
+      _creditsOffered = false;
     });
     try {
       await _player.open(Media(n.streamUrl!, httpHeaders: n.headers));
@@ -1134,7 +1184,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.skip_next, size: 20),
                 const SizedBox(width: 8),
-                Text(_skip!.label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                Text(_skip!.kind == SkipKind.credits && _nextEp != null ? 'Next episode' : _skip!.label,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(width: 10),
                 const Text('OK', style: TextStyle(color: Boss.muted, fontSize: 12)),
               ]),
@@ -1310,7 +1361,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 if (_queue != null) _btn(Icons.skip_next, 'Next channel', _player.next),
                 if (_queue != null) _btn(Icons.swap_horiz, 'Last channel', _goLast),
                 if (_queue != null && _queue!.length > 1) _btn(Icons.format_list_numbered, 'Channels', _pickChannel),
-                if (_skip != null) _btn(Icons.skip_next, _skip!.label, _doSkip, on: true),
+                if (_skip != null)
+                  _btn(Icons.skip_next, _skip!.kind == SkipKind.credits && _nextEp != null ? 'Next episode' : _skip!.label, _doSkip, on: true),
                 if (_chapters.length > 1) _btn(Icons.bookmarks_outlined, 'Chapters', _pickChapter),
                 if (!_live)
                   _btn(Icons.fast_forward, 'Skip ahead (+${_settings.skipSecs}s)', () => _seekBy(_settings.skipSecs)),
@@ -1323,6 +1375,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 _btn(Icons.bedtime, 'Sleep timer', _pickSleep, on: _sleepAt != null),
                 _btn(Icons.picture_in_picture, 'Mini player (P)', _minimize),
                 if (castSupported) _btn(Icons.cast, 'Cast to TV (experimental)', _cast),
+                if (airPlaySupported) const AirPlayButton(),
                 if (_canPip) _btn(Icons.picture_in_picture_alt, 'Picture-in-picture (system)', _enterPip),
                 _btn(Icons.analytics_outlined, 'Stats', _toggleStats, on: _stats),
               ],

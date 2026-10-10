@@ -11,6 +11,7 @@ import '../widgets/channel_filter_bar.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/vod_filter_bar.dart';
 import 'open_item.dart';
+import '../widgets/channel_sheet.dart';
 
 /// Live, Movies and Series. What it looks like depends on Settings > Appearance > Layout.
 class BrowseScreen extends StatelessWidget {
@@ -125,7 +126,7 @@ class _MarqueeBrowseState extends State<_MarqueeBrowse> {
               favorite: s.isFavorite(it),
               offline: live && s.isDead(it),
               onTap: () => openItem(context, it, queue: items),
-              onLongPress: () => s.toggleFavorite(it),
+              onLongPress: () => itemMenu(context, it),
             );
           },
         ),

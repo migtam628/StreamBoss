@@ -100,7 +100,7 @@ class GlassDock extends StatelessWidget {
         radius: 40,
         padding: const EdgeInsets.all(6),
         child: FittedBox(fit: BoxFit.scaleDown, child: Row(mainAxisSize: MainAxisSize.min, children: [
-          for (final i in const [0, 1, 2, 3, 4, 7, 5, 6])
+          for (final i in [0, 1, 2, 3, 4, if (context.select<AppState?, bool>((a) => a?.animeVisible ?? true)) 7, 5, 6])
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: NavTab(

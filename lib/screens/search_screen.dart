@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
+import '../widgets/channel_sheet.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -128,7 +129,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     s.rememberSearch(_q);
                     openItem(context, of[i], queue: live ? of : null);
                   },
-                  onLongPress: () => s.toggleFavorite(of[i]),
+                  onLongPress: () => itemMenu(context, of[i]),
                 ),
               ),
             ),

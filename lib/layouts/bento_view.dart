@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
+import '../screens/my_lists_screen.dart';
 import '../screens/open_item.dart';
 import '../services/time_format.dart';
 import '../services/xtream_client.dart';
@@ -8,7 +9,6 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
-import 'hub_view.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
 
@@ -86,7 +86,7 @@ class BentoHome extends StatelessWidget {
     final favTile = _Tile(
       color: _pink,
       semantic: 'My list',
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const FavoritesPage())),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MyListsScreen())),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const _Label('My list'),
         const Spacer(),

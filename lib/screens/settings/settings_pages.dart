@@ -8,6 +8,7 @@ import '../../layouts/ui_layout.dart';
 import '../../layouts/layout_picker.dart';
 import '../../layouts/theme_picker.dart';
 import '../collections_screen.dart';
+import '../edited_channels_screen.dart';
 import '../free_playlists_screen.dart';
 import '../onboarding_screen.dart';
 import 'package:flutter/services.dart';
@@ -263,6 +264,14 @@ class PlaybackPage extends StatelessWidget {
         subtitle: 'When an episode ends, the next one starts after a 10 second countdown you can cancel',
         value: st.autoplayNext,
         onChanged: (v) => st.set('autoplayNext', v),
+      ),
+      SwitchRow(
+        icon: Icons.skip_next_outlined,
+        title: 'Next episode at the credits',
+        subtitle: 'When a file marks its credits, offer the next episode as they start instead of when the file ends. '
+            'Needs "Play the next episode" above.',
+        value: st.creditsNext,
+        onChanged: (v) => st.set('creditsNext', v),
       ),
       ChoiceRow<String>(
         icon: Icons.aspect_ratio,
@@ -547,6 +556,14 @@ class AppearancePage extends StatelessWidget {
         options: const [(0, 'Home'), (1, 'Live TV'), (2, 'Guide'), (3, 'Movies'), (4, 'Series'), (7, 'Anime'), (5, 'Search')],
         onChanged: (v) => st.set('startTab', v),
       ),
+      ChoiceRow<String>(
+        icon: Icons.auto_awesome_outlined,
+        title: 'Anime page',
+        subtitle: 'Auto shows it in the menus when your library has anime. On always shows it, Off hides it.',
+        value: st.animePage,
+        options: const [('auto', 'Auto'), ('on', 'Always'), ('off', 'Hidden')],
+        onChanged: (v) => st.set('animePage', v),
+      ),
     ]);
   }
 }
@@ -582,6 +599,12 @@ class LibraryPage extends StatelessWidget {
         subtitle: 'Alphabetical channels, movies, series and categories instead of the provider\'s order',
         value: st.sortAz,
         onChanged: (v) => st.set('sortAz', v),
+      ),
+      ActionRow(
+        icon: Icons.edit_note,
+        title: 'Edited channels',
+        subtitle: 'Channels you renamed, hid or pinned to the top. Undo any of them here.',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditedChannelsScreen())),
       ),
       ActionRow(
         icon: Icons.collections_bookmark_outlined,

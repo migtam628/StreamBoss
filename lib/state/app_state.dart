@@ -11,9 +11,12 @@ import '../services/library_view.dart';
 import '../services/m3u_parser.dart';
 import '../services/recommend.dart';
 import '../services/search.dart';
+import '../services/skip_memory.dart';
 import '../services/stream_check.dart';
 import '../services/net_config.dart';
 import '../services/provider_url.dart';
+import '../services/anime.dart';
+import '../services/channel_edits.dart';
 import '../services/channel_filter.dart';
 import '../services/vod_filter.dart';
 import '../services/tmdb.dart';
@@ -33,6 +36,7 @@ class AppState extends ChangeNotifier {
   bool loading = false;
   String? error;
 
+  /// My list, in the order the viewer keeps it (newest last until moved).
   final Set<String> favorites = {};
   final List<MediaItem> recents = [];
 
@@ -105,7 +109,7 @@ class AppState extends ChangeNotifier {
 
   /// Removes everything a deleted profile saved.
   Future<void> forgetProfile(String id) async {
-    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings', 'deckSkips']) {
+    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings', 'deckSkips', 'channelEdits', 'introSkips']) {
       await _prefs?.remove('$base:$id');
     }
   }
@@ -118,7 +122,24 @@ class AppState extends ChangeNotifier {
     recentSearches.clear();
     collections.clear();
     deckSkips.clear();
+    channelEdits.clear();
+    introSkips.clear();
+    _animeSrc = null;
     if (p == null) return;
+    try {
+      final raw = p.getString(_k('channelEdits'));
+      if (raw != null) {
+        final m = jsonDecode(raw) as Map<String, dynamic>;
+        (m['edits'] as Map? ?? const {}).forEach((k, v) => channelEdits.edits['$k'] = ChannelEdit.fromJson(v as Map<String, dynamic>));
+        channelEdits.pins.addAll([for (final e in (m['pins'] as List? ?? const [])) '$e']);
+      }
+    } catch (_) {}
+    try {
+      final raw = p.getString(_k('introSkips'));
+      if (raw != null) {
+        (jsonDecode(raw) as Map<String, dynamic>).forEach((k, v) => introSkips[k] = IntroWindow.fromJson(v as Map<String, dynamic>));
+      }
+    } catch (_) {}
     try {
       final raw = p.getString(_k('deckSkips'));
       if (raw != null) {
@@ -165,6 +186,7 @@ class AppState extends ChangeNotifier {
           kidsOnly: kids,
           mergeDuplicates: merge,
           deadKeys: deadKeys,
+          channelEdits: channelEdits,
           alternatesOut: _alternates);
       _viewMerge = merge;
       _viewSrc = catalog;
@@ -381,6 +403,9 @@ class AppState extends ChangeNotifier {
     return _alternates[i.key] ?? const [];
   }
 
+  /// The library item with [key], when it is in the library on screen.
+  MediaItem? itemByKey(String key) => _byKey(key);
+
   bool isFavorite(MediaItem i) =>
       favorites.contains(i.key) || (i.kind == MediaKind.live && alternatesFor(i).any((a) => favorites.contains(a.key)));
 
@@ -390,8 +415,60 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<MediaItem> get favoriteItems =>
-      shown.all.where((i) => favorites.contains(i.key)).toList();
+  /// My list in the viewer's order. Items that are not in the library on screen are left out.
+  List<MediaItem> get favoriteItems => [
+        for (final k in favorites)
+          if (_byKey(k) case final it?) it,
+      ];
+
+  /// Moves [key] within My list: to the top, or [by] places earlier (negative) or later (positive).
+  void moveFavorite(String key, {bool toTop = false, int by = 0}) {
+    final l = _moved(favorites.toList(), key, toTop: toTop, by: by, visible: {for (final i in favoriteItems) i.key});
+    if (l == null) return;
+    favorites
+      ..clear()
+      ..addAll(l);
+    _prefs?.setStringList(_k('favorites'), l);
+    notifyListeners();
+  }
+
+  /// Moves [key] within the collection [name], the same way.
+  void moveInCollection(String name, String key, {bool toTop = false, int by = 0}) {
+    final l = collections[name];
+    if (l == null) return;
+    final m = _moved(l, key, toTop: toTop, by: by, visible: {for (final i in collectionItems(name)) i.key});
+    if (m == null) return;
+    collections[name] = m;
+    _saveCollections();
+  }
+
+  /// [list] with [key] moved, or null when it is not there or would not move. Moving by some places counts
+  /// only the keys in [visible] (when given), so a title never seems to stand still because it traded
+  /// places with something that is not in the library on screen.
+  List<String>? _moved(List<String> list, String key, {required bool toTop, required int by, Set<String>? visible}) {
+    final at = list.indexOf(key);
+    if (at < 0) return null;
+    var to = at;
+    if (toTop) {
+      to = 0;
+    } else if (by != 0) {
+      final dir = by.sign;
+      var steps = by.abs();
+      while (steps > 0) {
+        var n = to + dir;
+        while (n >= 0 && n < list.length && visible != null && !visible.contains(list[n])) {
+          n += dir;
+        }
+        if (n < 0 || n >= list.length) break;
+        to = n;
+        steps--;
+      }
+    }
+    if (to == at) return null;
+    return [...list]
+      ..removeAt(at)
+      ..insert(to, key);
+  }
 
   void markWatched(MediaItem i) {
     recents.removeWhere((e) => e.key == i.key);
@@ -459,6 +536,11 @@ class AppState extends ChangeNotifier {
         'favorites': favorites.toList(),
         'positions': positions,
         'recents': [for (final r in recents) r.toJson()],
+        'collections': collections,
+        'channelEdits': {
+          'edits': {for (final e in channelEdits.edits.entries) e.key: e.value.toJson()},
+          'pins': channelEdits.pins,
+        },
       };
 
   void importData(Map<String, dynamic> m) {
@@ -473,6 +555,27 @@ class AppState extends ChangeNotifier {
       final it = MediaItem.fromJson(j as Map<String, dynamic>);
       if (have.add(it.key)) recents.add(it);
     }
+    (m['collections'] as Map? ?? const {}).forEach((k, v) {
+      final l = collections.putIfAbsent('$k', () => []);
+      for (final e in (v as List)) {
+        if (!l.contains('$e')) l.add('$e');
+      }
+    });
+    try {
+      final ce = m['channelEdits'] as Map?;
+      if (ce != null) {
+        (ce['edits'] as Map? ?? const {}).forEach((k, v) => channelEdits.edits.putIfAbsent('$k', () => ChannelEdit.fromJson(Map<String, dynamic>.from(v as Map))));
+        for (final e in (ce['pins'] as List? ?? const [])) {
+          if (!channelEdits.pins.contains('$e')) channelEdits.pins.add('$e');
+        }
+        _prefs?.setString(_k('channelEdits'), jsonEncode({
+          'edits': {for (final e in channelEdits.edits.entries) e.key: e.value.toJson()},
+          'pins': channelEdits.pins,
+        }));
+        _ver++;
+      }
+    } catch (_) {}
+    _prefs?.setString(_k('collections'), jsonEncode(collections));
     _prefs?.setStringList(_k('favorites'), favorites.toList());
     _prefs?.setString(_k('positions'), jsonEncode(positions));
     _prefs?.setStringList(_k('recents'), [for (final e in recents) jsonEncode(e.toJson())]);
@@ -630,14 +733,142 @@ class AppState extends ChangeNotifier {
   bool isStarted(MediaItem i) =>
       positions.containsKey(i.key) || recents.any((e) => e.key == i.key);
 
-  /// [items] narrowed by the filter of [list].
-  List<MediaItem> filterVod(String list, List<MediaItem> items) => applyVodFilter(
-        items,
-        vodFilter(list),
-        categoryName: vodCategoryName,
-        isFavorite: isFavorite,
-        started: isStarted,
-      );
+  final Map<String, (List<MediaItem>, VodFilter, List<MediaItem>)> _vodMemo = {};
+
+  /// [items] narrowed by the filter of [list]. The answer is kept while the same list and filter are
+  /// asked about again (every rebuild of a screen does), except when it depends on favorites or history.
+  List<MediaItem> filterVod(String list, List<MediaItem> items) {
+    final f = vodFilter(list);
+    if (!f.active) return items;
+    final volatile = f.favoritesOnly || f.unwatchedOnly;
+    final hit = _vodMemo[list];
+    if (!volatile && hit != null && identical(hit.$1, items) && hit.$2 == f) return hit.$3;
+    final out = applyVodFilter(items, f,
+        categoryName: vodCategoryName, isFavorite: isFavorite, started: isStarted);
+    if (!volatile) _vodMemo[list] = (items, f, out);
+    return out;
+  }
+
+  // --- Anime ----------------------------------------------------------------------------------
+
+  Catalog? _animeSrc;
+  Map<MediaKind, AnimeFound>? _anime;
+
+  /// The anime in the library on screen, found once per library.
+  AnimeFound animeFor(MediaKind k) {
+    final c = shown;
+    if (_anime == null || !identical(_animeSrc, c)) {
+      _anime = {for (final kind in MediaKind.values) kind: animeOf(c, kind)};
+      _animeSrc = c;
+    }
+    return _anime![k]!;
+  }
+
+  int get animeCount => MediaKind.values.fold<int>(0, (a, k) => a + animeFor(k).items.length);
+
+  /// Whether the Anime page is in the menus: always, never, or (Auto) when the library has some.
+  bool get animeVisible => switch (_settings?.animePage ?? 'auto') {
+        'on' => true,
+        'off' => false,
+        _ => animeCount > 0,
+      };
+
+  // --- Edited channels ------------------------------------------------------------------------
+
+  /// The viewer's renames, hidden channels and pinned channels, kept per profile.
+  final ChannelEdits channelEdits = ChannelEdits();
+
+  void _saveChannelEdits() {
+    _prefs?.setString(_k('channelEdits'), jsonEncode({
+      'edits': {for (final e in channelEdits.edits.entries) e.key: e.value.toJson()},
+      'pins': channelEdits.pins,
+    }));
+    _ver++;
+    notifyListeners();
+  }
+
+  ChannelEdit _editOf(MediaItem ch) => channelEdits.edits[ch.key] ?? ChannelEdit(original: ch.name);
+
+  void _putEdit(MediaItem ch, ChannelEdit e) {
+    if (e.isEmpty) {
+      channelEdits.edits.remove(ch.key);
+    } else {
+      channelEdits.edits[ch.key] = e;
+    }
+  }
+
+  /// Gives [ch] a name of its own. A blank name, or the original one, takes the rename away.
+  void renameChannel(MediaItem ch, String? name) {
+    final cur = _editOf(ch);
+    final n = name?.trim();
+    _putEdit(ch, cur.copyWith(name: (n == null || n.isEmpty || n == cur.original) ? null : n));
+    _saveChannelEdits();
+  }
+
+  /// Takes [ch] out of every list. The Edited channels screen brings it back.
+  void hideChannel(MediaItem ch) {
+    _putEdit(ch, _editOf(ch).copyWith(hidden: true));
+    channelEdits.pins.remove(ch.key);
+    _saveChannelEdits();
+  }
+
+  void unhideChannel(String key) {
+    final e = channelEdits.edits[key];
+    if (e == null) return;
+    if (e.copyWith(hidden: false).isEmpty) {
+      channelEdits.edits.remove(key);
+    } else {
+      channelEdits.edits[key] = e.copyWith(hidden: false);
+    }
+    _saveChannelEdits();
+  }
+
+  bool isPinned(String key) => channelEdits.pins.contains(key);
+
+  /// Puts [ch] at the top of the channel lists (after the ones pinned before it).
+  void pinChannel(MediaItem ch) {
+    if (isPinned(ch.key)) return;
+    channelEdits.pins.add(ch.key);
+    _saveChannelEdits();
+  }
+
+  void unpinChannel(String key) {
+    if (channelEdits.pins.remove(key)) _saveChannelEdits();
+  }
+
+  /// Moves a pinned channel among the pinned ones, [by] places (negative is earlier).
+  void movePinned(String key, int by) {
+    final l = _moved(channelEdits.pins, key, toTop: false, by: by);
+    if (l == null) return;
+    channelEdits.pins
+      ..clear()
+      ..addAll(l);
+    _saveChannelEdits();
+  }
+
+  /// Undoes every rename, hide and pin of one channel.
+  void resetChannel(String key) {
+    final had = channelEdits.edits.remove(key) != null;
+    final pinned = channelEdits.pins.remove(key);
+    if (had || pinned) _saveChannelEdits();
+  }
+
+  void resetAllChannelEdits() {
+    if (channelEdits.isEmpty) return;
+    channelEdits.clear();
+    _saveChannelEdits();
+  }
+
+  // --- Skips the viewer made ------------------------------------------------------------------
+
+  /// Where the viewer skipped the opening of a series, so the next episodes can offer the same skip.
+  /// Keyed by the first episode's key; kept per profile.
+  final Map<String, IntroWindow> introSkips = {};
+
+  void rememberIntro(String seriesKey, IntroWindow w) {
+    introSkips[seriesKey] = w;
+    _prefs?.setString(_k('introSkips'), jsonEncode({for (final e in introSkips.entries) e.key: e.value.toJson()}));
+  }
 
   // --- Recommendations ----------------------------------------------------------------------
 
@@ -910,7 +1141,7 @@ class AppState extends ChangeNotifier {
   List<Programme> programmesFor(MediaItem ch) {
     final byId = ch.epgId == null ? null : guide.programmes[ch.epgId!.toLowerCase()];
     if (byId != null) return byId;
-    final id = guide.nameToId[ch.name.trim().toLowerCase()];
+    final id = guide.nameToId[(channelEdits.edits[ch.key]?.original ?? ch.name).trim().toLowerCase()];
     return id == null ? const [] : (guide.programmes[id] ?? const []);
   }
 }

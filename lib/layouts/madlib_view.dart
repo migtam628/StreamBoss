@@ -9,6 +9,7 @@ import '../widgets/media_tile.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../widgets/channel_sheet.dart';
 
 /// Madlib's Home: "Tonight I feel like a [movie] that is [funny], [well rated], from [any year]."
 /// Each bracket is a choice; the titles that fit are listed underneath, best rated first. A blank
@@ -109,7 +110,7 @@ class _MadlibHomeState extends State<MadlibHome> {
                 item: items[i],
                 favorite: app.isFavorite(items[i]),
                 onTap: () => openItem(context, items[i], queue: items[i].kind == MediaKind.live ? items : null),
-                onLongPress: () => app.toggleFavorite(items[i]),
+                onLongPress: () => itemMenu(context, items[i]),
               ),
             ),
           ),

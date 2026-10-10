@@ -3,6 +3,26 @@
 A cross-platform IPTV player for the Xtream or M3U service **you already have**. It ships with
 no content. Inspired by apps like Lumen, with its own UI.
 
+## Screenshots
+
+The 21 layouts on a TV (Settings > Appearance > Layout; every one also has a phone version). Titles and channels are a made-up demo library.
+
+<table>
+<tr><td align="center"><img src="docs/screenshots/marquee.jpg" width="300" alt="Marquee layout on a TV"><br><sub><b>Marquee</b></sub></td><td align="center"><img src="docs/screenshots/control.jpg" width="300" alt="Control Room layout on a TV"><br><sub><b>Control Room</b></sub></td><td align="center"><img src="docs/screenshots/spotlight.jpg" width="300" alt="Spotlight layout on a TV"><br><sub><b>Spotlight</b></sub></td></tr>
+<tr><td align="center"><img src="docs/screenshots/prime.jpg" width="300" alt="Prime Time layout on a TV"><br><sub><b>Prime Time</b></sub></td><td align="center"><img src="docs/screenshots/hub.jpg" width="300" alt="Hub layout on a TV"><br><sub><b>Hub</b></sub></td><td align="center"><img src="docs/screenshots/daylight.jpg" width="300" alt="Daylight layout on a TV"><br><sub><b>Daylight</b></sub></td></tr>
+<tr><td align="center"><img src="docs/screenshots/cable.jpg" width="300" alt="Cable Box layout on a TV"><br><sub><b>Cable Box</b></sub></td><td align="center"><img src="docs/screenshots/indexList.jpg" width="300" alt="Index layout on a TV"><br><sub><b>Index</b></sub></td><td align="center"><img src="docs/screenshots/glass.jpg" width="300" alt="Glass layout on a TV"><br><sub><b>Glass</b></sub></td></tr>
+<tr><td align="center"><img src="docs/screenshots/bento.jpg" width="300" alt="Bento layout on a TV"><br><sub><b>Bento</b></sub></td><td align="center"><img src="docs/screenshots/mosaic.jpg" width="300" alt="Mosaic layout on a TV"><br><sub><b>Mosaic</b></sub></td><td align="center"><img src="docs/screenshots/tonight.jpg" width="300" alt="Tonight layout on a TV"><br><sub><b>Tonight</b></sub></td></tr>
+<tr><td align="center"><img src="docs/screenshots/globe.jpg" width="300" alt="Globe layout on a TV"><br><sub><b>Globe</b></sub></td><td align="center"><img src="docs/screenshots/playground.jpg" width="300" alt="Playground layout on a TV"><br><sub><b>Playground</b></sub></td><td align="center"><img src="docs/screenshots/console.jpg" width="300" alt="Console layout on a TV"><br><sub><b>Console</b></sub></td></tr>
+<tr><td align="center"><img src="docs/screenshots/deck.jpg" width="300" alt="Deck layout on a TV"><br><sub><b>Deck</b></sub></td><td align="center"><img src="docs/screenshots/lounge.jpg" width="300" alt="Lounge layout on a TV"><br><sub><b>Lounge</b></sub></td><td align="center"><img src="docs/screenshots/madlib.jpg" width="300" alt="Madlib layout on a TV"><br><sub><b>Madlib</b></sub></td></tr>
+<tr><td align="center"><img src="docs/screenshots/matchday.jpg" width="300" alt="Matchday layout on a TV"><br><sub><b>Matchday</b></sub></td><td align="center"><img src="docs/screenshots/easy.jpg" width="300" alt="Easy layout on a TV"><br><sub><b>Easy</b></sub></td><td align="center"><img src="docs/screenshots/wall.jpg" width="300" alt="Wall layout on a TV"><br><sub><b>Wall</b></sub></td></tr>
+</table>
+
+On a phone:
+
+<p>
+<img src="docs/screenshots/phone-marquee.jpg" width="150" alt="marquee on a phone"> <img src="docs/screenshots/phone-tonight.jpg" width="150" alt="tonight on a phone"> <img src="docs/screenshots/phone-lounge.jpg" width="150" alt="lounge on a phone"> <img src="docs/screenshots/phone-madlib.jpg" width="150" alt="madlib on a phone"> <img src="docs/screenshots/phone-wall.jpg" width="150" alt="wall on a phone"> <img src="docs/screenshots/phone-easy.jpg" width="150" alt="easy on a phone"> 
+</p>
+
 ## Platform support
 
 | Platform | How |
@@ -122,7 +142,13 @@ every release. The first build signed with your key has to be installed after un
 - Live TV: pause and rewind within the player's cache (Left/Right), a "behind live" indicator and Back to live; Xtream
   catch-up from the player and the guide for channels that keep an archive; a quick channel switcher (Channels button / C)
 - Guide programme details (description, time, catch-up) on any programme that is not on now, or by long-press
-- Chapters: a chapter list, plus Skip intro / Skip credits when the chapter is named so
+- Chapters: a chapter list, plus Skip intro / Skip credits when the chapter is named so. A skip you make early in an episode
+  (Skip ahead, or Skip intro) is remembered for that series, so the next episodes offer it too even without chapters. When the
+  credits start, "Next episode" is offered (Settings > Playback)
+- My lists: My list and your collections in one screen, each in an order you set (move a title to the top, earlier or later,
+  or view it A to Z); collections are included in backups
+- Channel tools: press and hold a live channel to rename it, hide it, pin it to the top of the channel lists or move it among
+  the pinned ones, per profile and without touching the provider; Settings > Source & library > Edited channels undoes any of it
 - Collections (your own named lists, per profile) and a "Picked for you" shelf from your history; missing posters are
   filled in from TMDB when a key is set
 - Channel check: Settings > Source & library tests every live channel (two at a time on a provider login, ten at a time on a
@@ -138,10 +164,14 @@ every release. The first build signed with your key has to be installed after un
   opens the full player again with the same stream. The Guide, the Control Room and Prime Time play the selected channel
   in a preview. Live, the Guide and the Control Room share channel filters (words, quality, country, favorites, guide data, order)
 - Cast to TV (experimental): the player's Cast button finds Chromecasts and TVs with Chromecast built in on your Wi-Fi and
-  plays the stream there (not on the web build; untested on real hardware). For AirPlay use the system's Screen Mirroring
+  plays the stream there (not on the web build; untested on real hardware). On iPhone and iPad the player also has the system AirPlay
+  button: sound goes to the speaker or TV picked, and the picture follows when the screen is mirrored (untested on real hardware)
 - Movies, Series and the Anime page each have a filter: words, rating (6+, 7+, 8+), year (read from the title), favorites, not watched
   yet, and an order. Anime is its own page (Settings > Open on can start there) that gathers the categories named anime, manga,
-  donghua, shonen and similar, and titles tagged "(Anime)", across series, movies and channels
+  donghua, shonen and similar, and titles tagged "(Anime)", across series, movies and channels. The page is in the menus only when
+  the library has some (Settings > Appearance > Anime page: Auto, Always, Hidden)
+- Big libraries: what a title says about itself (year, rating, search words) is worked out once, filter and anime results are
+  kept while the library and the filter stay the same, and a 100,000 title library filters and sorts in about a second
 - Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
   - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel

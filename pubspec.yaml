@@ -27,6 +27,7 @@ dependencies:
   archive: ^4.0.0
   crypto: ^3.0.0
   cast: ^2.1.0
+  flutter_to_airplay: ^2.1.0
   bonsoir: ">=5.1.0 <6.0.0" # cast 2.1.0 does not build against bonsoir 6 and later
 
 dev_dependencies:

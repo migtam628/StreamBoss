@@ -101,19 +101,35 @@ class VodFilter {
 
 final _year = RegExp(r'(?<!\d)(19[3-9]\d|20[0-3]\d)(?!\d)');
 
-/// The release year in a title such as "Harbor Lights (2021)" or "Harbor Lights 2021", else null.
-/// Takes the last year-looking number, so "2012 (2009)" reads as 2009.
-int? yearOf(MediaItem i) {
-  final ms = _year.allMatches(i.name).toList();
-  return ms.isEmpty ? null : int.parse(ms.last.group(0)!);
+/// What filtering and sorting need to know about a title, worked out once. A 100,000-title library
+/// would otherwise parse every name again on each keystroke and on every comparison of a sort.
+class VodMeta {
+  /// The title as [normalizeSearch] leaves it.
+  final String norm;
+  final int? year;
+
+  /// Out of 10, 0 when there is none.
+  final double rating;
+  const VodMeta(this.norm, this.year, this.rating);
 }
 
-/// The rating out of 10, 0 when there is none. Some providers rate out of 5 or 100.
-double ratingOf(MediaItem i) {
-  final v = double.tryParse((i.rating ?? '').trim()) ?? 0;
-  if (v > 10) return v / 10;
-  return v;
+final _meta = Expando<VodMeta>('vodMeta');
+
+VodMeta metaOf(MediaItem i) => _meta[i] ??= _compute(i);
+
+VodMeta _compute(MediaItem i) {
+  final ms = _year.allMatches(i.name).toList();
+  var r = double.tryParse((i.rating ?? '').trim()) ?? 0;
+  if (r > 10) r /= 10;
+  return VodMeta(normalizeSearch(i.name), ms.isEmpty ? null : int.parse(ms.last.group(0)!), r);
 }
+
+/// The release year in a title such as "Harbor Lights (2021)" or "Harbor Lights 2021", else null.
+/// Takes the last year-looking number, so "2012 (2009)" reads as 2009.
+int? yearOf(MediaItem i) => metaOf(i).year;
+
+/// The rating out of 10, 0 when there is none. Some providers rate out of 5 or 100.
+double ratingOf(MediaItem i) => metaOf(i).rating;
 
 /// [items] narrowed by [f]. [categoryName] gives a title's category name (searched with the words);
 /// [isFavorite] and [started] answer the two toggles.
@@ -128,6 +144,7 @@ List<MediaItem> applyVodFilter(
   final words =
       normalizeSearch(f.text).split(' ').where((w) => w.isNotEmpty).toList();
   final out = <MediaItem>[];
+  final catNorm = <String, String>{};
   for (final i in items) {
     if (f.favoritesOnly && !isFavorite(i)) continue;
     if (f.unwatchedOnly && started(i)) continue;
@@ -137,18 +154,19 @@ List<MediaItem> applyVodFilter(
       if (y == null || !f.era.holds(y)) continue;
     }
     if (words.isNotEmpty) {
-      final hay = normalizeSearch('${i.name} ${categoryName(i)}');
+      final cat = catNorm.putIfAbsent(i.categoryId, () => normalizeSearch(categoryName(i)));
+      final hay = '${metaOf(i).norm} $cat';
       if (!words.every(hay.contains)) continue;
     }
     out.add(i);
   }
+  // Positions in the provider's order, so equal titles keep it.
   final at = {for (var n = 0; n < out.length; n++) out[n].key: n};
   switch (f.sort) {
     case VodSort.provider:
       break;
     case VodSort.name:
-      out.sort(
-          (a, b) => normalizeSearch(a.name).compareTo(normalizeSearch(b.name)));
+      out.sort((a, b) => metaOf(a).norm.compareTo(metaOf(b).norm));
     case VodSort.rating:
       out.sort((a, b) {
         final r = ratingOf(b).compareTo(ratingOf(a));

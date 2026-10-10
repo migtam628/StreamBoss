@@ -1,5 +1,4 @@
 import '../models/media.dart';
-import 'search.dart' show normalizeSearch;
 import 'vod_filter.dart';
 
 /// What the Madlib sentence can say it is. Provider data has no genre field, so a mood is a set of
@@ -77,6 +76,7 @@ List<MediaItem> madlibMatches(
   };
   final re = s.mood.regex;
   final out = <MediaItem>[];
+  final catText = <String, String>{};
   for (final i in pool) {
     if (s.rating != MadRating.any) {
       if (i.kind == MediaKind.live || ratingOf(i) < s.rating.minimum) continue;
@@ -86,8 +86,12 @@ List<MediaItem> madlibMatches(
       if (y == null || !s.era.holds(y)) continue;
     }
     if (re != null) {
-      final hay = normalizeSearch('${categoryName(i)} ${i.name} ${i.plot ?? ''}');
-      if (!re.hasMatch(hay)) continue;
+      // The mood patterns are plain lower-case words, so the text needs no normalizing.
+      if (!re.hasMatch(catText.putIfAbsent(i.categoryId, () => categoryName(i))) &&
+          !re.hasMatch(i.name) &&
+          !(i.plot != null && re.hasMatch(i.plot!))) {
+        continue;
+      }
     }
     out.add(i);
   }

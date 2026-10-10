@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/media.dart';
-import '../screens/open_item.dart';
-import '../services/anime.dart';
+import '../screens/my_lists_screen.dart';
 import '../state/app_state.dart';
-import '../widgets/media_tile.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'home_views.dart';
@@ -33,7 +30,7 @@ class HubHome extends StatelessWidget {
     final nav = ShellNav.maybeOf(context);
     void go(int i) => nav?.select(i);
     void favorites() => Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const FavoritesPage()));
+        .push(MaterialPageRoute(builder: (_) => const MyListsScreen()));
     final onNow = c.live.isEmpty ? null : c.live.first.name;
 
     Widget tile(String title, String sub, IconData icon, List<Color> colors,
@@ -74,7 +71,7 @@ class HubHome extends StatelessWidget {
     final search = tile('Search', '', Icons.search,
         const [Color(0xFF30334A), Color(0xFF262836)], () => go(5),
         small: true);
-    final animeCount = animeCounts(c).values.fold<int>(0, (a, b) => a + b);
+    final animeCount = s.animeCount;
     final anime = tile('Anime', wide ? '' : '$animeCount titles', Icons.auto_awesome,
         const [Color(0xFFFF7A59), Color(0xFF9C2F4A)], () => go(7),
         small: wide);
@@ -136,8 +133,10 @@ class HubHome extends StatelessWidget {
               Expanded(
                   child: Column(children: [
                 Expanded(child: search),
-                const SizedBox(height: 8),
-                Expanded(child: anime),
+                if (s.animeVisible) ...[
+                  const SizedBox(height: 8),
+                  Expanded(child: anime),
+                ],
                 const SizedBox(height: 8),
                 Expanded(child: settings)
               ])),
@@ -170,8 +169,10 @@ class HubHome extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(child: favs)
               ])),
-          const SizedBox(height: 10),
-          SizedBox(height: 84, child: anime),
+          if (s.animeVisible) ...[
+            const SizedBox(height: 10),
+            SizedBox(height: 84, child: anime),
+          ],
         ]),
       ),
       const SizedBox(height: 16),
@@ -294,46 +295,6 @@ class _HubTile extends StatelessWidget {
                     ]),
         ),
       ),
-    );
-  }
-}
-
-/// My list: everything marked as a favorite, as a poster grid.
-class FavoritesPage extends StatelessWidget {
-  const FavoritesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.watch<AppState>();
-    final p = LayoutPalette.of(context);
-    final items = s.favoriteItems;
-    return Scaffold(
-      appBar: AppBar(title: const Text('My list'), backgroundColor: p.bg),
-      body: items.isEmpty
-          ? Center(
-              child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                      'Nothing here yet. Press and hold a title, or choose My list on its page, to save it here.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: p.muted))))
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 170,
-                  childAspectRatio: 2 / 3,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12),
-              itemCount: items.length,
-              itemBuilder: (_, i) => MediaTile(
-                item: items[i],
-                favorite: true,
-                autofocus: i == 0,
-                onTap: () => openItem(context, items[i],
-                    queue: items[i].kind == MediaKind.live ? items : null),
-                onLongPress: () => s.toggleFavorite(items[i]),
-              ),
-            ),
     );
   }
 }

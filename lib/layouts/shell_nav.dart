@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/time_format.dart';
+import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/tv.dart';
 import 'ui_layout.dart';
@@ -87,13 +88,22 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
     };
 
 /// The tabs of a top navigation bar, in order (settings has its own button).
-List<int> topTabs(UiLayout l) => switch (l) {
-      UiLayout.prime => [0, 1, 3, 4, 7, 5],
-      _ => [0, 1, 2, 3, 4, 7, 5],
-    };
+List<int> topTabs(UiLayout l, {bool anime = true}) => [
+      for (final i in switch (l) {
+        UiLayout.prime => [0, 1, 3, 4, 7, 5],
+        _ => [0, 1, 2, 3, 4, 7, 5],
+      })
+        if (anime || i != 7) i
+    ];
 
 /// The five items of the phone's bottom bar for each layout, then what "More" holds.
-({List<int> bar, List<int> more}) phoneTabs(UiLayout l) => switch (l) {
+({List<int> bar, List<int> more}) phoneTabs(UiLayout l, {bool anime = true}) {
+  final t = _phoneTabs(l);
+  if (anime) return t;
+  return (bar: [for (final i in t.bar) if (i != 7) i], more: [for (final i in t.more) if (i != 7) i]);
+}
+
+({List<int> bar, List<int> more}) _phoneTabs(UiLayout l) => switch (l) {
       UiLayout.marquee => (bar: [0, 1, 2, 3], more: [4, 7, 5, 6]),
       UiLayout.control => (bar: [0, 1, 2, 5], more: [3, 4, 7, 6]),
       UiLayout.spotlight => (bar: [0, 1, 3, 4], more: [2, 7, 5, 6]),
@@ -132,7 +142,7 @@ class PhoneNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = phoneTabs(layout);
+    final tabs = phoneTabs(layout, anime: context.select<AppState?, bool>((a) => a?.animeVisible ?? true));
     final inBar = tabs.bar.indexOf(index);
     final hasMore = tabs.more.isNotEmpty;
     return NavigationBar(
@@ -286,7 +296,7 @@ class TopNav extends StatelessWidget {
     final pill = centered || soft;
     final flat = layout == UiLayout.bento;
     final tabs = [
-      for (final i in topTabs(layout))
+      for (final i in topTabs(layout, anime: context.select<AppState?, bool>((a) => a?.animeVisible ?? true)))
         NavTab(
             label: destLabel(layout, i),
             selected: i == index,

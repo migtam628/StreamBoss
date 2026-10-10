@@ -10,6 +10,7 @@ import 'common.dart';
 import 'home_views.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../widgets/channel_sheet.dart';
 
 /// Daylight's Home: a white feature card, what is live now as cards with progress, then the usual
 /// shelves. Light surfaces on a soft grey ground; one green accent.
@@ -233,7 +234,7 @@ class _LiveCardState extends State<_LiveCard> {
       radius: 14,
       semanticLabel: item.name,
       onTap: () => openItem(context, item, queue: widget.queue),
-      onLongPress: () => context.read<AppState>().toggleFavorite(item),
+      onLongPress: () => itemMenu(context, item),
       builder: (_, __) => Container(
         color: p.surface,
         padding: const EdgeInsets.all(12),

@@ -28,6 +28,7 @@ import 'mosaic_view.dart';
 import 'prime_view.dart';
 import 'spotlight_view.dart';
 import 'ui_layout.dart';
+import '../widgets/channel_sheet.dart';
 
 /// One row of tiles under a title. [dense] is Control Room's tighter, label-style version.
 class Shelf extends StatelessWidget {
@@ -83,7 +84,7 @@ class Shelf extends StatelessWidget {
                   favorite: s.isFavorite(it),
                   onTap: () => openItem(context, it,
                       queue: it.kind == MediaKind.live ? items : null),
-                  onLongPress: () => s.toggleFavorite(it),
+                  onLongPress: () => itemMenu(context, it),
                 ),
               );
             },

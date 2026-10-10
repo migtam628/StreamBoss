@@ -219,7 +219,7 @@ void main() {
           return;
         }
         expect(find.byType(NavigationBar), findsOneWidget);
-        final tabs = phoneTabs(layout);
+        final tabs = phoneTabs(layout, anime: app.animeVisible);
         expect(find.text('More'),
             tabs.more.isEmpty ? findsNothing : findsOneWidget);
         for (final k in tabs.bar) {
@@ -244,7 +244,7 @@ void main() {
         for (final k in [1, 3]) {
           if (layout == UiLayout.marquee) {
             final rail = t.widget<NavigationRail>(find.byType(NavigationRail));
-            expect(rail.destinations.length, 8);
+            expect(rail.destinations.length, app.animeVisible ? 8 : 7, reason: 'Anime is hidden when the library has none');
             (rail.onDestinationSelected!)(k);
           } else if (layout == UiLayout.hub) {
             await t.tap(find.text(k == 1 ? 'Live TV' : 'Movies').first);
@@ -463,6 +463,7 @@ void main() {
       final (st, app) = await setup({'layout': 'glass', 'tvMode': 'on'});
       await pumpApp(t, st, app, const Size(1280, 720));
       for (final d in kDests) {
+        if (d.label == 'Anime') continue; // not in the dock while the library has no anime
         expect(find.text(d.label), findsWidgets, reason: d.label);
       }
       expect(find.text('Play'), findsOneWidget);
