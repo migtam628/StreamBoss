@@ -5,6 +5,7 @@ import '../layouts/ui_layout.dart';
 import '../models/media.dart';
 import '../services/free_playlists.dart';
 import '../state/app_state.dart';
+import '../widgets/tv_text_field.dart';
 
 /// Browse the public playlist directories and add one, several or a whole group as a single source.
 /// [loadCountries] is replaceable so tests need no network.
@@ -154,7 +155,7 @@ class _FreePlaylistsScreenState extends State<FreePlaylistsScreen> {
       if (searchable)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-          child: TextField(
+          child: TvTextField(
               decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.search), hintText: 'Search countries'),
               onChanged: (v) => setState(() => _q = v)),

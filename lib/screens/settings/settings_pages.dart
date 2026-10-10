@@ -34,6 +34,7 @@ import '../profile_picker_screen.dart';
 import '../../state/settings_state.dart';
 import '../shader_screen.dart';
 import 'settings_widgets.dart';
+import '../../widgets/tv_text_field.dart';
 
 class SettingsSection {
   final String title;
@@ -721,7 +722,7 @@ Future<String?> _askText(BuildContext context, String title, String initial, {St
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
-      content: TextField(
+      content: TvTextField(
         controller: c,
         autofocus: true,
         maxLength: 20,
@@ -745,7 +746,7 @@ Future<void> _addProfile(BuildContext context, ProfilesState ps) async {
       builder: (ctx, setS) => AlertDialog(
         title: const Text('New profile'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
+          TvTextField(
               controller: c,
               autofocus: true,
               maxLength: 20,
@@ -855,7 +856,7 @@ class NetworkPage extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Custom User-Agent'),
-        content: TextField(controller: c, autofocus: true, decoration: const InputDecoration(hintText: 'e.g. MyPlayer/1.0')),
+        content: TvTextField(controller: c, autofocus: true, decoration: const InputDecoration(hintText: 'e.g. MyPlayer/1.0')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: const Text('Save')),
@@ -875,9 +876,9 @@ class NetworkPage extends StatelessWidget {
         title: const Text('OpenSubtitles'),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: key, autofocus: true, decoration: const InputDecoration(labelText: 'API key')),
-            TextField(controller: user, decoration: const InputDecoration(labelText: 'Username (needed to download)')),
-            TextField(controller: pass, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
+            TvTextField(controller: key, autofocus: true, decoration: const InputDecoration(labelText: 'API key')),
+            TvTextField(controller: user, decoration: const InputDecoration(labelText: 'Username (needed to download)')),
+            TvTextField(controller: pass, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
           ]),
         ),
         actions: [
@@ -899,7 +900,7 @@ class NetworkPage extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('TMDB API key (v3)'),
-        content: TextField(controller: c, autofocus: true),
+        content: TvTextField(controller: c, autofocus: true),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: const Text('Save')),

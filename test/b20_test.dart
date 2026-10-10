@@ -1,8 +1,12 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:streamboss/models/media.dart';
 import 'package:streamboss/services/channel_filter.dart';
 import 'package:streamboss/services/languages.dart';
 import 'package:streamboss/services/vod_filter.dart';
+import 'package:streamboss/widgets/tv.dart';
+import 'package:streamboss/widgets/tv_text_field.dart';
 
 MediaItem item(String id, String name, String cat, {MediaKind kind = MediaKind.live}) =>
     MediaItem(id: id, name: name, kind: kind, categoryId: cat, streamUrl: 'http://x/$id');
@@ -63,8 +67,62 @@ void main() {
     });
     test('languagesIn counts, biggest first', () {
       final l = languagesIn(ch, (c) => cats[c.categoryId]!);
-      expect([for (final e in l) e.$1.code].toSet(), {'en', 'es', 'it'});
+      expect({for (final e in l) e.$1.code}, {'en', 'es', 'it'});
       expect(l.first.$2, 2);
+    });
+  });
+
+  group('TvTextField', () {
+    Widget host(bool tv, TextEditingController c, {List<String>? sent}) => MaterialApp(
+          home: TvScope(
+            tv: tv,
+            child: Scaffold(
+              body: TvTextField(
+                controller: c,
+                autofocus: true,
+                decoration: const InputDecoration(hintText: 'Filter'),
+                onSubmitted: (v) => sent?.add(v),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('off TV it is a normal text field', (t) async {
+      await t.pumpWidget(host(false, TextEditingController()));
+      expect(find.byType(EditableText), findsOneWidget);
+    });
+
+    testWidgets('on TV, highlighting it does not open the input', (t) async {
+      final c = TextEditingController(text: 'abc');
+      await t.pumpWidget(host(true, c));
+      await t.pump();
+      expect(find.byType(EditableText), findsNothing);
+      expect(find.text('abc'), findsOneWidget);
+    });
+
+    testWidgets('OK opens the input, submitting closes it and keeps focus on the box', (t) async {
+      final c = TextEditingController();
+      final sent = <String>[];
+      await t.pumpWidget(host(true, c, sent: sent));
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.select);
+      await t.pump();
+      await t.pump();
+      expect(find.byType(EditableText), findsOneWidget);
+      await t.enterText(find.byType(EditableText), 'news');
+      await t.testTextInput.receiveAction(TextInputAction.done);
+      await t.pump();
+      await t.pump();
+      expect(sent, ['news']);
+      expect(find.byType(EditableText), findsNothing);
+      expect(find.text('news'), findsOneWidget);
+    });
+
+    testWidgets('tapping it also opens the input', (t) async {
+      await t.pumpWidget(host(true, TextEditingController()));
+      await t.tap(find.byType(InputDecorator));
+      await t.pump();
+      expect(find.byType(EditableText), findsOneWidget);
     });
   });
 }

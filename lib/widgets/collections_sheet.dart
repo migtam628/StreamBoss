@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../layouts/ui_layout.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
+import 'tv_text_field.dart';
 
 /// Asks for a name. Returns it, trimmed, or null when cancelled.
 Future<String?> askCollectionName(BuildContext context,
@@ -12,7 +13,7 @@ Future<String?> askCollectionName(BuildContext context,
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
-      content: TextField(
+      content: TvTextField(
         controller: c,
         autofocus: true,
         maxLength: 30,

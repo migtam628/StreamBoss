@@ -10,6 +10,7 @@ import '../state/settings_state.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
 import '../widgets/channel_sheet.dart';
+import '../widgets/tv_text_field.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -169,7 +170,7 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        child: TextField(
+        child: TvTextField(
           controller: _c,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(

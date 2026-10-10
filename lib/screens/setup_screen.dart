@@ -9,6 +9,7 @@ import '../state/app_state.dart';
 import '../widgets/tv.dart';
 import 'free_playlists_screen.dart';
 import 'pairing_dialog.dart';
+import '../widgets/tv_text_field.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -136,11 +137,11 @@ class _SetupScreenState extends State<SetupScreen> {
                         onSelectionChanged: (v) => setState(() => _type = v.first),
                       ),
                       const SizedBox(height: 16),
-                      TextField(
+                      TvTextField(
                           controller: _name,
                           decoration: const InputDecoration(labelText: 'Name')),
                       const SizedBox(height: 12),
-                      TextField(
+                      TvTextField(
                         controller: _url,
                         keyboardType: TextInputType.url,
                         decoration: InputDecoration(
@@ -150,11 +151,11 @@ class _SetupScreenState extends State<SetupScreen> {
                       ),
                       if (_type == SourceType.xtream) ...[
                         const SizedBox(height: 12),
-                        TextField(
+                        TvTextField(
                             controller: _user,
                             decoration: const InputDecoration(labelText: 'Username')),
                         const SizedBox(height: 12),
-                        TextField(
+                        TvTextField(
                             controller: _pass,
                             obscureText: true,
                             decoration: const InputDecoration(labelText: 'Password')),

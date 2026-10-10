@@ -6,6 +6,7 @@ import '../layouts/ui_layout.dart';
 import '../services/vod_filter.dart';
 import '../state/app_state.dart';
 import 'tv.dart';
+import 'tv_text_field.dart';
 
 /// A search field and a Filters button for the Movies, Series and Anime lists. It edits the
 /// [AppState.vodFilter] of [list] ('movie', 'series', 'anime'), and each list keeps its own.
@@ -56,7 +57,7 @@ class _VodFilterBarState extends State<VodFilterBar> {
         Expanded(
           child: SizedBox(
             height: tv ? 48 : 42,
-            child: TextField(
+            child: TvTextField(
               controller: _text,
               onChanged: (v) => _typed(s, v),
               textInputAction: TextInputAction.search,

@@ -5,6 +5,7 @@ import '../services/mpv_props.dart';
 import '../services/shaders.dart';
 import '../state/settings_state.dart';
 import '../theme.dart';
+import '../widgets/tv_text_field.dart';
 
 /// Shader library: toggle, drag to reorder (pipeline order), add custom GLSL.
 class ShaderScreen extends StatelessWidget {
@@ -95,9 +96,9 @@ class ShaderScreen extends StatelessWidget {
         content: SizedBox(
           width: 520,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
+            TvTextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
             const SizedBox(height: 12),
-            TextField(
+            TvTextField(
               controller: src,
               minLines: 6,
               maxLines: 12,

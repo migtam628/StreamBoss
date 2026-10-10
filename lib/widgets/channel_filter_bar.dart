@@ -6,6 +6,7 @@ import '../layouts/ui_layout.dart';
 import '../services/channel_filter.dart';
 import '../state/app_state.dart';
 import 'tv.dart';
+import 'tv_text_field.dart';
 
 /// A search field and a Filters button for the live channel lists. It edits [AppState.channelFilter],
 /// which the Live screens and the Guide share.
@@ -54,7 +55,7 @@ class _ChannelFilterBarState extends State<ChannelFilterBar> {
         Expanded(
           child: SizedBox(
             height: tv ? 48 : 42,
-            child: TextField(
+            child: TvTextField(
               controller: _text,
               onChanged: (v) => _typed(s, v),
               textInputAction: TextInputAction.search,

@@ -27,6 +27,7 @@ import '../theme.dart';
 import '../widgets/airplay_button.dart';
 import '../widgets/cast_sheet.dart';
 import '../widgets/screensaver.dart';
+import '../widgets/tv_text_field.dart';
 
 /// Full-screen player. Remote / keyboard behaviour (mpvNova-style):
 ///  * controls hidden: OK = pause + show controls, Left/Right = seek 10s (VOD),
@@ -533,7 +534,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: TextField(
+              child: TvTextField(
                 controller: ctl,
                 decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Channel name or number'),
                 onChanged: (_) => setS(() {}),

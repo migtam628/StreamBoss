@@ -15,6 +15,7 @@ import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
+import '../widgets/tv_text_field.dart';
 
 const _mono = TextStyle(
     fontFamily: 'monospace',
@@ -311,7 +312,7 @@ class _ConsoleHomeState extends State<ConsoleHome> {
         Text('›', style: t(26, p.accent, w: FontWeight.w700)),
         const SizedBox(width: 12),
         Expanded(
-          child: TextField(
+          child: TvTextField(
             controller: _text,
             focusNode: _prompt,
             autofocus: !tv,
