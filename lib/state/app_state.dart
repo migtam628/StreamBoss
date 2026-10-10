@@ -46,6 +46,8 @@ class AppState extends ChangeNotifier {
   // so use the regular keychain there.
   final _secure = const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
   final Map<String, int> positions = {}; // media key -> ms
+  final Map<String, int> durations = {}; // media key -> ms, noted when a title is played
+  final Set<String> watched = {}; // media keys finished or marked watched
 
   bool get ready => active != null && !loading && error == null;
 
@@ -110,7 +112,7 @@ class AppState extends ChangeNotifier {
 
   /// Removes everything a deleted profile saved.
   Future<void> forgetProfile(String id) async {
-    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings', 'deckSkips', 'channelEdits', 'introSkips']) {
+    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings', 'deckSkips', 'channelEdits', 'introSkips', 'watched', 'durations']) {
       await _prefs?.remove('$base:$id');
     }
   }
@@ -120,6 +122,8 @@ class AppState extends ChangeNotifier {
     favorites.clear();
     recents.clear();
     positions.clear();
+    durations.clear();
+    watched.clear();
     recentSearches.clear();
     collections.clear();
     deckSkips.clear();
@@ -158,6 +162,11 @@ class AppState extends ChangeNotifier {
     if (pos != null) {
       positions.addAll((jsonDecode(pos) as Map<String, dynamic>).map((k, v) => MapEntry(k, v as int)));
     }
+    try {
+      final d = p.getString(_k('durations'));
+      if (d != null) durations.addAll((jsonDecode(d) as Map<String, dynamic>).map((k, v) => MapEntry(k, v as int)));
+    } catch (_) {}
+    watched.addAll(p.getStringList(_k('watched')) ?? const []);
     favorites.addAll(p.getStringList(_k('favorites')) ?? const []);
     recents.addAll([
       for (final s in (p.getStringList(_k('recents')) ?? const []))
@@ -515,13 +524,48 @@ class AppState extends ChangeNotifier {
     // Treat the last 3% as finished.
     if (pos.inMilliseconds > total.inMilliseconds * 0.97) {
       positions.remove(i.key);
+      if (watched.add(i.key)) _prefs?.setStringList(_k('watched'), watched.toList());
     } else if (pos.inSeconds > 10) {
       positions[i.key] = pos.inMilliseconds;
+    }
+    if (durations[i.key] != total.inMilliseconds) {
+      durations.remove(i.key);
+      durations[i.key] = total.inMilliseconds;
+      while (durations.length > 3000) {
+        durations.remove(durations.keys.first);
+      }
+      _prefs?.setString(_k('durations'), jsonEncode(durations));
     }
     _prefs?.setString(_k('positions'), jsonEncode(positions));
     // Deferred: this runs from State.dispose(), where notifying synchronously would
     // mark widgets dirty while the tree is locked.
     if (notify) Future.microtask(notifyListeners);
+  }
+
+  // --- Watched and progress ---------------------------------------------------
+
+  bool isWatched(MediaItem i) => watched.contains(i.key);
+
+  /// How far through [i] you are, 0 to 1; null when it has not been started (or its length is unknown).
+  double? progressOf(MediaItem i) {
+    final p = positions[i.key], d = durations[i.key];
+    if (p == null || d == null || d <= 0) return null;
+    return (p / d).clamp(0.0, 1.0);
+  }
+
+  /// Marks titles watched (clearing where you were in them) or not watched.
+  void setWatched(Iterable<MediaItem> items, bool on) {
+    for (final i in items) {
+      if (on) {
+        watched.add(i.key);
+        positions.remove(i.key);
+      } else {
+        watched.remove(i.key);
+      }
+    }
+    _prefs?.setStringList(_k('watched'), watched.toList());
+    _prefs?.setString(_k('positions'), jsonEncode(positions));
+    notifyListeners();
   }
 
   // --- EPG --------------------------------------------------------------
@@ -536,6 +580,7 @@ class AppState extends ChangeNotifier {
         'sources': [for (final e in sources) e.toJson()..['pass'] = ''],
         'favorites': favorites.toList(),
         'positions': positions,
+        'watched': watched.toList(),
         'recents': [for (final r in recents) r.toJson()],
         'collections': collections,
         'channelEdits': {
@@ -551,6 +596,8 @@ class AppState extends ChangeNotifier {
     }
     favorites.addAll([for (final f in (m['favorites'] as List? ?? const [])) '$f']);
     positions.addAll((m['positions'] as Map? ?? const {}).map((k, v) => MapEntry('$k', (v as num).toInt())));
+    watched.addAll([for (final w in (m['watched'] as List? ?? const [])) '$w']);
+    _prefs?.setStringList(_k('watched'), watched.toList());
     final have = recents.map((e) => e.key).toSet();
     for (final j in (m['recents'] as List? ?? const [])) {
       final it = MediaItem.fromJson(j as Map<String, dynamic>);

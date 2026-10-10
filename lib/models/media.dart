@@ -95,7 +95,12 @@ class Episode {
   final int number;
   final String title;
   final String url;
-  const Episode(this.id, this.season, this.number, this.title, this.url);
+
+  /// From the provider when it says: length in minutes, a line of plot, a still, and the air date.
+  final int? minutes;
+  final String? plot, image, airDate;
+  const Episode(this.id, this.season, this.number, this.title, this.url,
+      {this.minutes, this.plot, this.image, this.airDate});
 }
 
 class Catalog {

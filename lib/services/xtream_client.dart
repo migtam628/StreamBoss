@@ -239,7 +239,30 @@ class XtreamClient {
     }
 
     final overview = _str(info['plot']) ?? _str(info['description']);
+    List<String> list(dynamic v) => (_str(v) ?? '')
+        .split(RegExp(r'[,/|]'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final video = info['video'], audio = info['audio'];
+    final containerExt = _str(j is Map && j['movie_data'] is Map ? j['movie_data']['container_extension'] : null);
+    final tech = TechInfo(
+      videoCodec: video is Map ? _str(video['codec_name']) : null,
+      width: video is Map ? int.tryParse(_str(video['width']) ?? '') : null,
+      height: video is Map ? int.tryParse(_str(video['height']) ?? '') : null,
+      audioCodec: audio is Map ? _str(audio['codec_name']) : null,
+      audioChannels: audio is Map ? int.tryParse(_str(audio['channels']) ?? '') : null,
+      audioLanguage: audio is Map && audio['tags'] is Map ? _str(audio['tags']['language']) : null,
+      bitrateKbps: int.tryParse(_str(info['bitrate']) ?? ''),
+      container: containerExt,
+    );
     final out = TmdbInfo(
+      genres: list(info['genre']),
+      directors: list(info['director']),
+      countries: list(info['country']),
+      certification: _str(info['mpaa_rating']) ?? _str(info['age']),
+      tech: tech.isEmpty ? null : tech,
+      people: [for (final n in cast) Person(n)],
       overview: overview,
       rating: rating,
       year: year,
@@ -250,8 +273,26 @@ class XtreamClient {
       trailerKey: trailer,
     );
     final empty = overview == null && rating == null && year == null && backdrop == null &&
-        poster == null && runtime == null && cast.isEmpty && trailer == null;
+        poster == null && runtime == null && cast.isEmpty && trailer == null && out.genres.isEmpty &&
+        out.tech == null;
     return empty ? null : out;
+  }
+
+  /// An episode's length in whole minutes from `duration_secs`, or from "00:41:00" / "41" in `duration`.
+  static int? episodeMinutes(Map info) {
+    final secs = int.tryParse(_str(info['duration_secs']) ?? '');
+    if (secs != null && secs > 0) return (secs / 60).round();
+    final d = _str(info['duration']);
+    if (d == null) return null;
+    final parts = d.split(':').map((e) => int.tryParse(e)).toList();
+    if (parts.any((e) => e == null)) return null;
+    final m = switch (parts.length) {
+      3 => parts[0]! * 60 + parts[1]! + (parts[2]! >= 30 ? 1 : 0),
+      2 => parts[0]! + (parts[1]! >= 30 ? 1 : 0),
+      1 => parts[0]!,
+      _ => 0,
+    };
+    return m > 0 ? m : null;
   }
 
   Future<List<Episode>> episodes(String seriesId) async {
@@ -262,12 +303,17 @@ class XtreamClient {
       eps.forEach((season, list) {
         for (final e in (list as List)) {
           final ext = e['container_extension'] ?? 'mp4';
+          final info = e['info'] is Map ? e['info'] as Map : const {};
           out.add(Episode(
             '${e['id']}',
             int.tryParse('$season') ?? 0,
             int.tryParse('${e['episode_num']}') ?? 0,
             '${e['title'] ?? 'Episode ${e['episode_num']}'}',
             '$base/series/$user/$pass/${e['id']}.$ext',
+            minutes: episodeMinutes(info),
+            plot: _str(info['plot']),
+            image: _str(info['movie_image']),
+            airDate: _str(info['releasedate'] ?? info['air_date']),
           ));
         }
       });
