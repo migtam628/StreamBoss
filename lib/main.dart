@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/profile_picker_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/crash_guard.dart';
+import 'services/provider_url.dart' show redactUrls;
 import 'services/device.dart';
 import 'screens/shell.dart';
 import 'state/app_state.dart';
@@ -23,6 +25,21 @@ import 'widgets/tv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Keep fewer decoded pictures in memory than Flutter's default (100 MB); fast scrolling through a
+  // poster wall on a small TV stick is otherwise enough to get the app closed by the system.
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 300
+    ..maximumSizeBytes = 48 << 20;
+  // Anything that goes wrong in Dart code lands in the playback log (Settings > About) instead of
+  // vanishing, and one failed task never takes the rest of the app with it.
+  FlutterError.onError = (d) {
+    FlutterError.presentError(d);
+    CrashGuard.log('flutter error ${redactUrls(d.exceptionAsString())}');
+  };
+  PlatformDispatcher.instance.onError = (e, st) {
+    CrashGuard.log('unhandled ${redactUrls('$e')}');
+    return true;
+  };
   MediaKit.ensureInitialized();
   LivePreview.ready = true;
   await CrashGuard.init();

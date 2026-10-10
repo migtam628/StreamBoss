@@ -4,6 +4,16 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b22 - 2026-10-10
+- **Fewer crashes from pressing a lot of buttons.** I cannot see the crash from here, so this closes the likely causes at once; if it still happens, see "If it still crashes" below.
+  - **Channel zapping waits for you to stop.** Up/Down, the channel keys and the skip buttons used to open a stream for every channel passed, and tearing a video decoder down and starting another that fast is the most likely thing to crash a Fire Stick. Now each press just moves the target (the toast shows its number and name) and the channel is tuned about half a second after the last press. Typing a number or picking from the list tunes after a short moment.
+  - **A double press cannot open two players.** Double tapping or holding OK on a title no longer opens the player (or a details page) twice: a second open within 0.7 seconds is ignored. Two players at once means two decoders and twice the memory.
+  - **Held keys act once.** In the player, holding Menu, Info, F, P, C, S or OK used to repeat the action: a stack of channel menus, My list flipping on and off. Only the arrows, the skip keys and seeking repeat now, and seeking is limited to about six steps a second.
+  - **One picker at a time.** Audio, subtitles, speed, chapters, channels and shaders no longer pile up on top of each other.
+  - **Pictures take less memory.** Posters and backdrops are decoded no wider than they are shown, and the cache holds 48 MB of them instead of 100 MB. Scrolling fast through a big poster wall on a small TV stick was the other likely way for the system to close the app.
+  - **Errors are written down.** Anything that goes wrong in the app's own code is added to the playback log instead of being lost.
+- **If it still crashes:** reopen the app. If the last session ended badly it says so and offers the log. Otherwise Settings > About > Playback log has the steps and errors from the last session; send me that, and say what you pressed (on which screen) just before it closed.
+
 ## 0.3.0b21 - 2026-10-10
 - **Check for updates now updates the app, inside the app.** Settings > About > Check for updates shows what is new in the release and an **Update now** button: it downloads the right file for your device (with a progress bar and a size and checksum check), then installs it. No browser, no download page.
   - **Android, Fire TV, Android TV:** the file goes to Android's own installer. The first time, Android asks you to allow StreamBoss to install apps (the app opens that screen for you; on a Fire TV it is "Install unknown apps"). Android then asks you to confirm, and StreamBoss reopens by itself on the new version. This needs the new `REQUEST_INSTALL_PACKAGES` permission, which the build adds (run `dart run tool/patch_android.dart` after `flutter create` if you build the project yourself). An update only installs over an app signed with the same key, so use the permanent signing key (README, "Releases"): an app installed from a build signed with a throwaway key has to be reinstalled once.

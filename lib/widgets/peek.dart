@@ -5,6 +5,7 @@ import '../models/media.dart';
 import '../screens/open_item.dart';
 import '../screens/player_screen.dart';
 import '../services/details_logic.dart';
+import '../services/nav_guard.dart';
 import '../services/tmdb.dart';
 import '../services/vod_filter.dart';
 import '../state/app_state.dart';
@@ -107,6 +108,7 @@ class _PeekSheetState extends State<PeekSheet> {
                     icon: const Icon(Icons.play_arrow),
                     label: Text(resume == null ? (watched ? 'Watch again' : 'Play') : (auto ? 'Resume ${clock(resume)}' : 'Play from start')),
                     onPressed: () {
+                      if (!NavGuard.allow()) return;
                       Navigator.pop(context);
                       Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => PlayerScreen(

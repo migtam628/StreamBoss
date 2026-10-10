@@ -6,6 +6,7 @@ import '../models/media.dart';
 import '../services/details_logic.dart';
 import '../services/languages.dart';
 import '../services/tmdb.dart';
+import '../services/nav_guard.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/collections_sheet.dart';
@@ -35,6 +36,7 @@ class _DetailScreenState extends State<DetailScreen> {
   MediaItem get item => widget.item;
 
   void _play(MediaItem what, {Duration? at, required PlayRequest? req}) {
+    if (!NavGuard.allow()) return;
     Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => PlayerScreen(
             title: what.name, url: what.streamUrl!, item: what, startAt: at, choices: req?.choices)));

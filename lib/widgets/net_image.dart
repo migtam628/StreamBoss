@@ -10,17 +10,22 @@ class NetImage extends StatelessWidget {
   final String url;
   final BoxFit fit;
   final Widget Function()? fallback;
-  const NetImage(this.url, {super.key, this.fit = BoxFit.cover, this.fallback});
+
+  /// Pictures are decoded no wider than this, however big the file is. A poster wall full of full-size
+  /// images is what runs a TV stick out of memory when someone scrolls fast.
+  final int decodeWidth;
+  const NetImage(this.url, {super.key, this.fit = BoxFit.cover, this.fallback, this.decodeWidth = 520});
 
   @override
   Widget build(BuildContext context) {
     Widget fail() => fallback?.call() ?? const SizedBox.shrink();
     if (kIsWeb) {
-      return Image.network(url, fit: fit, errorBuilder: (_, __, ___) => fail());
+      return Image.network(url, fit: fit, cacheWidth: decodeWidth, errorBuilder: (_, __, ___) => fail());
     }
     return CachedNetworkImage(
       imageUrl: url,
       fit: fit,
+      memCacheWidth: decodeWidth,
       errorWidget: (_, __, ___) => fail(),
       placeholder: (_, __) => const SizedBox.shrink(),
     );

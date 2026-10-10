@@ -50,7 +50,7 @@ class DetailsHero extends StatelessWidget {
     final h = wide ? 340.0 : 240.0;
     Widget art;
     if (backdrop != null) {
-      art = NetImage(backdrop!);
+      art = NetImage(backdrop!, decodeWidth: 1280);
     } else if (poster != null) {
       art = ImageFiltered(
         imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),

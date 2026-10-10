@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
+import '../services/nav_guard.dart';
 import '../services/xmltv.dart';
 import '../state/app_state.dart';
 import 'detail_screen.dart';
@@ -10,6 +11,7 @@ import 'series_screen.dart';
 /// Opens the right screen for [item]. For live channels pass [queue] (the
 /// visible list) so Up/Down can zap through it.
 void openItem(BuildContext context, MediaItem item, {List<MediaItem>? queue}) {
+  if (!NavGuard.allow()) return; // a double tap or held OK
   final Widget page;
   switch (item.kind) {
     case MediaKind.series:
@@ -31,6 +33,7 @@ void openItem(BuildContext context, MediaItem item, {List<MediaItem>? queue}) {
 /// Plays [p] of [ch] from the provider's archive. With [replace] it takes the place of the screen it
 /// is opened from (the live player), so the live stream stops instead of playing underneath.
 void openCatchUp(BuildContext context, MediaItem ch, Programme p, {bool replace = false}) {
+  if (!NavGuard.allow()) return;
   final url = context.read<AppState>().catchUpUrl(ch, p);
   if (url == null) {
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text('This channel has no catch-up.')));

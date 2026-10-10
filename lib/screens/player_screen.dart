@@ -22,6 +22,7 @@ import '../state/app_state.dart';
 import '../services/time_format.dart';
 import 'open_item.dart';
 import '../state/settings_state.dart';
+import '../services/nav_guard.dart';
 import '../services/play_choices.dart';
 import '../services/subtitle_search.dart';
 import '../theme.dart';
@@ -275,6 +276,36 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }
   }
 
+  /// One picker at a time: holding OK or Menu would otherwise stack a sheet per key repeat.
+  bool _sheetOpen = false;
+
+  // Channel changes wait until the person stops pressing (see Zap).
+  final _zap = Zap();
+  Timer? _zapTimer;
+
+  /// Aims [delta] channels along the list and tunes once the keys go quiet.
+  void _zapBy(int delta) {
+    final q = _queue;
+    if (q == null || q.isEmpty) return;
+    final to = _zap.step(_index, delta, q.length);
+    _flash('${to + 1} · ${q[to].name}');
+    _armZap(const Duration(milliseconds: 450));
+  }
+
+  /// Aims at channel [index] (typed digits, the channel list, Last channel) and tunes shortly.
+  void _zapTo(int index) {
+    _zap.aim(index);
+    _armZap(const Duration(milliseconds: 150));
+  }
+
+  void _armZap(Duration wait) {
+    _zapTimer?.cancel();
+    _zapTimer = Timer(wait, () {
+      final to = _zap.take();
+      if (mounted && to != null && to != _index) _player.jump(to);
+    });
+  }
+
   Future<void> _openQueue() => _player.open(Playlist(
         [for (var i = 0; i < _queue!.length; i++) Media(_source(i).streamUrl!, httpHeaders: _source(i).headers)],
         index: _index,
@@ -358,6 +389,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _sleepTimer?.cancel();
     _statsTimer?.cancel();
     _typeTimer?.cancel();
+    _zapTimer?.cancel();
     _toastTimer?.cancel();
     _nextTimer?.cancel();
     _stallTimer?.cancel();
@@ -402,7 +434,13 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   // --- actions ----------------------------------------------------------
 
+  DateTime _lastSeek = DateTime.fromMillisecondsSinceEpoch(0);
+
   void _seekBy(int secs) {
+    // A held arrow key repeats faster than a decoder can seek.
+    final now = DateTime.now();
+    if (now.difference(_lastSeek) < const Duration(milliseconds: 160)) return;
+    _lastSeek = now;
     final from = _player.state.position;
     if (secs >= 20) _learnSkip(from, from + Duration(seconds: secs));
     final target = _player.state.position + Duration(seconds: secs);
@@ -529,7 +567,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   /// A list of every channel in the zapping queue to jump to; typing filters it by name or number.
   Future<void> _pickChannel() {
     final q = _queue;
-    if (q == null) return Future.value();
+    if (q == null || _sheetOpen) return Future.value();
+    _sheetOpen = true;
     _hideTimer?.cancel();
     final ctl = TextEditingController();
     final scroll = ScrollController(initialScrollOffset: (_index * 56.0 - 120).clamp(0, double.infinity));
@@ -572,7 +611,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     subtitle: _app.isDead(c) ? const Text('Offline at the last check') : null,
                     onTap: () {
                       Navigator.pop(sheet);
-                      if (i != _index) _player.jump(i);
+                      if (i != _index) _zapTo(i);
                     },
                   );
                 },
@@ -582,6 +621,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         );
       }),
     ).whenComplete(() {
+      _sheetOpen = false;
       ctl.dispose();
       scroll.dispose();
       _scheduleHide();
@@ -652,7 +692,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (at == null) {
       _flash('No channel $typed');
     } else if (at != _index) {
-      _player.jump(at);
+      _zapTo(at);
     }
   }
 
@@ -662,7 +702,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _flash('No previous channel yet');
       return;
     }
-    _player.jump(at);
+    _zapTo(at);
   }
 
   // Up next: when an episode ends, count down and start the following one.
@@ -736,6 +776,18 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
     final k = e.logicalKey;
 
+    // Holding a key repeats it. Only moving around, zapping and seeking should repeat; anything else
+    // (a menu, a toggle, play/pause) acts once per press.
+    if (e is KeyRepeatEvent &&
+        k != LogicalKeyboardKey.arrowUp &&
+        k != LogicalKeyboardKey.arrowDown &&
+        k != LogicalKeyboardKey.arrowLeft &&
+        k != LogicalKeyboardKey.arrowRight &&
+        k != LogicalKeyboardKey.mediaTrackNext &&
+        k != LogicalKeyboardKey.mediaTrackPrevious) {
+      return KeyEventResult.handled;
+    }
+
     if (k == LogicalKeyboardKey.escape) {
       Navigator.of(context).maybePop();
       return KeyEventResult.handled;
@@ -747,11 +799,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.mediaTrackNext) {
-      _live ? _player.next() : _seekBy(30);
+      _live ? _zapBy(1) : _seekBy(30);
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.mediaTrackPrevious) {
-      _live ? _player.previous() : _seekBy(-30);
+      _live ? _zapBy(-1) : _seekBy(-30);
       return KeyEventResult.handled;
     }
 
@@ -819,11 +871,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.arrowUp && _queue != null) {
-      _player.next();
+      _zapBy(1);
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.arrowDown && _queue != null) {
-      _player.previous();
+      _zapBy(-1);
       return KeyEventResult.handled;
     }
     if (k == LogicalKeyboardKey.arrowUp ||
@@ -856,8 +908,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   /// Every option for the channel on screen (My list, collections, rename, hide, pin). Opened by the
   /// remote's Menu or Info key, or the Channel options button.
   Future<void> _channelMenu() {
+    if (_sheetOpen) return Future.value();
+    _sheetOpen = true;
     _hideTimer?.cancel();
     return showChannelSheet(context, _cur, details: false).whenComplete(() {
+      _sheetOpen = false;
       _scheduleHide();
       if (mounted) setState(() {});
     });
@@ -866,6 +921,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   // --- pickers ----------------------------------------------------------
 
   Future<void> _sheet(String title, List<Widget> children) {
+    if (_sheetOpen) return Future.value();
+    _sheetOpen = true;
     _hideTimer?.cancel();
     return showModalBottomSheet<void>(
       context: context,
@@ -881,7 +938,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           ...children,
         ]),
       ),
-    ).whenComplete(_scheduleHide);
+    ).whenComplete(() {
+      _sheetOpen = false;
+      _scheduleHide();
+    });
   }
 
   String _trackLabel(dynamic t) {
@@ -1026,6 +1086,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   void _pickShaders() {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
     _hideTimer?.cancel();
     showModalBottomSheet<void>(
       context: context,
@@ -1062,7 +1124,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           ]),
         ),
       ),
-    ).whenComplete(_scheduleHide);
+    ).whenComplete(() {
+      _sheetOpen = false;
+      _scheduleHide();
+    });
   }
 
   Future<void> _enterPip() async {
@@ -1396,7 +1461,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               alignment: WrapAlignment.center,
               spacing: 4,
               children: [
-                if (_queue != null) _btn(Icons.skip_previous, 'Previous channel', _player.previous),
+                if (_queue != null) _btn(Icons.skip_previous, 'Previous channel', () => _zapBy(-1)),
                 _btn(_seekIcon(false), 'Back ${_settings.seekSecs}s',
                     () => _live ? _rewindLive(_settings.seekSecs) : _seekBy(-_settings.seekSecs)),
                 _btn(_playing ? Icons.pause : Icons.play_arrow, 'Play / pause', _player.playOrPause,
@@ -1406,7 +1471,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 if (_live && _behind >= const Duration(seconds: 2))
                   _btn(Icons.sensors, 'Back to live (${_fmt(_behind)} behind)', _goLive, on: true),
                 if (_live && _app.canCatchUp(_cur)) _btn(Icons.history, 'Catch-up', _pickCatchUp),
-                if (_queue != null) _btn(Icons.skip_next, 'Next channel', _player.next),
+                if (_queue != null) _btn(Icons.skip_next, 'Next channel', () => _zapBy(1)),
                 if (_queue != null) _btn(Icons.swap_horiz, 'Last channel', _goLast),
                 if (_queue != null && _queue!.length > 1) _btn(Icons.format_list_numbered, 'Channels', _pickChannel),
                 _btn(_app.isFavorite(_cur) ? Icons.star : Icons.star_border,

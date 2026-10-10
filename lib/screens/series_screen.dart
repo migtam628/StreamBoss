@@ -7,6 +7,7 @@ import '../models/media.dart';
 import '../services/details_logic.dart';
 import '../services/languages.dart';
 import '../services/tmdb.dart';
+import '../services/nav_guard.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/collections_sheet.dart';
@@ -61,6 +62,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
       ];
 
   void _play(List<_Ep> all, int i, {Duration? at}) {
+    if (!NavGuard.allow()) return;
     final s = context.read<AppState>();
     final ep = all[i].item;
     final auto = context.read<SettingsState>().autoResume;

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
+import '../services/nav_guard.dart';
 import '../screens/open_item.dart';
 import '../screens/player_screen.dart';
 import '../services/deck.dart';
@@ -86,6 +87,7 @@ class _DeckHomeState extends State<DeckHome> {
     if (c == null) return;
     final it = c.item;
     if (it.kind == MediaKind.movie && it.streamUrl != null) {
+      if (!NavGuard.allow()) return;
       final at = context.read<AppState>().resumeFor(it);
       Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => PlayerScreen(
