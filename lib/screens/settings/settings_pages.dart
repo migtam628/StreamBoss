@@ -27,6 +27,7 @@ import '../../services/http_client.dart';
 import '../../services/mpv_props.dart';
 import '../../services/net_config.dart';
 import '../../services/update_check.dart';
+import '../../widgets/update_dialog.dart';
 import '../../models/profile.dart';
 import '../../state/app_state.dart';
 import '../../state/profiles_state.dart';
@@ -1185,11 +1186,7 @@ class _AboutPageState extends State<AboutPage> {
       final u = await checkForUpdate(current);
       if (!mounted) return;
       if (u.newer) {
-        final go = await confirmDialog(context,
-            title: 'Version ${u.latest} is available',
-            body: 'You have $current. Open the download page?',
-            confirm: 'Open');
-        if (go) launchUrl(Uri.parse(u.url), mode: LaunchMode.externalApplication);
+        await showUpdateDialog(context, u, current);
       } else {
         toast(context, 'You are up to date ($current)');
       }

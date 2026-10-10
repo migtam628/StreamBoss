@@ -16,6 +16,7 @@ void main() {
   if (x.contains('LEANBACK_LAUNCHER')) {
     _patchIconAliases();
     _patchBoot();
+    _patchUpdate();
     stdout.writeln('Already patched.');
     return;
   }
@@ -46,6 +47,7 @@ void main() {
   f.writeAsStringSync(x);
   _patchIconAliases();
   _patchBoot();
+  _patchUpdate();
   stdout.writeln('Patched AndroidManifest.xml for TV.');
 }
 
@@ -92,7 +94,9 @@ void _patchIconAliases() {
 void _patchBoot() {
   final f = File('android/app/src/main/AndroidManifest.xml');
   var x = f.readAsStringSync();
-  if (x.contains('.BootReceiver"')) return;
+  if (x.contains('.BootReceiver"') && x.contains('MY_PACKAGE_REPLACED')) return;
+  x = x.replaceAll(RegExp(r'\s*<receiver\s+android:name="\.BootReceiver"[\s\S]*?</receiver>'), '');
+  x = x.replaceAll(RegExp(r'\n    <uses-permission android:name="android.permission.(RECEIVE_BOOT_COMPLETED|SYSTEM_ALERT_WINDOW)"/>'), '');
   x = x.replaceFirstMapped(
       RegExp(r'<manifest[^>]*>'),
       (m) => '${m[0]}\n'
@@ -106,6 +110,7 @@ void _patchBoot() {
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
     </application>''');
@@ -131,9 +136,15 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val a = intent.action ?: return
-        if (a != Intent.ACTION_BOOT_COMPLETED && !a.endsWith("QUICKBOOT_POWERON")) return
         val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("flutter.startOnBoot", false)) return
+        if (a == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            // The app just updated itself from Settings > About: open the new version again.
+            if (!prefs.getBoolean("flutter.updating", false)) return
+            prefs.edit().putBoolean("flutter.updating", false).apply()
+        } else {
+            if (a != Intent.ACTION_BOOT_COMPLETED && !a.endsWith("QUICKBOOT_POWERON")) return
+            if (!prefs.getBoolean("flutter.startOnBoot", false)) return
+        }
         try {
             context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (_: Exception) {
@@ -142,6 +153,19 @@ class BootReceiver : BroadcastReceiver() {
 }
 '''.trimLeft());
   stdout.writeln('Added the start-on-boot receiver.');
+}
+
+/// Updating from inside the app (Settings > About > Check for updates): the permission to install
+/// packages, which Android also asks the person to allow once for this app.
+void _patchUpdate() {
+  final f = File('android/app/src/main/AndroidManifest.xml');
+  var x = f.readAsStringSync();
+  if (x.contains('REQUEST_INSTALL_PACKAGES')) return;
+  x = x.replaceFirstMapped(
+      RegExp(r'<manifest[^>]*>'),
+      (m) => '${m[0]}\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>');
+  f.writeAsStringSync(x);
+  stdout.writeln('Added the install-packages permission.');
 }
 
 /// Replaces the generated MainActivity with one exposing picture-in-picture
@@ -167,8 +191,14 @@ void _patchMainActivity() {
 String _mainActivity(String pkg) => '''
 package $pkg
 
+import android.app.PendingIntent
 import android.app.PictureInPictureParams
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
@@ -179,6 +209,54 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private var pipChannel: MethodChannel? = null
+    private var updateChannel: MethodChannel? = null
+    private val installAction = "$pkg.INSTALL_STATUS"
+
+    // The system installer reports back here: it asks for the person's go-ahead, then succeeds or fails.
+    private val installReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)) {
+                PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                    @Suppress("DEPRECATION")
+                    val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                    if (confirm != null) {
+                        confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(confirm)
+                    }
+                    updateChannel?.invokeMethod("status", mapOf("code" to "waiting"))
+                }
+                PackageInstaller.STATUS_SUCCESS -> updateChannel?.invokeMethod("status", mapOf("code" to "success"))
+                else -> updateChannel?.invokeMethod(
+                    "status",
+                    mapOf("code" to "failed", "message" to (intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "The install failed."))
+                )
+            }
+        }
+    }
+
+    private fun installApk(path: String) {
+        val installer = packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+        }
+        val id = installer.createSession(params)
+        val session = installer.openSession(id)
+        try {
+            java.io.FileInputStream(java.io.File(path)).use { input ->
+                session.openWrite("streamboss", 0, -1).use { out ->
+                    input.copyTo(out)
+                    session.fsync(out)
+                }
+            }
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
+            val pending = PendingIntent.getBroadcast(this, id, Intent(installAction).setPackage(packageName), flags)
+            session.commit(pending.intentSender)
+        } finally {
+            session.close()
+        }
+    }
 
     // The launcher icons (activity-aliases in the manifest, see tool/patch_android.dart).
     private val iconNames = listOf("crown", "bold", "signal", "screen")
@@ -215,6 +293,41 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     } else {
                         result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        val update = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.streamboss/update")
+        updateChannel = update
+        val filter = IntentFilter(installAction)
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(installReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        else registerReceiver(installReceiver, filter)
+        update.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "abis" -> result.success(Build.SUPPORTED_ABIS.toList())
+                "canInstall" -> result.success(
+                    Build.VERSION.SDK_INT < Build.VERSION_CODES.O || packageManager.canRequestPackageInstalls()
+                )
+                "openInstallSettings" -> {
+                    try {
+                        startActivity(
+                            Intent(
+                                android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                android.net.Uri.parse("package:" + packageName)
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
+                "install" -> {
+                    try {
+                        installApk(call.arguments as String)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("install", e.message ?: "The install failed.", null)
                     }
                 }
                 else -> result.notImplemented()
@@ -271,6 +384,14 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    override fun onDestroy() {
+        try {
+            unregisterReceiver(installReceiver)
+        } catch (_: Exception) {
+        }
+        super.onDestroy()
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {

@@ -42,11 +42,33 @@ int compareVersions(String a, String b) => AppVersion.parse(a).compareTo(AppVers
 
 bool isPrerelease(String v) => AppVersion.parse(v).isPrerelease;
 
+/// A file attached to a release, such as `StreamBoss-0.3.0b21-android-arm64-v8a.apk`.
+class UpdateAsset {
+  final String name, url;
+  final int size;
+
+  /// The hex SHA-256 GitHub reports for the file, when it does.
+  final String? sha256;
+  const UpdateAsset(this.name, this.url, this.size, [this.sha256]);
+
+  static UpdateAsset? fromJson(Map<String, dynamic> j) {
+    final name = j['name'], url = j['browser_download_url'];
+    if (name is! String || url is! String) return null;
+    final digest = j['digest'];
+    return UpdateAsset(name, url, (j['size'] as num?)?.toInt() ?? 0,
+        digest is String && digest.startsWith('sha256:') ? digest.substring(7).toLowerCase() : null);
+  }
+}
+
 class UpdateInfo {
   final String latest; // e.g. 0.2.0 or 0.3.0b2
   final String url;
   final bool newer;
-  const UpdateInfo(this.latest, this.url, this.newer);
+
+  /// The release notes (the changelog section), and the files that came with the release.
+  final String notes;
+  final List<UpdateAsset> assets;
+  const UpdateInfo(this.latest, this.url, this.newer, {this.notes = '', this.assets = const []});
 }
 
 /// Asks GitHub for a newer release than [current]. Stable builds only look at stable releases;
@@ -67,5 +89,14 @@ Future<UpdateInfo> checkForUpdate(String current, {http.Client? client}) async {
   releases.sort((a, b) => compareVersions(tagOf(b), tagOf(a)));
   final best = releases.first;
   final tag = tagOf(best);
-  return UpdateInfo(tag, (best['html_url'] as String?) ?? kReleasesUrl, compareVersions(tag, current) > 0);
+  return UpdateInfo(
+    tag,
+    (best['html_url'] as String?) ?? kReleasesUrl,
+    compareVersions(tag, current) > 0,
+    notes: (best['body'] as String?) ?? '',
+    assets: [
+      for (final a in (best['assets'] as List? ?? const []).whereType<Map<String, dynamic>>())
+        if (UpdateAsset.fromJson(a) case final x?) x,
+    ],
+  );
 }

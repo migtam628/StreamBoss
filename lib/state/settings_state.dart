@@ -42,6 +42,7 @@ class SettingsState extends ChangeNotifier {
     'lastLive': '', // key of the live channel last watched
     'lastLiveOpen': false, // it was still on screen when the app closed
     'startOnBoot': false, // Android: open the app when the device starts (Fire TV, Android TV)
+    'updating': false, // an in-app update was started; the Android receiver reopens the app once it is installed
     'animePage': 'auto', // auto (when the library has anime) | on | off
     'tvMode': 'auto', // auto | on | off
     'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
@@ -170,6 +171,7 @@ class SettingsState extends ChangeNotifier {
   String get lastLive => _g('lastLive');
   bool get lastLiveOpen => _g('lastLiveOpen');
   bool get startOnBoot => _g('startOnBoot');
+  bool get updating => _g('updating');
   String get tvMode => _g('tvMode');
 
   /// TV ("10-foot") mode: on when forced, or when auto and a TV was detected.
