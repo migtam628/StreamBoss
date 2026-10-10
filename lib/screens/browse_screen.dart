@@ -111,6 +111,8 @@ class _MarqueeBrowseState extends State<_MarqueeBrowse> {
                 child: Text(live ? 'No channels match the filters.' : 'No titles match the filters.',
                     style: TextStyle(color: LayoutPalette.of(context).muted)))
             : GridView.builder(
+          // ignore: deprecated_member_use
+          cacheExtent: 1000, // start loading posters a little before they scroll into view
           padding: const EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: (live ? 220 : 160) * size,

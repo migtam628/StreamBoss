@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import '../../services/app_icon.dart';
+import '../../services/catalog_cache.dart';
+import '../../services/perf_log.dart';
 import '../../services/boot_launch.dart';
 import '../../widgets/screensaver.dart';
 import '../../layouts/common.dart';
@@ -61,6 +63,55 @@ final settingsSections = <SettingsSection>[
 
 // ---------------------------------------------------------------------------------------
 
+/// What is saved on this device so the next start is quick, and how to clear it.
+class _SavedLibraryRow extends StatefulWidget {
+  const _SavedLibraryRow();
+
+  @override
+  State<_SavedLibraryRow> createState() => _SavedLibraryRowState();
+}
+
+class _SavedLibraryRowState extends State<_SavedLibraryRow> {
+  late Future<int> _size = CatalogCache.size();
+
+  String _ago(DateTime t) {
+    final m = DateTime.now().difference(t).inMinutes;
+    if (m < 1) return 'just now';
+    if (m < 60) return '$m min ago';
+    if (m < 48 * 60) return '${m ~/ 60} h ago';
+    return '${m ~/ (24 * 60)} days ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!CatalogCache.supported) return const SizedBox.shrink();
+    final s = context.watch<AppState>();
+    return FutureBuilder<int>(
+      future: _size,
+      builder: (context, snap) {
+        final mb = (snap.data ?? 0) / 1048576;
+        final status = s.refreshing
+            ? 'Showing the copy saved ${s.libraryFrom == null ? 'earlier' : _ago(s.libraryFrom!)}; updating it now.'
+            : s.refreshError != null
+                ? 'Could not update the saved copy: ${s.refreshError}'
+                : 'The library is saved on this device so the next start is quick.';
+        return ActionRow(
+          icon: Icons.bolt_outlined,
+          title: 'Clear saved library',
+          subtitle: '$status ${mb < 0.05 ? '' : '(${mb.toStringAsFixed(1)} MB) '}The next start loads from the provider again.',
+          onTap: () async {
+            await CatalogCache.clear();
+            if (!mounted) return;
+            setState(() => _size = CatalogCache.size());
+            // ignore: use_build_context_synchronously
+            toast(context, 'Saved library cleared');
+          },
+        );
+      },
+    );
+  }
+}
+
 class SourcePage extends StatelessWidget {
   const SourcePage({super.key});
 
@@ -99,6 +150,7 @@ class SourcePage extends StatelessWidget {
         subtitle: 'Fetch channels, movies and series again',
         onTap: active == null ? null : () => s.activate(active),
       ),
+      const _SavedLibraryRow(),
       ActionRow(
         icon: Icons.view_timeline_outlined,
         title: 'Reload TV guide',
@@ -1253,6 +1305,8 @@ class _AboutPageState extends State<AboutPage> {
       'Live categories with no country: ${unmatched.length}${unmatched.isEmpty ? '' : ' (${unmatched.take(12).join(' | ')})'}',
       'Kids categories matched: ${kids.length}${kids.isEmpty ? '' : ' (${kids.take(8).join(' | ')})'}',
       'Guide: ${app.hasGuideSource ? 'available' : 'none'}${app.guideError != null ? ' (error: ${app.guideError})' : ''}',
+      'Performance:',
+      ...PerfLog.report().map((l) => '  $l'),
       'Settings: ${jsonEncode(settings)}',
     ].join('\n');
   }

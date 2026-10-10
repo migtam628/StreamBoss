@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'dart:convert';
 import '../models/media.dart';
 
 /// Parses an extended M3U playlist into a [Catalog].
@@ -134,3 +136,6 @@ int _titleComma(String line) {
   }
   return -1;
 }
+
+/// [parseM3u] over raw bytes as a function holding nothing but plain data (see xtreamParseJob).
+Catalog Function() m3uParseJob(Uint8List bytes) => () => parseM3u(utf8.decode(bytes, allowMalformed: true));

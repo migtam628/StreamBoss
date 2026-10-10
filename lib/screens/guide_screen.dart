@@ -91,22 +91,23 @@ class _GuideScreenState extends State<GuideScreen> {
         Expanded(
           child: SizedBox(
             height: 56,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              children: [
-                for (final c in [const Category('', 'All'), ...s.shown.liveCategories])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(c.name),
-                      selected: (_cat ?? '') == c.id,
-                      selectedColor: LayoutPalette.of(context).accent,
-                      onSelected: (_) => setState(() => _cat = c.id.isEmpty ? null : c.id),
-                    ),
+            child: Builder(builder: (context) {
+              final cats = [const Category('', 'All'), ...s.shown.liveCategories];
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                itemCount: cats.length,
+                itemBuilder: (_, i) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(cats[i].name),
+                    selected: (_cat ?? '') == cats[i].id,
+                    selectedColor: LayoutPalette.of(context).accent,
+                    onSelected: (_) => setState(() => _cat = cats[i].id.isEmpty ? null : cats[i].id),
                   ),
-              ],
-            ),
+                ),
+              );
+            }),
           ),
         ),
         if (s.hasGuideSource)

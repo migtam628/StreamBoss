@@ -87,6 +87,8 @@ class _AnimeScreenState extends State<AnimeScreen> {
         child: items.isEmpty
             ? Center(child: Text('No anime matches the filters.', style: TextStyle(color: p.muted)))
             : GridView.builder(
+                // ignore: deprecated_member_use
+                cacheExtent: 1000,
                 padding: const EdgeInsets.all(12),
                 gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: (live ? 220 : 160) * size,

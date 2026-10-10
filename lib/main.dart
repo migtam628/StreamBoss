@@ -8,6 +8,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/profile_picker_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/crash_guard.dart';
+import 'services/perf_log.dart';
 import 'services/provider_url.dart' show redactUrls;
 import 'services/device.dart';
 import 'screens/shell.dart';
@@ -24,6 +25,7 @@ import 'widgets/screensaver.dart';
 import 'widgets/tv.dart';
 
 Future<void> main() async {
+  PerfLog.start();
   WidgetsFlutterBinding.ensureInitialized();
   // Keep fewer decoded pictures in memory than Flutter's default (100 MB); fast scrolling through a
   // poster wall on a small TV stick is otherwise enough to get the app closed by the system.
@@ -53,10 +55,13 @@ Future<void> main() async {
   final state = AppState();
   state.bindSettings(settings);
   state.bindProfiles(profiles);
-  await state.init();
+  PerfLog.mark('settings ready');
+  await state.init(waitForLibrary: false);
+  PerfLog.mark('state ready');
   // Someone who already has a provider has been through setup, whichever version they came from.
   if (state.sources.isNotEmpty && !settings.onboarded) settings.set('onboarded', true);
   AppIconService.restore(AppIcon.fromKey(settings.appIcon));
+  WidgetsBinding.instance.addPostFrameCallback((_) => PerfLog.mark('first frame'));
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: state),
@@ -97,6 +102,9 @@ class StreamBossApp extends StatelessWidget {
               ),
               child: Stack(children: [
                 Positioned.fill(child: child ?? const SizedBox.shrink()),
+                // A saved library is on screen while the provider's current one is fetched.
+                if (s.refreshing)
+                  const Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: LinearProgressIndicator(minHeight: 2))),
                 const MiniPlayerOverlay(),
               ]),
             ),

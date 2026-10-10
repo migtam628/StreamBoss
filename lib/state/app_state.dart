@@ -16,6 +16,8 @@ import '../services/stream_check.dart';
 import '../services/net_config.dart';
 import '../services/provider_url.dart';
 import '../services/anime.dart';
+import '../services/catalog_cache.dart';
+import '../services/perf_log.dart';
 import '../services/languages.dart';
 import '../services/channel_edits.dart';
 import '../services/channel_filter.dart';
@@ -215,7 +217,11 @@ class AppState extends ChangeNotifier {
   /// The provider's account details (expiry, connections) when an Xtream login is in use.
   AccountInfo? get account => _xtream?.account;
 
-  Future<void> init() async {
+  /// Loads what is saved on this device. With [waitForLibrary] false (the app's start-up) it does not
+  /// wait for the library at all: the app comes up with `loading` on, a saved copy of the library
+  /// replaces that as soon as it is read (and is refreshed behind it), and with no saved copy the
+  /// library loads from the provider while the connect screen shows its progress.
+  Future<void> init({bool waitForLibrary = true}) async {
     _prefs = await SharedPreferences.getInstance();
     final p = _prefs!;
     sources = [];
@@ -235,10 +241,19 @@ class AppState extends ChangeNotifier {
     final last = p.getString('active');
     if (last != null) {
       final match = sources.where((s) => s.name == last);
-      if (match.isNotEmpty) {
-        await activate(match.first);
-      } else if (last == Source.demo.name) {
-        await activate(Source.demo);
+      final src = match.isNotEmpty ? match.first : (last == Source.demo.name ? Source.demo : null);
+      if (src != null) {
+        if (waitForLibrary) {
+          await activate(src);
+        } else {
+          // The app comes up at once; the library arrives behind it (from the saved copy when there is
+          // one, else from the provider).
+          active = src;
+          loading = true;
+          unawaited(() async {
+            if (!await activateFromSaved(src)) await activate(src);
+          }());
+        }
       }
     }
     notifyListeners();
@@ -285,43 +300,146 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// One source's library, how it was got, and the Xtream client when it has one.
+  /// [savedAt] is set when the library is a saved copy rather than what the provider just sent.
+
+  /// The Xtream login a source stands for: its own, or the one inside a provider's get.php link.
+  ProviderLogin? _xtreamLogin(Source s) {
+    if (s.type == SourceType.xtream) return ProviderLogin(s.url, s.username, s.password);
+    if (s.type == SourceType.m3u && !s.url.contains('\n') && Uri.tryParse(s.url)?.path.endsWith('get.php') == true) {
+      return parseProviderLink(s.url);
+    }
+    return null;
+  }
+
+  /// A source's saved library, ready to use, or null when there is none. Reading and parsing happen off
+  /// the UI thread.
+  Future<({Catalog catalog, XtreamClient? client, DateTime? savedAt})?> _fromCache(Source s) async {
+    if (s.type == SourceType.demo) return (catalog: demoCatalog(), client: null, savedAt: null);
+    final saved = await PerfLog.time('read saved library', () => CatalogCache.load(s));
+    if (saved == null) return null;
+    final total = saved.blobs.fold<int>(0, (a, b) => a + b.length);
+    try {
+      if (saved.kind == 'x') {
+        final login = _xtreamLogin(s);
+        if (login == null || saved.blobs.length != 6) return null;
+        final cat = await parseAway('parse saved library', total,
+            xtreamParseJob(_trimBase(login.server), login.username, login.password, saved.blobs));
+        return (catalog: cat, client: XtreamClient(login.server, login.username, login.password), savedAt: saved.savedAt);
+      }
+      if (saved.kind == 'm' && saved.blobs.length == 1) {
+        final cat = await parseAway('parse saved library', total, m3uParseJob(saved.blobs.first));
+        return (catalog: cat, client: null, savedAt: saved.savedAt);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static String _trimBase(String server) => server.trim().replaceAll(RegExp(r'/+$'), '');
+
   /// Loads one source on its own: its library, and the Xtream client when it has one.
-  Future<({Catalog catalog, XtreamClient? client})> _load(Source s) async {
+  Future<({Catalog catalog, XtreamClient? client, DateTime? savedAt})> _load(Source s) async {
     switch (s.type) {
       case SourceType.demo:
-        return (catalog: demoCatalog(), client: null);
+        return (catalog: demoCatalog(), client: null, savedAt: null);
       case SourceType.m3u:
         // Several playlist addresses, one per line, load and merge into one library.
         final urls = s.url.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-        if (urls.length > 1) return (catalog: await loadMergedPlaylists(urls), client: null);
+        if (urls.length > 1) return (catalog: await loadMergedPlaylists(urls), client: null, savedAt: null);
         // A provider's get.php?username=..&password=.. link is the Xtream panel in disguise.
         // Its API gives proper movies, series, posters and guide data, so prefer it and
         // fall back to the plain playlist when the panel doesn't answer.
-        final login = parseProviderLink(s.url);
-        if (login != null && Uri.tryParse(s.url)?.path.endsWith('get.php') == true) {
+        final login = _xtreamLogin(s);
+        if (login != null) {
           try {
-            final api = XtreamClient(login.server, login.username, login.password);
-            await api.authenticate();
-            return (catalog: await api.loadCatalog(), client: api);
+            return await _loadXtream(s, XtreamClient(login.server, login.username, login.password));
           } catch (_) {}
         }
-        final res = await appHttp.get(Uri.parse(s.url), headers: NetConfig.headers).timeout(const Duration(seconds: 60));
+        final res = await PerfLog.time('fetch library', () => appHttp.get(Uri.parse(s.url), headers: NetConfig.headers).timeout(const Duration(seconds: 60)));
         if (res.statusCode != 200) throw Exception('Playlist returned ${res.statusCode}');
-        return (catalog: parseM3u(utf8.decode(res.bodyBytes, allowMalformed: true)), client: null);
+        final bytes = res.bodyBytes;
+        unawaited(CatalogCache.save(s, 'm', [bytes]));
+        final cat = await parseAway('parse library', bytes.length, m3uParseJob(bytes));
+        return (catalog: cat, client: null, savedAt: null);
       case SourceType.xtream:
-        final c = XtreamClient(s.url, s.username, s.password);
-        await c.authenticate();
-        return (catalog: await c.loadCatalog(), client: c);
+        return _loadXtream(s, XtreamClient(s.url, s.username, s.password));
     }
   }
 
-  Future<void> activate(Source s) async {
-    loading = true;
+  Future<({Catalog catalog, XtreamClient? client, DateTime? savedAt})> _loadXtream(Source s, XtreamClient c) async {
+    await PerfLog.time('sign in', c.authenticate);
+    final raw = await PerfLog.time('fetch library', c.fetchRaw);
+    unawaited(CatalogCache.save(s, 'x', raw));
+    final total = raw.fold<int>(0, (a, b) => a + b.length);
+    PerfLog.fact('library download', '${(total / 1048576).toStringAsFixed(1)} MB');
+    final cat = await parseAway('parse library', total, xtreamParseJob(c.base, c.user, c.pass, raw));
+    return (catalog: cat, client: c, savedAt: null);
+  }
+
+  /// True while a saved library is on screen and the provider's current one is being fetched.
+  bool refreshing = false;
+
+  /// When the library on screen was saved, if it is a saved copy; null when it came from the provider.
+  DateTime? libraryFrom;
+
+  /// Why the last quiet refresh failed (the saved library stays on screen).
+  String? refreshError;
+
+  /// Makes [s] the library from what is saved on this device, if anything is. Returns false (and changes
+  /// nothing) when no saved copy exists, so the caller can fetch it from the provider instead.
+  Future<bool> activateFromSaved(Source s) async {
+    final main = await _fromCache(s);
+    if (main == null) return false;
+    final extras = <(String, Catalog)>[];
+    final clients = <String, XtreamClient>{};
+    for (final src in sources) {
+      if (src.name == s.name || !extraSources.contains(src.name)) continue;
+      final r = await _fromCache(src); // an extra with no saved copy joins after the refresh
+      if (r == null) continue;
+      extras.add((src.name, r.catalog));
+      if (r.client != null) clients[src.name] = r.client!;
+    }
+    active = s;
+    _xtream = main.client;
+    _clients
+      ..clear()
+      ..addAll(clients);
+    _extraGuides.clear();
+    extraErrors.clear();
+    catalog = combineSources(main.catalog, extras);
+    _guideLoaded = false;
+    guide = XmltvData.empty;
+    error = null;
+    loading = false;
+    refreshing = true;
+    libraryFrom = main.savedAt;
+    PerfLog.fact('library shown from', 'saved copy (${main.savedAt == null ? 'demo' : '${DateTime.now().difference(main.savedAt!).inMinutes} min old'})');
+    PerfLog.mark('library on screen');
+    notifyListeners();
+    unawaited(_refresh(s));
+    return true;
+  }
+
+  /// Fetches the provider's current library behind a saved copy that is already showing.
+  Future<void> _refresh(Source s) async {
+    refreshError = null;
+    try {
+      await activate(s, quiet: true);
+    } catch (_) {}
+  }
+
+  Future<void> activate(Source s, {bool quiet = false}) async {
+    if (!quiet) {
+      loading = true;
+      refreshing = false;
+      libraryFrom = null;
+    }
     error = null;
     active = s;
     notifyListeners();
     try {
       final main = await _load(s);
+      if (quiet && active?.name != s.name) return; // another source was picked meanwhile
       _xtream = main.client;
       _clients.clear();
       _extraGuides.clear();
@@ -349,12 +467,21 @@ class AppState extends ChangeNotifier {
       catalog = combineSources(main.catalog, extras);
       _guideLoaded = false;
       guide = XmltvData.empty;
+      libraryFrom = null;
       await _prefs?.setString('active', s.name);
+      PerfLog.fact('library from', 'provider');
+      PerfLog.mark(quiet ? 'library refreshed' : 'library on screen');
     } catch (e) {
-      error = friendlyError(e);
-      catalog = const Catalog();
+      if (quiet) {
+        // The saved copy stays; just say the refresh did not work.
+        refreshError = friendlyError(e);
+      } else {
+        error = friendlyError(e);
+        catalog = const Catalog();
+      }
     }
     loading = false;
+    refreshing = false;
     notifyListeners();
   }
 

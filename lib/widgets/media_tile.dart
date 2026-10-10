@@ -110,6 +110,10 @@ class _Art extends StatefulWidget {
   final Widget Function() fallback;
   const _Art({required this.item, required this.fit, required this.fallback});
 
+  /// A tile shows a picture about 160 to 220 pixels wide, so decoding more than this is wasted time and
+  /// memory (the biggest cost of fast scrolling on a small TV stick).
+  static const posterWidth = 340, logoWidth = 300;
+
   @override
   State<_Art> createState() => _ArtState();
 }
@@ -141,14 +145,15 @@ class _ArtState extends State<_Art> {
   @override
   Widget build(BuildContext context) {
     final i = widget.item;
-    if (i.poster != null) return NetImage(i.poster!, fit: widget.fit, fallback: widget.fallback);
+    final w = i.kind == MediaKind.live ? _Art.logoWidth : _Art.posterWidth;
+    if (i.poster != null) return NetImage(i.poster!, fit: widget.fit, fallback: widget.fallback, decodeWidth: w);
     final f = _future;
     if (f == null) return widget.fallback();
     return FutureBuilder<String?>(
       future: f,
       builder: (_, snap) {
         final url = snap.data;
-        return url == null || url.isEmpty ? widget.fallback() : NetImage(url, fit: widget.fit, fallback: widget.fallback);
+        return url == null || url.isEmpty ? widget.fallback() : NetImage(url, fit: widget.fit, fallback: widget.fallback, decodeWidth: w);
       },
     );
   }

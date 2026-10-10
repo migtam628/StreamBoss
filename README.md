@@ -171,6 +171,8 @@ every release. The first build signed with your key has to be installed after un
   format, other copies in your library), a Continue button that knows the next episode, per-episode progress and watched
   marks, Play options (audio, subtitles, speed, which copy), and a quick look when you press and hold a title. Settings >
   About > Check for updates downloads and installs the new version without leaving the app.
+- Quick start: the library is saved on the device and shown at once on the next start while the provider's current one is
+  fetched behind it, and big libraries are read off the screen's thread. Copy diagnostics reports the timings.
 - On a TV the on-screen keyboard only opens when you press OK on a text box. In the player the star adds a channel to My list and
   Menu/Info open its options (rename, pin, hide). Settings > Startup can open the app when the Fire TV / Android TV starts and
   reopen the last screen or live channel.

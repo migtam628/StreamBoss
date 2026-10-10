@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../models/media.dart';
 import 'http_client.dart';
+import 'catalog_cache.dart' show parseAway;
 import 'net_config.dart';
 import 'tmdb.dart';
 
@@ -94,13 +96,16 @@ class XtreamClient {
   Uri get xmltvUri => Uri.parse('$base/xmltv.php')
       .replace(queryParameters: {'username': user, 'password': pass});
 
-  Future<dynamic> _get(String action, [Map<String, String> extra = const {}]) async {
+  Future<Uint8List> _getBytes(String action, [Map<String, String> extra = const {}]) async {
     final res = await _http.get(_api(action, extra), headers: NetConfig.headers).timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
       throw Exception('Server returned ${res.statusCode}');
     }
-    return jsonDecode(utf8.decode(res.bodyBytes));
+    return res.bodyBytes;
   }
+
+  Future<dynamic> _get(String action, [Map<String, String> extra = const {}]) async =>
+      jsonDecode(utf8.decode(await _getBytes(action, extra)));
 
   Future<void> authenticate() async {
     final j = await _get('');
@@ -124,20 +129,30 @@ class XtreamClient {
     return '$base/timeshift/$user/$pass/$mins/$at/$streamId.ts';
   }
 
-  List<Category> _cats(dynamic j) => [
-        for (final c in (j as List? ?? const []))
-          Category('${c['category_id']}', '${c['category_name']}'),
-      ];
+  /// The provider's six answers that make up the library, as they came: live categories and streams,
+  /// movie categories and streams, series categories and series. Kept as bytes so they can be saved and
+  /// parsed in the background (see [parseCatalog]).
+  Future<List<Uint8List>> fetchRaw() => Future.wait([
+        _getBytes('get_live_categories'),
+        _getBytes('get_live_streams'),
+        _getBytes('get_vod_categories'),
+        _getBytes('get_vod_streams'),
+        _getBytes('get_series_categories'),
+        _getBytes('get_series'),
+      ]);
 
   Future<Catalog> loadCatalog() async {
-    final r = await Future.wait([
-      _get('get_live_categories'),
-      _get('get_live_streams'),
-      _get('get_vod_categories'),
-      _get('get_vod_streams'),
-      _get('get_series_categories'),
-      _get('get_series'),
-    ]);
+    final raw = await fetchRaw();
+    return parseAway('parse library', raw.fold<int>(0, (a, b) => a + b.length), xtreamParseJob(base, user, pass, raw));
+  }
+
+  /// Builds the library from the answers of [fetchRaw]. A plain function of its inputs, so it can run in
+  /// a background isolate.
+  static Catalog parseCatalog(String base, String user, String pass, List<Uint8List> raw) {
+    final r = [for (final b in raw) jsonDecode(utf8.decode(b))];
+    List<Category> cats(dynamic j) => [
+          for (final c in (j as List? ?? const [])) Category('${c['category_id']}', '${c['category_name']}'),
+        ];
 
     String? s(dynamic v) {
       final t = v?.toString();
@@ -183,9 +198,9 @@ class XtreamClient {
         ),
     ];
     return Catalog(
-      liveCategories: _cats(r[0]),
-      movieCategories: _cats(r[2]),
-      seriesCategories: _cats(r[4]),
+      liveCategories: cats(r[0]),
+      movieCategories: cats(r[2]),
+      seriesCategories: cats(r[4]),
       live: live,
       movies: movies,
       series: series,
@@ -356,3 +371,9 @@ class EpgEntry {
     return !n.isBefore(start) && n.isBefore(end);
   }
 }
+
+/// The work of [XtreamClient.parseCatalog] as a function that holds nothing but plain data, so it can be
+/// sent to a background isolate (a closure built inside a class would drag the whole object, with its
+/// open connections, along and be refused).
+Catalog Function() xtreamParseJob(String base, String user, String pass, List<Uint8List> raw) =>
+    () => XtreamClient.parseCatalog(base, user, pass, raw);
