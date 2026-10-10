@@ -114,7 +114,7 @@ class _ChannelFilterBarState extends State<ChannelFilterBar> {
   }
 }
 
-/// The filters that do not fit in the bar: quality, country, favorites, guide data and the order.
+/// The filters that do not fit in the bar: quality, country, language, favorites, guide data and the order.
 Future<void> showChannelFilterSheet(BuildContext context) {
   final p = LayoutPalette.of(context);
   return showModalBottomSheet<void>(
@@ -127,6 +127,10 @@ Future<void> showChannelFilterSheet(BuildContext context) {
   );
 }
 
+/// [set] with [code] added, or removed when it is already in.
+Set<String> _toggled(Set<String> set, String code) =>
+    set.contains(code) ? ({...set}..remove(code)) : {...set, code};
+
 class _FilterSheet extends StatelessWidget {
   const _FilterSheet();
 
@@ -137,6 +141,8 @@ class _FilterSheet extends StatelessWidget {
     final f = s.channelFilter;
     final countries =
         countriesIn(s.shown.live, s.liveCategoryName).take(24).toList();
+
+    final langs = s.languagesFor('live').take(24).toList();
 
     Widget header(String t) => Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
@@ -200,13 +206,25 @@ class _FilterSheet extends StatelessWidget {
                     () => s.setChannelFilter(f.copyWith(quality: q))),
             ]),
             if (countries.isNotEmpty) ...[
-              header('COUNTRY'),
+              header('COUNTRY (PICK AS MANY AS YOU LIKE)'),
               chips([
-                chip('All', f.country == null,
-                    () => s.setChannelFilter(f.copyWith(country: null))),
+                chip('All', f.countries.isEmpty,
+                    () => s.setChannelFilter(f.copyWith(countries: {}))),
                 for (final (c, n) in countries)
-                  chip('${c.name}  $n', f.country == c.code,
-                      () => s.setChannelFilter(f.copyWith(country: c.code))),
+                  chip('${c.name}  $n', f.countries.contains(c.code),
+                      () => s.setChannelFilter(f.copyWith(
+                          countries: _toggled(f.countries, c.code)))),
+              ]),
+            ],
+            if (langs.isNotEmpty) ...[
+              header('LANGUAGE (PICK AS MANY AS YOU LIKE)'),
+              chips([
+                chip('All', f.languages.isEmpty,
+                    () => s.setChannelFilter(f.copyWith(languages: {}))),
+                for (final (l, n) in langs)
+                  chip('${l.name}  $n', f.languages.contains(l.code),
+                      () => s.setChannelFilter(f.copyWith(
+                          languages: _toggled(f.languages, l.code)))),
               ]),
             ],
             header('SHOW ONLY'),

@@ -126,6 +126,7 @@ class _VodFilterSheet extends StatelessWidget {
     final p = LayoutPalette.of(context);
     final f = s.vodFilter(list);
     void set(VodFilter n) => s.setVodFilter(list, n);
+    final langs = s.languagesFor(list).take(24).toList();
 
     Widget header(String t) => Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
@@ -165,6 +166,13 @@ class _VodFilterSheet extends StatelessWidget {
         ]),
         header('YEAR (READ FROM THE TITLE)'),
         chips([for (final e in Era.values) chip(e.label, f.era == e, () => set(f.copyWith(era: e)))]),
+        if (langs.isNotEmpty) ...[
+          header('LANGUAGE (PICK AS MANY AS YOU LIKE)'),
+          chips([
+            chip('All', f.languages.isEmpty, () => set(f.copyWith(languages: {}))),
+            for (final (l, n) in langs) chip('${l.name}  $n', f.languages.contains(l.code), () => set(f.copyWith(languages: f.languages.contains(l.code) ? ({...f.languages}..remove(l.code)) : {...f.languages, l.code}))),
+          ]),
+        ],
         header('SHOW ONLY'),
         chips([
           chip('Favorites', f.favoritesOnly, () => set(f.copyWith(favoritesOnly: !f.favoritesOnly))),

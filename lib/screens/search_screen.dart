@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../layouts/common.dart';
 import '../layouts/ui_layout.dart';
 import '../models/media.dart';
+import '../services/languages.dart';
 import '../services/search.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
@@ -34,6 +35,9 @@ class _SearchScreenState extends State<SearchScreen> {
   int _kind = 0, _cat = 0, _rating = 0, _sort = 0;
   bool _filters = false;
 
+  /// Language codes to keep; empty keeps all.
+  Set<String> _langs = const {};
+
   // The last answer, so a rebuild that changes nothing does not search again.
   SearchIndex? _idx;
   String? _memoKey;
@@ -51,7 +55,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final cats =
         kind == null ? const <String>[] : idx.categoryNames[kind] ?? const [];
     final cat = _cat > 0 && _cat <= cats.length ? cats[_cat - 1] : null;
-    final key = '$_q|$_kind|$cat|$_rating|$_sort|${s.favorites.length}';
+    final key = '$_q|$_kind|$cat|$_rating|$_sort|${s.favorites.length}|${(_langs.toList()..sort()).join(',')}';
     if (!identical(idx, _idx) || key != _memoKey) {
       _idx = idx;
       _memoKey = key;
@@ -63,6 +67,14 @@ class _SearchScreenState extends State<SearchScreen> {
               sort: SearchSort.values[_sort]),
           favorites: s.favorites,
           recent: {for (final r in s.recents) r.key});
+      if (_langs.isNotEmpty) {
+        _hits = [
+          for (final h in _hits)
+            if (_langs.contains(languageCodeOf(
+                h, h.kind == MediaKind.live ? s.liveCategoryName(h) : s.vodCategoryName(h))))
+              h
+        ];
+      }
     }
     return _hits;
   }
@@ -82,8 +94,24 @@ class _SearchScreenState extends State<SearchScreen> {
         ? const <String>[]
         : s.searchIndex.categoryNames[kind] ?? const [];
     final results = _results(s);
+    final langs = {
+      for (final list in kind == null
+          ? const ['live', 'movie', 'series']
+          : [kind == MediaKind.live ? 'live' : kind == MediaKind.movie ? 'movie' : 'series'])
+        for (final e in s.languagesFor(list)) e.$1: 0
+    }.keys.take(24).map((l) {
+      var n = 0;
+      for (final list in kind == null
+          ? const ['live', 'movie', 'series']
+          : [kind == MediaKind.live ? 'live' : kind == MediaKind.movie ? 'movie' : 'series']) {
+        for (final e in s.languagesFor(list)) {
+          if (e.$1.code == l.code) n += e.$2;
+        }
+      }
+      return (l, n);
+    }).toList();
     final active =
-        (_cat > 0 ? 1 : 0) + (_rating > 0 ? 1 : 0) + (_sort > 0 ? 1 : 0);
+        (_cat > 0 ? 1 : 0) + (_rating > 0 ? 1 : 0) + (_sort > 0 ? 1 : 0) + (_langs.isEmpty ? 0 : 1);
     final typed = _q.trim().length >= 2;
 
     final slivers = <Widget>[];
@@ -189,6 +217,26 @@ class _SearchScreenState extends State<SearchScreen> {
             labels: _ratingLabels,
             selected: _rating,
             onSelect: (i) => setState(() => _rating = i)),
+        if (langs.isNotEmpty)
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                for (final (l, n) in langs)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text('${l.name}  $n'),
+                      selected: _langs.contains(l.code),
+                      onSelected: (on) => setState(() => _langs =
+                          on ? {..._langs, l.code} : ({..._langs}..remove(l.code))),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         if (cats.isNotEmpty)
           ChipRow(
             labels: ['Any category', ...cats.take(40)],

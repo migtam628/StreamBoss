@@ -98,10 +98,10 @@ void main() {
     });
 
     test('country comes from the category, then the channel name', () {
-      expect(names(filt(const ChannelFilter(country: 'ES'))),
+      expect(names(filt(const ChannelFilter(countries: {'ES'}))),
           ['La Uno HD', 'Canal Sur', 'Sports Four 4K']);
-      expect(names(filt(const ChannelFilter(country: 'GB'))), ['BBC One FHD']);
-      expect(filt(const ChannelFilter(country: 'FR')), isEmpty);
+      expect(names(filt(const ChannelFilter(countries: {'GB'}))), ['BBC One FHD']);
+      expect(filt(const ChannelFilter(countries: {'FR'})), isEmpty);
     });
 
     test('favorites and guide data toggles', () {
@@ -118,7 +118,7 @@ void main() {
     test('filters combine', () {
       expect(
           names(filt(const ChannelFilter(
-              text: 'uno', country: 'ES', quality: QualityFilter.hd))),
+              text: 'uno', countries: {'ES'}, quality: QualityFilter.hd))),
           ['La Uno HD']);
     });
 
@@ -143,12 +143,12 @@ void main() {
       final f = const ChannelFilter().copyWith(
           text: 'a',
           quality: QualityFilter.hd,
-          country: 'ES',
+          countries: {'ES'},
           favoritesOnly: true,
           guideOnly: true);
       expect(f.count, 5);
-      expect(f.copyWith(country: null).country, isNull);
-      expect(f.copyWith(text: 'b').country, 'ES');
+      expect(f.copyWith(countries: {}).countries, isEmpty);
+      expect(f.copyWith(text: 'b').countries, {'ES'});
       expect(const ChannelFilter(text: 'x') == const ChannelFilter(text: 'x'),
           isTrue);
       expect(const ChannelFilter(sort: ChannelSort.name).active, isTrue,
@@ -578,7 +578,7 @@ void main() {
       expect(app.channelFilter.quality, QualityFilter.hd);
       await t.tap(find.textContaining('United Kingdom'));
       await t.pumpAndSettle();
-      expect(app.channelFilter.country, 'GB');
+      expect(app.channelFilter.countries, {'GB'});
       await t.tap(find.text('Clear all'));
       await t.pumpAndSettle();
       expect(app.channelFilter.active, isFalse);

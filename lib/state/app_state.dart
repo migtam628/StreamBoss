@@ -16,6 +16,7 @@ import '../services/stream_check.dart';
 import '../services/net_config.dart';
 import '../services/provider_url.dart';
 import '../services/anime.dart';
+import '../services/languages.dart';
 import '../services/channel_edits.dart';
 import '../services/channel_filter.dart';
 import '../services/vod_filter.dart';
@@ -727,6 +728,26 @@ class AppState extends ChangeNotifier {
       _vodCatNamesFor = c;
     }
     return _vodCatNames![i.categoryId] ?? '';
+  }
+
+  final Map<String, List<(Language, int)>> _langMemo = {};
+  Catalog? _langMemoFor;
+
+  /// The languages in a list ('live', 'movie', 'series', 'anime'), most titles first, worked out once
+  /// per library.
+  List<(Language, int)> languagesFor(String list) {
+    final c = shown;
+    if (!identical(_langMemoFor, c)) {
+      _langMemo.clear();
+      _langMemoFor = c;
+    }
+    return _langMemo[list] ??= switch (list) {
+      'live' => languagesIn(c.live, liveCategoryName),
+      'series' => languagesIn(c.series, vodCategoryName),
+      'anime' => languagesIn(
+          [for (final k in MediaKind.values) ...animeFor(k).items], vodCategoryName),
+      _ => languagesIn(c.movies, vodCategoryName),
+    };
   }
 
   /// Whether this title was opened lately or has a resume position.

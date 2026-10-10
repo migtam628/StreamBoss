@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show setEquals;
 import '../models/media.dart';
+import 'languages.dart';
 import 'search.dart' show normalizeSearch;
 
 /// The release years a title can be narrowed to.
@@ -39,6 +41,9 @@ class VodFilter {
   /// The lowest rating (out of 10) a title needs; 0 lets everything through, unrated titles included.
   final double minRating;
   final Era era;
+
+  /// Language codes (see [languages]) to keep; empty keeps every language.
+  final Set<String> languages;
   final bool favoritesOnly;
 
   /// Leaves out what you are partway through or have opened lately.
@@ -48,6 +53,7 @@ class VodFilter {
     this.text = '',
     this.minRating = 0,
     this.era = Era.any,
+    this.languages = const {},
     this.favoritesOnly = false,
     this.unwatchedOnly = false,
     this.sort = VodSort.provider,
@@ -62,6 +68,7 @@ class VodFilter {
       (text.trim().isEmpty ? 0 : 1) +
       (minRating > 0 ? 1 : 0) +
       (era == Era.any ? 0 : 1) +
+      (languages.isEmpty ? 0 : 1) +
       (favoritesOnly ? 1 : 0) +
       (unwatchedOnly ? 1 : 0);
 
@@ -71,6 +78,7 @@ class VodFilter {
     String? text,
     double? minRating,
     Era? era,
+    Set<String>? languages,
     bool? favoritesOnly,
     bool? unwatchedOnly,
     VodSort? sort,
@@ -79,6 +87,7 @@ class VodFilter {
         text: text ?? this.text,
         minRating: minRating ?? this.minRating,
         era: era ?? this.era,
+        languages: languages ?? this.languages,
         favoritesOnly: favoritesOnly ?? this.favoritesOnly,
         unwatchedOnly: unwatchedOnly ?? this.unwatchedOnly,
         sort: sort ?? this.sort,
@@ -90,13 +99,15 @@ class VodFilter {
       other.text == text &&
       other.minRating == minRating &&
       other.era == era &&
+      setEquals(other.languages, languages) &&
       other.favoritesOnly == favoritesOnly &&
       other.unwatchedOnly == unwatchedOnly &&
       other.sort == sort;
 
   @override
   int get hashCode =>
-      Object.hash(text, minRating, era, favoritesOnly, unwatchedOnly, sort);
+      Object.hash(text, minRating, era, Object.hashAllUnordered(languages), favoritesOnly,
+          unwatchedOnly, sort);
 }
 
 final _year = RegExp(r'(?<!\d)(19[3-9]\d|20[0-3]\d)(?!\d)');
@@ -145,6 +156,7 @@ List<MediaItem> applyVodFilter(
       normalizeSearch(f.text).split(' ').where((w) => w.isNotEmpty).toList();
   final out = <MediaItem>[];
   final catNorm = <String, String>{};
+  final catName = <String, String>{};
   for (final i in items) {
     if (f.favoritesOnly && !isFavorite(i)) continue;
     if (f.unwatchedOnly && started(i)) continue;
@@ -152,6 +164,10 @@ List<MediaItem> applyVodFilter(
     if (f.era != Era.any) {
       final y = yearOf(i);
       if (y == null || !f.era.holds(y)) continue;
+    }
+    if (f.languages.isNotEmpty) {
+      final name = catName.putIfAbsent(i.categoryId, () => categoryName(i));
+      if (!f.languages.contains(languageCodeOf(i, name))) continue;
     }
     if (words.isNotEmpty) {
       final cat = catNorm.putIfAbsent(i.categoryId, () => normalizeSearch(categoryName(i)));

@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show setEquals;
 import '../models/media.dart';
 import 'channel_merge.dart' show channelQuality;
 import 'countries.dart';
+import 'languages.dart';
 import 'search.dart' show normalizeSearch;
 
 /// The smallest picture quality a channel's name promises. Names that say nothing count as "any".
@@ -38,8 +40,11 @@ class ChannelFilter {
   final String text;
   final QualityFilter quality;
 
-  /// A country code (see [countries]), or null for every country.
-  final String? country;
+  /// Country codes (see [countries]) to keep; empty keeps every country.
+  final Set<String> countries;
+
+  /// Language codes (see [languages]) to keep; empty keeps every language.
+  final Set<String> languages;
   final bool favoritesOnly;
 
   /// Only channels the guide has programmes for.
@@ -48,7 +53,8 @@ class ChannelFilter {
   const ChannelFilter({
     this.text = '',
     this.quality = QualityFilter.any,
-    this.country,
+    this.countries = const {},
+    this.languages = const {},
     this.favoritesOnly = false,
     this.guideOnly = false,
     this.sort = ChannelSort.provider,
@@ -60,7 +66,8 @@ class ChannelFilter {
   int get count =>
       (text.trim().isEmpty ? 0 : 1) +
       (quality == QualityFilter.any ? 0 : 1) +
-      (country == null ? 0 : 1) +
+      (countries.isEmpty ? 0 : 1) +
+      (languages.isEmpty ? 0 : 1) +
       (favoritesOnly ? 1 : 0) +
       (guideOnly ? 1 : 0);
 
@@ -69,7 +76,8 @@ class ChannelFilter {
   ChannelFilter copyWith({
     String? text,
     QualityFilter? quality,
-    Object? country = _keep,
+    Set<String>? countries,
+    Set<String>? languages,
     bool? favoritesOnly,
     bool? guideOnly,
     ChannelSort? sort,
@@ -77,7 +85,8 @@ class ChannelFilter {
       ChannelFilter(
         text: text ?? this.text,
         quality: quality ?? this.quality,
-        country: identical(country, _keep) ? this.country : country as String?,
+        countries: countries ?? this.countries,
+        languages: languages ?? this.languages,
         favoritesOnly: favoritesOnly ?? this.favoritesOnly,
         guideOnly: guideOnly ?? this.guideOnly,
         sort: sort ?? this.sort,
@@ -88,17 +97,17 @@ class ChannelFilter {
       other is ChannelFilter &&
       other.text == text &&
       other.quality == quality &&
-      other.country == country &&
+      setEquals(other.countries, countries) &&
+      setEquals(other.languages, languages) &&
       other.favoritesOnly == favoritesOnly &&
       other.guideOnly == guideOnly &&
       other.sort == sort;
 
   @override
   int get hashCode =>
-      Object.hash(text, quality, country, favoritesOnly, guideOnly, sort);
+      Object.hash(text, quality, Object.hashAllUnordered(countries),
+          Object.hashAllUnordered(languages), favoritesOnly, guideOnly, sort);
 }
-
-const _keep = Object();
 
 /// [channels] narrowed by [f]. [categoryName] gives a channel's category name (used for the words and
 /// the country); [isFavorite] and [hasGuide] answer the two toggles.
@@ -121,8 +130,12 @@ List<MediaItem> applyChannelFilter(
       continue;
     }
     final cat = categoryName(c);
-    if (f.country != null &&
-        (countryOf(cat) ?? countryOf(c.name))?.code != f.country) {
+    if (f.countries.isNotEmpty &&
+        !f.countries.contains((countryOf(cat) ?? countryOf(c.name))?.code)) {
+      continue;
+    }
+    if (f.languages.isNotEmpty &&
+        !f.languages.contains(languageCodeOf(c, cat))) {
       continue;
     }
     if (words.isNotEmpty) {
