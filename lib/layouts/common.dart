@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/tv.dart';
 import 'ui_layout.dart';
 
@@ -63,6 +64,25 @@ class _FocusSurfaceState extends State<FocusSurface> {
         ),
       ),
     );
+    // A remote has no long press: its Menu, Info and yellow keys do the same thing on whatever is focused.
+    if (widget.onLongPress != null) {
+      w = Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: (_, e) {
+          final k = e.logicalKey;
+          if (e is KeyDownEvent &&
+              (k == LogicalKeyboardKey.contextMenu ||
+                  k == LogicalKeyboardKey.info ||
+                  k == LogicalKeyboardKey.colorF2Yellow)) {
+            widget.onLongPress!();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: w,
+      );
+    }
     if (widget.semanticLabel != null) {
       w = Semantics(label: widget.semanticLabel, button: true, child: w);
     }

@@ -37,7 +37,11 @@ class SettingsState extends ChangeNotifier {
     // appearance
     'uiScale': 1.0,
     'posterSize': 1.0,
-    'startTab': 0,
+    'startTab': 0, // 0..7 a screen, -1 where you left off
+    'lastTab': 0, // the screen last open (this device)
+    'lastLive': '', // key of the live channel last watched
+    'lastLiveOpen': false, // it was still on screen when the app closed
+    'startOnBoot': false, // Android: open the app when the device starts (Fire TV, Android TV)
     'animePage': 'auto', // auto (when the library has anime) | on | off
     'tvMode': 'auto', // auto | on | off
     'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
@@ -162,6 +166,10 @@ class SettingsState extends ChangeNotifier {
   double get uiScale => _g('uiScale');
   double get posterSize => _g('posterSize');
   int get startTab => _g('startTab');
+  int get lastTab => _g('lastTab');
+  String get lastLive => _g('lastLive');
+  bool get lastLiveOpen => _g('lastLiveOpen');
+  bool get startOnBoot => _g('startOnBoot');
   String get tvMode => _g('tvMode');
 
   /// TV ("10-foot") mode: on when forced, or when auto and a TV was detected.

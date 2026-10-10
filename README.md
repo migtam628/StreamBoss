@@ -166,8 +166,11 @@ every release. The first build signed with your key has to be installed after un
 - Cast to TV (experimental): the player's Cast button finds Chromecasts and TVs with Chromecast built in on your Wi-Fi and
   plays the stream there (not on the web build; untested on real hardware). On iPhone and iPad the player also has the system AirPlay
   button: sound goes to the speaker or TV picked, and the picture follows when the screen is mirrored (untested on real hardware)
-- Movies, Series and the Anime page each have a filter: words, rating (6+, 7+, 8+), year (read from the title), favorites, not watched
-  yet, and an order. Anime is its own page (Settings > Open on can start there) that gathers the categories named anime, manga,
+- On a TV the on-screen keyboard only opens when you press OK on a text box. In the player the star adds a channel to My list and
+  Menu/Info open its options (rename, pin, hide). Settings > Startup can open the app when the Fire TV / Android TV starts and
+  reopen the last screen or live channel.
+- Movies, Series and the Anime page each have a filter: words, rating (6+, 7+, 8+), year (read from the title), language, favorites,
+  not watched yet, and an order. Live, Guide and Search filter by language too, and countries and languages can be picked several at once. Anime is its own page (Settings > Open on can start there) that gathers the categories named anime, manga,
   donghua, shonen and similar, and titles tagged "(Anime)", across series, movies and channels. The page is in the menus only when
   the library has some (Settings > Appearance > Anime page: Auto, Always, Hidden)
 - Big libraries: what a title says about itself (year, rating, search words) is worked out once, filter and anime results are

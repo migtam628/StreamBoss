@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:streamboss/screens/browse_screen.dart';
+import 'package:streamboss/screens/shell.dart';
+import 'package:streamboss/state/app_state.dart';
+import 'package:streamboss/state/settings_state.dart';
+import 'package:streamboss/theme.dart';
+import 'package:streamboss/layouts/common.dart';
 import 'package:streamboss/models/media.dart';
 import 'package:streamboss/services/channel_filter.dart';
 import 'package:streamboss/services/languages.dart';
@@ -123,6 +131,79 @@ void main() {
       await t.tap(find.byType(InputDecorator));
       await t.pump();
       expect(find.byType(EditableText), findsOneWidget);
+    });
+  });
+
+  group('open where I left off', () {
+    Future<(SettingsState, AppState)> boot(WidgetTester t, Map<String, Object> prefs) async {
+      SharedPreferences.setMockInitialValues(prefs);
+      final st = SettingsState();
+      await st.init();
+      final app = AppState()..bindSettings(st);
+      app.catalog = Catalog(
+        movies: [item('m', 'Movie', '1', kind: MediaKind.movie)],
+        movieCategories: const [Category('1', 'Movies')],
+        series: [item('s', 'Show', '2', kind: MediaKind.series)],
+        seriesCategories: const [Category('2', 'Shows')],
+      );
+      t.view.physicalSize = const Size(1000, 800);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AppState>.value(value: app),
+          ChangeNotifierProvider<SettingsState>.value(value: st),
+        ],
+        child: MaterialApp(theme: Boss.theme(tv: false, layout: st.layout), home: const Shell()),
+      ));
+      await t.pump();
+      return (st, app);
+    }
+
+    bool onSeries() => find.byWidgetPredicate((w) => w is BrowseScreen && w.kind == MediaKind.series).evaluate().isNotEmpty;
+
+    testWidgets('reopens the last screen', (t) async {
+      await boot(t, {'startTab': -1, 'lastTab': 4});
+      expect(onSeries(), isTrue);
+    });
+
+    testWidgets('a fixed start screen ignores the last one', (t) async {
+      await boot(t, {'startTab': 0, 'lastTab': 4});
+      expect(onSeries(), isFalse);
+    });
+
+    test('defaults', () async {
+      SharedPreferences.setMockInitialValues({});
+      final st = SettingsState();
+      await st.init();
+      expect(st.startOnBoot, isFalse);
+      expect(st.lastLiveOpen, isFalse);
+      expect(st.lastLive, '');
+      st.set('startTab', -1);
+      expect(st.startTab, -1);
+    });
+  });
+
+  group('remote Menu key', () {
+    testWidgets('Menu on a focused tile does what a long press does', (t) async {
+      var tapped = 0, held = 0;
+      await t.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: FocusSurface(
+            autofocus: true,
+            onTap: () => tapped++,
+            onLongPress: () => held++,
+            builder: (_, __) => const SizedBox(width: 100, height: 50),
+          ),
+        ),
+      ));
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+      await t.sendKeyEvent(LogicalKeyboardKey.info);
+      expect(held, 2);
+      expect(tapped, 0);
+      await t.sendKeyEvent(LogicalKeyboardKey.select);
+      expect(tapped, 1);
     });
   });
 }

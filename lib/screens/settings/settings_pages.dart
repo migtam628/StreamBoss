@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import '../../services/app_icon.dart';
+import '../../services/boot_launch.dart';
 import '../../widgets/screensaver.dart';
 import '../../layouts/common.dart';
 import '../../layouts/ui_layout.dart';
@@ -552,11 +553,40 @@ class AppearancePage extends StatelessWidget {
       ChoiceRow<int>(
         icon: Icons.home_outlined,
         title: 'Open on',
-        subtitle: 'The screen shown when the app starts',
+        subtitle: 'The screen shown when the app starts. Where I left off reopens the last screen, and the last live channel if you were watching one',
         value: st.startTab,
-        options: const [(0, 'Home'), (1, 'Live TV'), (2, 'Guide'), (3, 'Movies'), (4, 'Series'), (7, 'Anime'), (5, 'Search')],
+        options: const [(-1, 'Where I left off'), (0, 'Home'), (1, 'Live TV'), (2, 'Guide'), (3, 'Movies'), (4, 'Series'), (7, 'Anime'), (5, 'Search')],
         onChanged: (v) => st.set('startTab', v),
       ),
+      if (BootLaunch.supported)
+        SwitchRow(
+          icon: Icons.power_settings_new,
+          title: 'Open when the device starts',
+          subtitle: 'Opens StreamBoss when the Fire TV or Android TV is switched on or restarted. With Open on set to '
+              'Where I left off it goes straight back to the channel you were watching.',
+          value: st.startOnBoot,
+          onChanged: (v) async {
+            st.set('startOnBoot', v);
+            if (v && !await BootLaunch.allowed() && context.mounted) {
+              final open = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('One more step'),
+                  content: const Text('This version of Android only lets an app open itself at start-up if it may '
+                      '"Display over other apps". Turn that on for StreamBoss on the next screen.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Not now')),
+                    FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Open settings')),
+                  ],
+                ),
+              );
+              if (open == true && !await BootLaunch.openPermissionSettings() && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('This device has no such screen. Look for StreamBoss under Apps > Special access.')));
+              }
+            }
+          },
+        ),
       ChoiceRow<String>(
         icon: Icons.auto_awesome_outlined,
         title: 'Anime page',

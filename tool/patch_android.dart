@@ -15,6 +15,7 @@ void main() {
   _patchLibrarySdk();
   if (x.contains('LEANBACK_LAUNCHER')) {
     _patchIconAliases();
+    _patchBoot();
     stdout.writeln('Already patched.');
     return;
   }
@@ -44,6 +45,7 @@ void main() {
 
   f.writeAsStringSync(x);
   _patchIconAliases();
+  _patchBoot();
   stdout.writeln('Patched AndroidManifest.xml for TV.');
 }
 
@@ -82,6 +84,64 @@ void _patchIconAliases() {
   x = x.replaceFirst('</application>', '$aliases    </application>');
   f.writeAsStringSync(x);
   stdout.writeln('Added the launcher icon aliases.');
+}
+
+/// Opening the app when the device starts (Settings > Startup): a receiver for BOOT_COMPLETED that
+/// starts MainActivity when the app's own setting is on. Android 10 and later only let a background
+/// receiver open an activity if the app may "Display over other apps", which the setting asks for.
+void _patchBoot() {
+  final f = File('android/app/src/main/AndroidManifest.xml');
+  var x = f.readAsStringSync();
+  if (x.contains('.BootReceiver"')) return;
+  x = x.replaceFirstMapped(
+      RegExp(r'<manifest[^>]*>'),
+      (m) => '${m[0]}\n'
+          '    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n'
+          '    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>');
+  x = x.replaceFirst('</application>', '''        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+    </application>''');
+  f.writeAsStringSync(x);
+  final root = Directory('android/app/src/main/kotlin');
+  final main = root.existsSync()
+      ? root.listSync(recursive: true).whereType<File>().where((e) => e.path.endsWith('MainActivity.kt')).firstOrNull
+      : null;
+  final pkg = main == null ? null : RegExp(r'^package\s+([\w.]+)', multiLine: true).firstMatch(main.readAsStringSync())?[1];
+  if (main == null || pkg == null) {
+    stderr.writeln('MainActivity.kt not found; opening on start-up will be unavailable.');
+    return;
+  }
+  File('${main.parent.path}/BootReceiver.kt').writeAsStringSync('''
+package $pkg
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+
+/// Opens the app after the device starts, when Settings > Startup > "Open when the device starts" is on.
+/// Flutter keeps its preferences in this file, with a "flutter." prefix on every key.
+class BootReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val a = intent.action ?: return
+        if (a != Intent.ACTION_BOOT_COMPLETED && !a.endsWith("QUICKBOOT_POWERON")) return
+        val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("flutter.startOnBoot", false)) return
+        try {
+            context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) {
+        }
+    }
+}
+'''.trimLeft());
+  stdout.writeln('Added the start-on-boot receiver.');
 }
 
 /// Replaces the generated MainActivity with one exposing picture-in-picture
@@ -154,6 +214,28 @@ class MainActivity : FlutterActivity() {
                         setIcon(name)
                         result.success(true)
                     } else {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.streamboss/boot").setMethodCallHandler { call, result ->
+            when (call.method) {
+                // Android 10+ only lets the boot receiver open the app when it may draw over other apps.
+                "canDrawOverlays" -> result.success(
+                    Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || android.provider.Settings.canDrawOverlays(this)
+                )
+                "openOverlaySettings" -> {
+                    try {
+                        startActivity(
+                            android.content.Intent(
+                                android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                android.net.Uri.parse("package:" + packageName)
+                            ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                        result.success(true)
+                    } catch (e: Exception) {
                         result.success(false)
                     }
                 }

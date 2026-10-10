@@ -14,6 +14,7 @@ import 'anime_screen.dart';
 import 'crash_notice.dart';
 import 'guide_screen.dart';
 import 'home_screen.dart';
+import 'open_item.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
 
@@ -36,10 +37,48 @@ class _ShellState extends State<Shell> {
   void initState() {
     super.initState();
     // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings, 7 Anime
-    _i = context.read<SettingsState>().startTab.clamp(0, kDests.length - 1);
+    final st = context.read<SettingsState>();
+    final resume = st.startTab < 0;
+    _i = (resume ? st.lastTab : st.startTab).clamp(0, kDests.length - 1);
     if (_i == 7 && !context.read<AppState>().animeVisible) _i = 0;
     _visited.add(_i);
+    if (resume && st.lastLiveOpen && st.lastLive.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _resumeLive(st.lastLive));
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _crashNotice());
+  }
+
+  AppState? _waiting;
+
+  /// Reopens the live channel that was on when the app last closed. The library may still be loading,
+  /// so it waits for the channels to arrive.
+  void _resumeLive(String key) {
+    if (!mounted) return;
+    final app = context.read<AppState>();
+    void go() {
+      final live = app.shown.live;
+      if (live.isEmpty) return;
+      app.removeListener(go);
+      _waiting = null;
+      final ch = live.where((c) => c.key == key).firstOrNull;
+      if (ch != null && mounted) openItem(context, ch, queue: live);
+    }
+
+    if (app.shown.live.isNotEmpty) {
+      go();
+    } else {
+      _waiting = app;
+      app.addListener(go);
+      _waitingGo = go;
+    }
+  }
+
+  VoidCallback? _waitingGo;
+
+  @override
+  void dispose() {
+    if (_waitingGo != null) _waiting?.removeListener(_waitingGo!);
+    super.dispose();
   }
 
   /// If the last playback session died, say so, and step down to a safer way of playing when it
@@ -92,7 +131,7 @@ class _ShellState extends State<Shell> {
     Widget guard(Widget child) => PopScope(
           canPop: !backHome || _i == 0,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) setState(() => _i = 0);
+            if (!didPop) select(0);
           },
           child: ShellNav(index: _i, select: select, child: child),
         );
@@ -167,10 +206,13 @@ class _ShellState extends State<Shell> {
   /// Layouts that draw their own backdrop behind the whole screen.
   static bool _paints(UiLayout l) => l == UiLayout.glass || l == UiLayout.mosaic;
 
-  void select(int v) => setState(() {
-        _i = v;
-        _visited.add(v);
-      });
+  void select(int v) {
+    context.read<SettingsState>().set('lastTab', v, notify: false);
+    setState(() {
+      _i = v;
+      _visited.add(v);
+    });
+  }
 }
 
 /// Spotlight sits on soft colored glows; the other layouts use the plain background.

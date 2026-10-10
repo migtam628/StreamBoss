@@ -317,6 +317,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void _onChannelChanged() {
     _anchorPos = null; // a new channel starts a new "live edge"
     if (!widget.catchUp) _app.markWatched(_cur);
+    if (_live && !widget.catchUp) {
+      // So "open where I left off" can come back to this channel.
+      _settings.set('lastLive', _cur.key, notify: false);
+      _settings.set('lastLiveOpen', true, notify: false);
+    }
     _epg = const [];
     if (_live) {
       _app.epg(_cur).then((e) {
@@ -336,6 +341,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     WidgetsBinding.instance.removeObserver(this);
     Screensaver.busy.value--;
     CrashGuard.mark('closing');
+    // Leaving the player on purpose means there is nothing to come back to (the mini player keeps it).
+    if (_live && !_handedOff) _settings.set('lastLiveOpen', false, notify: false);
     _savePosition(notify: true);
     for (final s in _subs) {
       s.cancel();
