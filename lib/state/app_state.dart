@@ -765,16 +765,18 @@ class AppState extends ChangeNotifier {
   Map<String, String>? _vodCatNames;
   Catalog? _vodCatNamesFor;
 
-  /// The category name of a movie or series ("" when it has none).
+  /// The category name of a movie or series ("" when it has none). Movies and series number their
+  /// categories separately, so the same id can be two different categories.
   String vodCategoryName(MediaItem i) {
     final c = shown;
     if (_vodCatNames == null || !identical(_vodCatNamesFor, c)) {
       _vodCatNames = {
-        for (final x in [...c.movieCategories, ...c.seriesCategories]) x.id: x.name
+        for (final x in c.movieCategories) 'movie:${x.id}': x.name,
+        for (final x in c.seriesCategories) 'series:${x.id}': x.name,
       };
       _vodCatNamesFor = c;
     }
-    return _vodCatNames![i.categoryId] ?? '';
+    return _vodCatNames!['${i.kind == MediaKind.series ? 'series' : 'movie'}:${i.categoryId}'] ?? '';
   }
 
   final Map<String, List<(Language, int)>> _langMemo = {};

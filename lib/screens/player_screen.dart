@@ -22,6 +22,7 @@ import '../state/app_state.dart';
 import '../services/time_format.dart';
 import 'open_item.dart';
 import '../state/settings_state.dart';
+import '../services/play_choices.dart';
 import '../services/subtitle_search.dart';
 import '../theme.dart';
 import '../widgets/airplay_button.dart';
@@ -54,6 +55,9 @@ class PlayerScreen extends StatefulWidget {
   /// A player the in-app mini window was already running; it carries on here without restarting.
   final MiniSession? adopt;
 
+  /// Audio, subtitles and speed picked on the details page for this play.
+  final PlayChoices? choices;
+
   const PlayerScreen({
     super.key,
     required this.title,
@@ -64,6 +68,7 @@ class PlayerScreen extends StatefulWidget {
     this.episodes,
     this.catchUp = false,
     this.adopt,
+    this.choices,
   });
 
   @override
@@ -244,9 +249,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       if (_live) await allowRewind(_player, _settings.isTv ? 24 : 48);
       await applyPlaybackPrefs(
         _player,
-        audioLang: _settings.audioLang,
-        subLang: _settings.subLang,
-        subsOn: _settings.subsOn,
+        audioLang: widget.choices?.audioLang ?? _settings.audioLang,
+        subLang: widget.choices?.subLang ?? _settings.subLang,
+        subsOn: widget.choices?.subsOn ?? _settings.subsOn,
         userAgent: _settings.userAgent,
       );
       await _applyShaders();
@@ -260,7 +265,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       CrashGuard.mark('opened');
       _armStall();
       _loadChapters();
-      if (!_live && _settings.speed != 1) await _player.setRate(_settings.speed);
+      final speed = widget.choices?.speed ?? _settings.speed;
+      if (!_live && speed != 1) await _player.setRate(speed);
       _onChannelChanged();
     } catch (e) {
       // Show what went wrong instead of an endless spinner.

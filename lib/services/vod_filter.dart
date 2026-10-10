@@ -166,11 +166,11 @@ List<MediaItem> applyVodFilter(
       if (y == null || !f.era.holds(y)) continue;
     }
     if (f.languages.isNotEmpty) {
-      final name = catName.putIfAbsent(i.categoryId, () => categoryName(i));
+      final name = catName.putIfAbsent('${i.kind.name}:${i.categoryId}', () => categoryName(i));
       if (!f.languages.contains(languageCodeOf(i, name))) continue;
     }
     if (words.isNotEmpty) {
-      final cat = catNorm.putIfAbsent(i.categoryId, () => normalizeSearch(categoryName(i)));
+      final cat = catNorm.putIfAbsent('${i.kind.name}:${i.categoryId}', () => normalizeSearch(categoryName(i)));
       final hay = '${metaOf(i).norm} $cat';
       if (!words.every(hay.contains)) continue;
     }

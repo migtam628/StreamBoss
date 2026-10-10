@@ -1,4 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:streamboss/screens/detail_screen.dart';
+import 'package:streamboss/screens/series_screen.dart';
+import 'package:streamboss/state/app_state.dart';
+import 'package:streamboss/state/settings_state.dart';
+import 'package:streamboss/theme.dart';
 import 'package:streamboss/models/media.dart';
 import 'package:streamboss/services/details_logic.dart';
 import 'package:streamboss/services/tmdb.dart';
@@ -8,6 +16,7 @@ MediaItem m(String id, String name, {String cat = '1', String? rating, MediaKind
     MediaItem(id: id, name: name, kind: kind, categoryId: cat, rating: rating, streamUrl: 'http://x/$id');
 
 void main() {
+  pageTests();
   test('runtime reads like people say it', () {
     expect(formatRuntime(108), '1h 48m');
     expect(formatRuntime(52), '52m');
@@ -113,8 +122,8 @@ void main() {
   });
 
   test('merging keeps the first source and fills the gaps', () {
-    final a = const TmdbInfo(genres: ['Drama'], certification: 'R');
-    final b = const TmdbInfo(genres: ['Other'], directors: ['X'], certification: 'PG', tech: TechInfo(container: 'mp4'));
+    const a = TmdbInfo(genres: ['Drama'], certification: 'R');
+    const b = TmdbInfo(genres: ['Other'], directors: ['X'], certification: 'PG', tech: TechInfo(container: 'mp4'));
     final r = mergeInfo(a, b)!;
     expect(r.genres, ['Drama']);
     expect(r.directors, ['X']);
@@ -135,5 +144,193 @@ void main() {
         'PG-13');
     expect(certificationOf({'content_ratings': {'results': [{'iso_3166_1': 'GB', 'rating': '15'}]}}, 'tv'), '15');
     expect(certificationOf({}, 'movie'), isNull);
+  });
+}
+
+// ---- the pages ----------------------------------------------------------------------------
+
+Future<AppState> _pump(WidgetTester t, Widget page, {Map<String, Object> prefs = const {}, Catalog? catalog}) async {
+  SharedPreferences.setMockInitialValues(prefs);
+  final st = SettingsState();
+  await st.init();
+  final app = AppState()..bindSettings(st);
+  app.catalog = catalog ??
+      Catalog(
+        movies: [m('1', 'Harbor Lights (2021)'), m('2', 'Harbor Lights (2021) 4K', cat: '2'), m('3', 'Other Movie')],
+        movieCategories: const [Category('1', 'EN | Movies'), Category('2', 'EN | 4K Movies')],
+        series: [m('s', 'The Long Quiet', kind: MediaKind.series)],
+        seriesCategories: const [Category('1', 'Shows')],
+      );
+  t.view.physicalSize = const Size(1000, 2400);
+  t.view.devicePixelRatio = 1;
+  addTearDown(t.view.reset);
+  await t.pumpWidget(MultiProvider(
+    providers: [
+      ChangeNotifierProvider<AppState>.value(value: app),
+      ChangeNotifierProvider<SettingsState>.value(value: st),
+    ],
+    child: MaterialApp(theme: Boss.theme(tv: false, layout: st.layout), home: page),
+  ));
+  await t.pump();
+  await t.pump();
+  return app;
+}
+
+const _info = TmdbInfo(
+  overview: 'Two strangers share one last ferry ride.',
+  year: '2021',
+  runtimeMin: 108,
+  rating: 7.8,
+  certification: 'PG-13',
+  genres: ['Drama', 'Romance'],
+  directors: ['Mara Voss'],
+  people: [Person('Ada Lin', 'Nora'), Person('Ben Ortiz', 'Sam')],
+  tech: TechInfo(videoCodec: 'hevc', width: 1920, height: 1080, audioCodec: 'eac3', audioChannels: 6, container: 'mkv'),
+);
+
+void pageTests() {
+  group('movie page', () {
+    final item = m('1', 'Harbor Lights (2021)');
+
+    testWidgets('title, facts and the play buttons', (t) async {
+      await _pump(t, DetailScreen(item: item, loadInfo: () async => _info));
+      expect(find.text('Harbor Lights (2021)'), findsOneWidget);
+      for (final c in ['2021', '1h 48m', '★ 7.8', 'PG-13', '1080p', '5.1', 'English']) {
+        expect(find.text(c), findsOneWidget, reason: c);
+      }
+      expect(find.text('Play'), findsOneWidget);
+      expect(find.text('Play options'), findsOneWidget);
+      expect(find.text('Mark watched'), findsOneWidget);
+      expect(find.textContaining('Two strangers'), findsOneWidget);
+    });
+
+    testWidgets('tabs: cast, details with the file and the other copy', (t) async {
+      await _pump(t, DetailScreen(item: item, loadInfo: () async => _info));
+      await t.tap(find.text('Cast'));
+      await t.pump();
+      expect(find.text('Ada Lin'), findsOneWidget);
+      expect(find.text('Nora'), findsOneWidget);
+      await t.tap(find.text('Details'));
+      await t.pump();
+      expect(find.text('THE FILE'), findsOneWidget);
+      expect(find.text('1080p · HEVC'), findsOneWidget);
+      expect(find.text('MKV'), findsOneWidget);
+      expect(find.text('OTHER COPIES IN YOUR LIBRARY'), findsOneWidget);
+      expect(find.text('4K'), findsWidgets);
+    });
+
+    testWidgets('a started movie offers to resume, with how much is left', (t) async {
+      final app = await _pump(t, DetailScreen(item: item, loadInfo: () async => _info), prefs: {'autoResume': true});
+      app.positions[item.key] = const Duration(minutes: 42, seconds: 10).inMilliseconds;
+      app.durations[item.key] = const Duration(minutes: 108).inMilliseconds;
+      app.setWatched([], false); // notifies
+      await t.pump();
+      expect(find.text('Resume 42:10'), findsOneWidget);
+      expect(find.text('Start over'), findsOneWidget);
+      expect(find.textContaining('left'), findsOneWidget);
+    });
+
+    testWidgets('Mark watched flips and is remembered', (t) async {
+      final app = await _pump(t, DetailScreen(item: item, loadInfo: () async => _info));
+      await t.tap(find.text('Mark watched'));
+      await t.pump();
+      expect(app.isWatched(item), isTrue);
+      expect(find.text('Mark not watched'), findsOneWidget);
+      expect(find.text('Watch again'), findsOneWidget);
+    });
+
+    testWidgets('Play options lists the other copy and Settings defaults', (t) async {
+      await _pump(t, DetailScreen(item: item, loadInfo: () async => _info));
+      await t.ensureVisible(find.text('Play options'));
+      await t.tap(find.text('Play options'));
+      await t.pumpAndSettle();
+      expect(find.text('COPY'), findsOneWidget);
+      expect(find.text('AUDIO'), findsOneWidget);
+      expect(find.text('SUBTITLES'), findsOneWidget);
+      expect(find.text('SPEED'), findsOneWidget);
+      expect(find.text('Spanish'), findsWidgets);
+    });
+
+    testWidgets('no provider details: still a page, with a hint', (t) async {
+      await _pump(t, DetailScreen(item: item, loadInfo: () async => null));
+      expect(find.text('No description from your provider yet.'), findsOneWidget);
+      await t.tap(find.text('Cast'));
+      await t.pump();
+      expect(find.textContaining('No cast listed'), findsOneWidget);
+    });
+  });
+
+  group('series page', () {
+    final series = m('s', 'The Long Quiet', kind: MediaKind.series);
+    Future<List<Episode>> eps() async => [
+          const Episode('11', 1, 1, 'Pilot', 'http://x/11', minutes: 47, plot: 'It begins.'),
+          const Episode('12', 1, 2, 'The Signal', 'http://x/12', minutes: 44),
+          const Episode('21', 2, 1, 'Cold Open', 'http://x/21', minutes: 46),
+          const Episode('22', 2, 2, 'Low Tide', 'http://x/22', minutes: 41, airDate: '2099-01-01'),
+        ];
+    MediaItem ep(String id) => MediaItem(id: 'ep$id', name: 'x', kind: MediaKind.movie, categoryId: '');
+
+    testWidgets('Continue starts at the first episode, with season chips', (t) async {
+      await _pump(t, SeriesScreen(series: series, loadEpisodes: eps, loadInfo: () async => _info));
+      expect(find.text('Continue S1 · E1'), findsOneWidget);
+      expect(find.text('2 seasons'), findsOneWidget);
+      expect(find.text('4 episodes'), findsOneWidget);
+      expect(find.text('Season 1'), findsOneWidget);
+      expect(find.text('Pilot'), findsOneWidget);
+      expect(find.textContaining('47 min'), findsWidgets);
+    });
+
+    testWidgets('Continue moves on after finished episodes, and the season follows', (t) async {
+      final app = await _pump(t, SeriesScreen(series: series, loadEpisodes: eps, loadInfo: () async => _info));
+      app.setWatched([ep('11'), ep('12')], true);
+      await t.pump();
+      expect(find.text('Continue S2 · E1'), findsOneWidget);
+      expect(find.text('Cold Open'), findsOneWidget);
+    });
+
+    testWidgets('Mark season watched', (t) async {
+      final app = await _pump(t, SeriesScreen(series: series, loadEpisodes: eps, loadInfo: () async => _info));
+      await t.tap(find.text('Mark season watched'));
+      await t.pump();
+      expect(app.isWatched(ep('11')), isTrue);
+      expect(app.isWatched(ep('12')), isTrue);
+      expect(app.isWatched(ep('21')), isFalse);
+      expect(find.text('Mark season not watched'), findsOneWidget);
+      expect(find.text('Continue S2 · E1'), findsOneWidget);
+      expect(find.text('Pilot'), findsOneWidget); // still looking at season 1
+    });
+
+    testWidgets('everything watched offers to start again', (t) async {
+      final app = await _pump(t, SeriesScreen(series: series, loadEpisodes: eps, loadInfo: () async => _info));
+      app.setWatched([ep('11'), ep('12'), ep('21'), ep('22')], true);
+      await t.pump();
+      expect(find.text('Watch again from the start'), findsOneWidget);
+    });
+
+    testWidgets('a half watched episode shows its progress', (t) async {
+      final app = await _pump(t, SeriesScreen(series: series, loadEpisodes: eps, loadInfo: () async => _info));
+      app.positions[ep('11').key] = const Duration(minutes: 20).inMilliseconds;
+      app.durations[ep('11').key] = const Duration(minutes: 47).inMilliseconds;
+      app.setWatched([], false);
+      await t.pump();
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.text('Continue S1 · E1'), findsOneWidget);
+    });
+
+    testWidgets('another season, and the Details tab totals', (t) async {
+      await _pump(t, SeriesScreen(series: series, loadEpisodes: eps, loadInfo: () async => _info));
+      await t.tap(find.text('Season 2'));
+      await t.pump();
+      expect(find.text('Low Tide'), findsOneWidget);
+      expect(find.text('Pilot'), findsNothing);
+      await t.tap(find.text('Details'));
+      await t.pump();
+      expect(find.text('2h 58m'), findsOneWidget);
+    });
+
+    testWidgets('a provider with no episodes says so', (t) async {
+      await _pump(t, SeriesScreen(series: series, loadEpisodes: () async => [], loadInfo: () async => null));
+      expect(find.text('No episodes listed by your provider.'), findsOneWidget);
+    });
   });
 }

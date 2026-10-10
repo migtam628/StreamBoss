@@ -130,7 +130,7 @@ List<(Language, int)> languagesIn(Iterable<MediaItem> items, String Function(Med
   final counts = <String, int>{};
   final catNames = <String, String>{};
   for (final i in items) {
-    final c = languageCodeOf(i, catNames.putIfAbsent(i.categoryId, () => categoryName(i)));
+    final c = languageCodeOf(i, catNames.putIfAbsent('${i.kind.name}:${i.categoryId}', () => categoryName(i)));
     if (c != null) counts[c] = (counts[c] ?? 0) + 1;
   }
   final out = [for (final e in counts.entries) (_byCode[e.key]!, e.value)];
