@@ -257,9 +257,7 @@ void main() {
       expect(app.catalog.live.single.streamUrl, contains('/u/'));
     });
   });
-}
 
-Future<T> inBackground<T>(T Function() job) => Future(() async => parseAway('x', 10 * 1024 * 1024, job))
   group('PerfLog', () {
     test('a mark keeps its first time, facts keep their latest, and the report lists both', () async {
       PerfLog.mark('first frame');
@@ -285,3 +283,5 @@ Future<T> inBackground<T>(T Function() job) => Future(() async => parseAway('x',
     });
   });
 }
+
+Future<T> inBackground<T>(T Function() job) => Future(() async => parseAway('x', 10 * 1024 * 1024, job));
