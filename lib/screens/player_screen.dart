@@ -204,15 +204,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           if (_error != null) setState(() => _error = null);
         }
       }),
-      _player.stream.playlist.listen((p) {
-        if (_queue != null && p.index != _index && p.index < _queue!.length) {
-          setState(() {
-            _lastIndex = _index;
-            _index = p.index;
-          });
-          _onChannelChanged();
-        }
-      }),
       _player.stream.completed.listen((done) {
         if (done && !_live && mounted) _offerNextEpisode();
       }),
@@ -248,7 +239,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }
     try {
       await applyBuffer(_player, _settings.bufferSecs);
-      if (_live) await allowRewind(_player, _settings.isTv ? 24 : 48);
+      if (_live) {
+        await allowRewind(_player, _settings.isTv ? 24 : 48);
+        await applyFastStart(_player, _settings.fastStart);
+      }
       await applyPlaybackPrefs(
         _player,
         audioLang: widget.choices?.audioLang ?? _settings.audioLang,
@@ -303,14 +297,37 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _zapTimer?.cancel();
     _zapTimer = Timer(wait, () {
       final to = _zap.take();
-      if (mounted && to != null && to != _index) _player.jump(to);
+      if (mounted && to != null && to != _index) _tune(to);
     });
   }
 
-  Future<void> _openQueue() => _player.open(Playlist(
-        [for (var i = 0; i < _queue!.length; i++) Media(_source(i).streamUrl!, httpHeaders: _source(i).headers)],
-        index: _index,
-      ));
+  /// Opens the channel at [_index]. Only that one stream is given to the player: handing it the whole
+  /// channel list (thousands of entries) cost memory and made every change slower, and let the player
+  /// wander on to the next channel by itself when a stream ended.
+  Future<void> _openQueue() {
+    final src = _source(_index);
+    return _player.open(Media(src.streamUrl!, httpHeaders: src.headers));
+  }
+
+  /// Switches to channel [to] of the list.
+  Future<void> _tune(int to) async {
+    final q = _queue;
+    if (q == null || to < 0 || to >= q.length || to == _index || !mounted) return;
+    setState(() {
+      _lastIndex = _index;
+      _index = to;
+      _reportedPlaying = false;
+      _error = null;
+    });
+    _onChannelChanged();
+    try {
+      await _openQueue();
+      _armStall();
+    } catch (e) {
+      CrashGuard.log('exception ${redactUrls('$e')}');
+      if (mounted) setState(() => _error = redactUrls('$e'));
+    }
+  }
 
   /// A live channel that has not started after a while counts as failed, like one that errors.
   void _armStall() {
@@ -475,7 +492,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _anchorPos = null;
     _reportedPlaying = true;
     if (_queue != null) {
-      await _player.jump(_index);
+      await _openQueue();
     } else {
       await _player.open(Media(_source(0).streamUrl!, httpHeaders: _source(0).headers));
     }

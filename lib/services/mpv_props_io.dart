@@ -12,6 +12,25 @@ Future<void> applyBuffer(Player player, int cacheSecs) async {
   }
 }
 
+/// Live channels: look at less of the stream before showing it. libmpv normally reads several megabytes
+/// and about five seconds of a stream to work out what is in it; for a live channel a fraction of that
+/// is enough, and the picture comes up sooner. Off puts libmpv's own defaults back.
+Future<void> applyFastStart(Player player, bool on) async {
+  final plat = player.platform;
+  if (plat is! NativePlayer) return;
+  Future<void> set(String k, String v) async {
+    try {
+      await plat.setProperty(k, v);
+    } catch (_) {
+      // A property this libmpv build does not know must not stop playback.
+    }
+  }
+
+  await set('demuxer-lavf-probesize', on ? '500000' : '5000000');
+  await set('demuxer-lavf-analyzeduration', on ? '1' : '0');
+  await set('cache-pause-initial', on ? 'no' : 'yes');
+}
+
 bool get shadersSupported => true;
 
 /// Writes each shader to the cache dir and points libmpv's `glsl-shaders` at

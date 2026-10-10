@@ -16,6 +16,7 @@ class SettingsState extends ChangeNotifier {
     // playback
     'decoder': 'auto', // auto | software (native only)
     'videoOutput': 'auto', // auto | surface | compat (Android only, see [surfaceOutput])
+    'fastStart': true, // live channels: look at less of the stream before showing it (native only)
     'bufferSecs': 20, // low 5 / normal 20 / high 60 (native only)
     'speed': 1.0,
     'autoResume': true,
@@ -146,6 +147,7 @@ class SettingsState extends ChangeNotifier {
 
   String get decoder => _g('decoder');
   int get bufferSecs => _g('bufferSecs');
+  bool get fastStart => _g('fastStart');
   double get speed => _g('speed');
   bool get autoResume => _g('autoResume');
   bool get autoplayNext => _g('autoplayNext');

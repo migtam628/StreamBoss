@@ -4,6 +4,9 @@ import 'chapters.dart';
 /// Web: libmpv properties are not available.
 Future<void> applyBuffer(Player player, int cacheSecs) async {}
 
+/// Web: the browser decides how much of a stream to look at.
+Future<void> applyFastStart(Player player, bool on) async {}
+
 /// Web: user shaders are not supported.
 Future<void> applyShaders(Player player, List<MapEntry<String, String>> idAndSource) async {}
 

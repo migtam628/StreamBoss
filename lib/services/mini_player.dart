@@ -109,15 +109,9 @@ class MiniPlayer extends ChangeNotifier {
           subLang: st.subLang,
           subsOn: st.subsOn,
           userAgent: st.userAgent);
-      if (q != null) {
-        await player.open(Playlist(
-          [for (final c in q) Media(c.streamUrl!, httpHeaders: c.headers)],
-          index: q.indexWhere((e) => e.key == channel.key),
-        ));
-      } else {
-        await player
-            .open(Media(channel.streamUrl!, httpHeaders: channel.headers));
-      }
+      await applyFastStart(player, st.fastStart);
+      // Only this channel goes to the player; the list is kept for zapping when the full player takes over.
+      await player.open(Media(channel.streamUrl!, httpHeaders: channel.headers));
       start(MiniSession(
           player: player,
           controller: controller,

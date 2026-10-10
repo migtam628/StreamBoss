@@ -417,6 +417,14 @@ class PlaybackPage extends StatelessWidget {
           options: const [(5, 'Low'), (20, 'Normal'), (60, 'High')],
           onChanged: (v) => st.set('bufferSecs', v),
         ),
+        SwitchRow(
+          icon: Icons.bolt,
+          title: 'Faster channel start',
+          subtitle: 'Looks at less of a live stream before showing it, so channels come up sooner. '
+              'If a channel ever has no picture or sound, turn this off',
+          value: st.fastStart,
+          onChanged: (v) => st.set('fastStart', v),
+        ),
         if (shadersSupported)
           ListTile(
             leading: const Icon(Icons.auto_fix_high),

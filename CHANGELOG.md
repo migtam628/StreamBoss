@@ -4,6 +4,12 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b26 - 2026-10-10
+- **Quicker, lighter channel changes.**
+  - **Only the channel you are on is given to the player.** Before, opening a channel loaded the whole channel list (thousands of entries on a big provider) into the video player, which cost memory and slowed every change; it also let the player move on to the next channel by itself if a stream ended. Now the player has one stream, and the app switches channels itself. This applies to the full-screen player and the mini player. Up/Down zapping still waits for you to stop pressing (b22).
+  - **Faster channel start.** Settings > Playback > Faster channel start (on by default): for live channels the player looks at a fraction of the stream before showing it (about half a megabyte and one second instead of five of each) and starts playing without waiting for its buffer to fill. Channels should come up sooner. It is a trade-off: if a particular channel ever shows no picture or has no sound, turn it off and tell me which kind of channel it was.
+- **Not in this version:** reducing how many screens rebuild when something changes. I held that back until the Performance numbers from a Fire Stick show whether it is worth the risk.
+
 ## 0.3.0b25 - 2026-10-10
 - **A much faster start.** Before, the app waited for the provider to send its whole library (often tens of megabytes) and then turned it into 100,000 or more items on the screen's own thread, so a Fire Stick showed nothing for many seconds and froze while it worked. Now:
   - **The app opens at once.** It no longer waits for the library.
