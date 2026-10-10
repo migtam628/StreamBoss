@@ -32,7 +32,9 @@ enum UiLayout {
   mood('Mood',
       'Asks what you are in the mood for, then shows a shelf for it. Calm, spacious, one idea at a time.'),
   mosaic('Mosaic',
-      'Four channel tiles at once with the sound on one of them. Made for sport and news days.');
+      'Four channel tiles at once with the sound on one of them. Made for sport and news days.'),
+  tonight('Tonight',
+      'An evening planner. One timeline of what is on now, what starts later, what you are halfway through and what you saved.');
 
   final String label;
   final String blurb;
@@ -233,6 +235,18 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     line: Color(0x4DF2F6EE),
   );
 
+  static const tonight = LayoutPalette(
+    bg: Color(0xFFF1E8D4),
+    surface: Color(0xFFFFFAF0),
+    surfaceHi: Color(0xFFE9DCC0),
+    accent: Color(0xFFA83A20),
+    accent2: Color(0xFF5B6B3A),
+    text: Color(0xFF241D14),
+    muted: Color(0xFF7A6A4E),
+    line: Color(0xFFD9CCB0),
+    brightness: Brightness.light,
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
@@ -249,6 +263,7 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.orbit => orbit,
         UiLayout.mood => mood,
         UiLayout.mosaic => mosaic,
+        UiLayout.tonight => tonight,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).

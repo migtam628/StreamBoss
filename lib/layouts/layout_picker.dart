@@ -738,6 +738,56 @@ class _Wireframe extends StatelessWidget {
             ]),
           ]),
         ),
+      UiLayout.tonight => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(children: [
+            Expanded(
+                flex: 6,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  box(pal.text, w: 40, h: 8, r: 2),
+                  const SizedBox(height: 3),
+                  box(pal.accent.withValues(alpha: 0.7), w: 34, h: 3),
+                  const SizedBox(height: 5),
+                  for (var i = 0; i < 4; i++)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 3),
+                        child: Row(children: [
+                          box(pal.muted, w: 8, h: 3),
+                          const SizedBox(width: 3),
+                          Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: i == 0 ? pal.accent : pal.bg,
+                                  border: Border.all(color: pal.accent, width: 1))),
+                          const SizedBox(width: 3),
+                          Expanded(
+                              child: Container(
+                                  height: 11,
+                                  decoration: BoxDecoration(
+                                      color: pal.surface,
+                                      borderRadius: BorderRadius.circular(3),
+                                      border: Border.all(color: i == 0 ? pal.accent : pal.line, width: i == 0 ? 1.5 : 1)))),
+                        ])),
+                ])),
+            const SizedBox(width: 6),
+            Expanded(
+                flex: 4,
+                child: Container(
+                    decoration: BoxDecoration(color: pal.text, borderRadius: BorderRadius.circular(4)),
+                    padding: const EdgeInsets.all(4),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      box(pal.accent2, w: 40, h: 16, r: 2),
+                      const SizedBox(height: 3),
+                      box(pal.bg, w: 30, h: 4),
+                      const SizedBox(height: 2),
+                      box(pal.bg.withValues(alpha: 0.5), w: 36, h: 2),
+                      const Spacer(),
+                      box(pal.accent, w: 28, h: 7, r: 3),
+                    ]))),
+          ]),
+        ),
       UiLayout.spotlight => Column(children: [
           const SizedBox(height: 5),
           box(Colors.white24, w: 64, h: 8, r: 5),

@@ -35,6 +35,7 @@ class BrowseScreen extends StatelessWidget {
       case UiLayout.mosaic:
         return kind == MediaKind.live ? ControlView(kind: kind, catalog: catalog) : _MarqueeBrowse(kind: kind, catalog: catalog);
       case UiLayout.prime:
+      case UiLayout.tonight:
         return kind == MediaKind.live ? ControlView(kind: kind, catalog: catalog) : _MarqueeBrowse(kind: kind, catalog: catalog);
       case UiLayout.coverflow:
         final cf = catalog.categoriesFor(kind);

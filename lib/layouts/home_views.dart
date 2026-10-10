@@ -17,6 +17,7 @@ import 'hub_view.dart';
 import 'index_view.dart';
 import 'library_view.dart';
 import 'mood_view.dart';
+import 'tonight_view.dart';
 import 'mosaic_view.dart';
 import 'orbit_view.dart';
 import 'prime_view.dart';
@@ -302,6 +303,8 @@ class LayoutHome extends StatelessWidget {
         return const MoodHome();
       case UiLayout.mosaic:
         return const MosaicHome();
+      case UiLayout.tonight:
+        return const TonightHome();
       case UiLayout.coverflow:
         final seen2 = <String>{};
         List<MediaItem> uniq2(Iterable<MediaItem> xs) => [
