@@ -26,6 +26,7 @@ import '../services/subtitle_search.dart';
 import '../theme.dart';
 import '../widgets/airplay_button.dart';
 import '../widgets/cast_sheet.dart';
+import '../widgets/channel_sheet.dart';
 import '../widgets/screensaver.dart';
 import '../widgets/tv_text_field.dart';
 
@@ -754,6 +755,18 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _goLast();
       return KeyEventResult.handled;
     }
+    if (k == LogicalKeyboardKey.keyF || k == LogicalKeyboardKey.colorF2Yellow) {
+      _toggleFav();
+      return KeyEventResult.handled;
+    }
+    if (_live &&
+        (k == LogicalKeyboardKey.contextMenu ||
+            k == LogicalKeyboardKey.info ||
+            k == LogicalKeyboardKey.colorF3Blue ||
+            k == LogicalKeyboardKey.keyO)) {
+      _channelMenu();
+      return KeyEventResult.handled;
+    }
     if (k == LogicalKeyboardKey.keyP || k == LogicalKeyboardKey.keyM) {
       _minimize();
       return KeyEventResult.handled;
@@ -815,6 +828,27 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         30 => forward ? Icons.forward_30 : Icons.replay_30,
         _ => forward ? Icons.forward_10 : Icons.replay_10,
       };
+
+  // --- channel options ----------------------------------------------------
+
+  /// Adds the channel or title on screen to My list, or takes it out. Works from the remote (F, or the
+  /// star button) without leaving the picture.
+  void _toggleFav() {
+    final item = _cur;
+    _app.toggleFavorite(item);
+    _flash(_app.isFavorite(item) ? 'Added to My list' : 'Removed from My list');
+    if (mounted) setState(() {});
+  }
+
+  /// Every option for the channel on screen (My list, collections, rename, hide, pin). Opened by the
+  /// remote's Menu or Info key, or the Channel options button.
+  Future<void> _channelMenu() {
+    _hideTimer?.cancel();
+    return showChannelSheet(context, _cur).whenComplete(() {
+      _scheduleHide();
+      if (mounted) setState(() {});
+    });
+  }
 
   // --- pickers ----------------------------------------------------------
 
@@ -1362,6 +1396,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 if (_queue != null) _btn(Icons.skip_next, 'Next channel', _player.next),
                 if (_queue != null) _btn(Icons.swap_horiz, 'Last channel', _goLast),
                 if (_queue != null && _queue!.length > 1) _btn(Icons.format_list_numbered, 'Channels', _pickChannel),
+                _btn(_app.isFavorite(_cur) ? Icons.star : Icons.star_border,
+                    _app.isFavorite(_cur) ? 'Remove from My list (F)' : 'Add to My list (F)', _toggleFav,
+                    on: _app.isFavorite(_cur)),
+                if (_live) _btn(Icons.tune, 'Channel options (Menu)', _channelMenu),
                 if (_skip != null)
                   _btn(Icons.skip_next, _skip!.kind == SkipKind.credits && _nextEp != null ? 'Next episode' : _skip!.label, _doSkip, on: true),
                 if (_chapters.length > 1) _btn(Icons.bookmarks_outlined, 'Chapters', _pickChapter),
