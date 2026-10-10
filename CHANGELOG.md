@@ -4,6 +4,9 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b24 - 2026-10-10
+- **Fix: updating on a Mac that opened the app from Downloads.** macOS runs an app you opened straight from the Downloads folder or a disk image from a hidden read-only copy, so the in-app update said "StreamBoss cannot change the files in /private/var/folders/..." and stopped. Now, when the app is running from such a copy (or from a disk image), the update installs the new version into **Applications** (or into your own Applications folder if that cannot be written), removes the download quarantine mark so it opens normally, and starts it. An app that is already in Applications is replaced where it is, as before. The old copy in Downloads is left alone: you can delete it.
+
 ## 0.3.0b23 - 2026-10-10
 - **Sliders no longer trap the remote.** Moving Up or Down onto a slider (the accent hue in Settings > Appearance, the sliders in Settings, the seek bar in the player) used to stop there: Flutter's slider uses Up and Down to change its value as well, so focus could not leave until Back was pressed. Now Up and Down move on to whatever is above or below, and Left and Right still change the value.
 

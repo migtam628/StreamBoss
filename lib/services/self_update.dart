@@ -129,10 +129,25 @@ while kill -0 $pid 2>/dev/null; do sleep 0.5; done
 tar -xzf ${_shq(archive)} -C ${_shq(dest)} && (nohup ${_shq(exe)} >/dev/null 2>&1 &)
 ''';
 
+/// Where the new macOS app goes. Normally over the one that is running. But an app opened straight from
+/// Downloads or a disk image is run by macOS from a random read-only copy ("App Translocation", under
+/// /private/var/folders) or from /Volumes, which cannot be changed: then it is put in Applications, or in
+/// the person's own Applications folder when that is not writable. [writable] says whether a folder can
+/// be changed.
+String macosInstallTarget(String runningApp, {required String home, required bool Function(String dir) writable}) {
+  final name = runningApp.split('/').where((e) => e.isNotEmpty).lastOrNull ?? 'StreamBoss.app';
+  final stuck = runningApp.contains('/AppTranslocation/') || runningApp.startsWith('/Volumes/');
+  final parent = runningApp.substring(0, runningApp.lastIndexOf('/'));
+  if (!stuck && writable(parent)) return runningApp;
+  if (writable('/Applications')) return '/Applications/$name';
+  return '$home/Applications/$name';
+}
+
 /// And on macOS (a zip holding the .app, which replaces the one that is running).
 String macosUpdateScript({required int pid, required String zip, required String app}) => '''
 #!/bin/sh
 while kill -0 $pid 2>/dev/null; do sleep 0.5; done
+mkdir -p ${_shq(app.substring(0, app.lastIndexOf('/')))}
 tmp="\$(mktemp -d)"
 ditto -x -k ${_shq(zip)} "\$tmp" && rm -rf ${_shq(app)} && mv "\$tmp"/*.app ${_shq(app)} && xattr -cr ${_shq(app)}
 open ${_shq(app)}
@@ -229,11 +244,26 @@ class SelfUpdate {
         // .../StreamBoss.app/Contents/MacOS/streamboss
         final app = File(Platform.resolvedExecutable).parent.parent.parent.path;
         if (!app.endsWith('.app')) throw Exception('Could not find the app to replace. Install the new version by hand.');
-        await _checkWritable(Directory(app).parent.path);
+        final target = macosInstallTarget(app,
+            home: Platform.environment['HOME'] ?? '', writable: _writable);
+        final dir = target.substring(0, target.lastIndexOf('/'));
+        await Directory(dir).create(recursive: true);
+        await _checkWritable(dir);
         final script = File('${file.parent.path}/apply-update.sh');
-        await script.writeAsString(macosUpdateScript(pid: pid, zip: file.path, app: app));
+        await script.writeAsString(macosUpdateScript(pid: pid, zip: file.path, app: target));
         await Process.start('sh', [script.path], mode: ProcessStartMode.detached);
         _quitSoon();
+    }
+  }
+
+  static bool _writable(String dir) {
+    try {
+      final f = File('$dir/.streamboss-write-test');
+      f.writeAsStringSync('x');
+      f.deleteSync();
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

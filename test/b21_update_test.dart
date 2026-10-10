@@ -140,6 +140,32 @@ void main() {
     });
   });
 
+  group('macOS install location', () {
+    bool all(String _) => true;
+    bool none(String _) => false;
+    test('a normal app is replaced where it is', () {
+      expect(macosInstallTarget('/Applications/StreamBoss.app', home: '/Users/me', writable: all), '/Applications/StreamBoss.app');
+    });
+    test('an app run from a translocated copy goes in Applications', () {
+      const t = '/private/var/folders/zv/fyfsl4g14tdf075qf9ffw0k40000gn/T/AppTranslocation/D159B133/d/StreamBoss.app';
+      expect(macosInstallTarget(t, home: '/Users/me', writable: all), '/Applications/StreamBoss.app');
+    });
+    test('and in the home Applications folder when that is not writable', () {
+      const t = '/private/var/folders/zv/x/T/AppTranslocation/D1/d/StreamBoss.app';
+      expect(macosInstallTarget(t, home: '/Users/me', writable: none), '/Users/me/Applications/StreamBoss.app');
+    });
+    test('an app on a disk image is not changed in place', () {
+      expect(macosInstallTarget('/Volumes/StreamBoss/StreamBoss.app', home: '/Users/me', writable: all), '/Applications/StreamBoss.app');
+    });
+    test('a read-only folder falls back too', () {
+      expect(macosInstallTarget('/opt/StreamBoss.app', home: '/Users/me', writable: (d) => d != '/opt'), '/Applications/StreamBoss.app');
+    });
+    test('the script makes the folder first', () {
+      final m = macosUpdateScript(pid: 9, zip: '/tmp/x.zip', app: '/Users/me/Applications/StreamBoss.app');
+      expect(m, contains("mkdir -p '/Users/me/Applications'"));
+    });
+  });
+
   group('plainNotes', () {
     test('drops markdown marks and trims', () {
       expect(plainNotes('## 1\n- **Bold** and [a link](http://x) and `code`'), '1\n- Bold and a link and code');
