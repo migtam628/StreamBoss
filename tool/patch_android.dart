@@ -12,6 +12,7 @@ void main() {
   _patchMainActivity();
   _copyResources();
   _patchSigning();
+  _patchLibrarySdk();
   if (x.contains('LEANBACK_LAUNCHER')) {
     _patchIconAliases();
     stdout.writeln('Already patched.');
@@ -255,4 +256,37 @@ val sbStorePassword: String? = System.getenv("STREAMBOSS_KEYSTORE_PASSWORD")
   );
   f.writeAsStringSync(x);
   stdout.writeln('Patched build.gradle.kts for optional permanent release signing.');
+}
+
+/// Some plugins (bonsoir_android, used for casting) compile against an old Android SDK while their own
+/// AndroidX dependencies need a newer one, which fails the release build. Compile every library
+/// subproject against the same SDK as the app. Must come before `evaluationDependsOn(":app")` in the
+/// root build file, because afterEvaluate cannot be added to a project that is already evaluated.
+void _patchLibrarySdk() {
+  final f = File('android/build.gradle.kts');
+  if (!f.existsSync()) {
+    return;
+  }
+  var x = f.readAsStringSync();
+  if (x.contains('STREAMBOSS_LIBSDK')) {
+    return;
+  }
+  const block = '''// STREAMBOSS_LIBSDK: see tool/patch_android.dart
+subprojects {
+    afterEvaluate {
+        val ext = extensions.findByName("android")
+        if (ext is com.android.build.gradle.LibraryExtension) {
+            ext.compileSdk = 36
+        }
+    }
+}
+''';
+  const anchor = 'subprojects {\n    project.evaluationDependsOn(":app")';
+  if (!x.contains(anchor)) {
+    stderr.writeln('android/build.gradle.kts has an unexpected layout; plugin SDKs left alone.');
+    return;
+  }
+  x = x.replaceFirst(anchor, '$block$anchor');
+  f.writeAsStringSync(x);
+  stdout.writeln('Patched android/build.gradle.kts so plugins compile against SDK 36.');
 }
