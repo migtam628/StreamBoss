@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../screens/open_item.dart';
+import '../services/anime.dart';
 import '../state/app_state.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/tv.dart';
@@ -73,6 +74,10 @@ class HubHome extends StatelessWidget {
     final search = tile('Search', '', Icons.search,
         const [Color(0xFF30334A), Color(0xFF262836)], () => go(5),
         small: true);
+    final animeCount = animeCounts(c).values.fold<int>(0, (a, b) => a + b);
+    final anime = tile('Anime', wide ? '' : '$animeCount titles', Icons.auto_awesome,
+        const [Color(0xFFFF7A59), Color(0xFF9C2F4A)], () => go(7),
+        small: wide);
     final settings = tile('Settings', '', Icons.settings_outlined,
         const [Color(0xFF30334A), Color(0xFF262836)], () => go(6),
         small: true);
@@ -131,7 +136,9 @@ class HubHome extends StatelessWidget {
               Expanded(
                   child: Column(children: [
                 Expanded(child: search),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Expanded(child: anime),
+                const SizedBox(height: 8),
                 Expanded(child: settings)
               ])),
             ]),
@@ -163,6 +170,8 @@ class HubHome extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(child: favs)
               ])),
+          const SizedBox(height: 10),
+          SizedBox(height: 84, child: anime),
         ]),
       ),
       const SizedBox(height: 16),

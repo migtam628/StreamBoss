@@ -22,6 +22,7 @@ const kDests = [
   Dest(Icons.tv_outlined, Icons.tv, 'Series'),
   Dest(Icons.search, Icons.search, 'Search'),
   Dest(Icons.settings_outlined, Icons.settings, 'Settings'),
+  Dest(Icons.auto_awesome_outlined, Icons.auto_awesome, 'Anime'),
 ];
 
 /// Lets a page below the shell switch tabs (for example a search field that opens Search).
@@ -46,8 +47,6 @@ String destLabel(UiLayout l, int i) => switch ((l, i)) {
       (UiLayout.prime, 0) => 'Guide',
       (UiLayout.hub, 0) => 'Hub',
       (UiLayout.indexList, 0) => 'Index',
-      (UiLayout.orbit, 0) => 'Orbit',
-      (UiLayout.mood, 0) => 'Mood',
       (UiLayout.mosaic, 0) => 'Mosaic',
       (UiLayout.tonight, 0) => 'Tonight',
       (UiLayout.globe, 0) => 'Globe',
@@ -55,6 +54,10 @@ String destLabel(UiLayout l, int i) => switch ((l, i)) {
       (UiLayout.console, 0) => 'Console',
       (UiLayout.deck, 0) => 'Picks',
       (UiLayout.lounge, 0) => 'Lounge',
+      (UiLayout.madlib, 0) => 'Madlib',
+      (UiLayout.matchday, 0) => 'Matchday',
+      (UiLayout.easy, 0) => 'Easy',
+      (UiLayout.wall, 0) => 'Wall',
       (UiLayout.cable, 0) => 'Live',
       (UiLayout.cable, 1) => 'Channels',
       _ => kDests[i].label,
@@ -68,8 +71,6 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
       (UiLayout.indexList, 0) =>
         selected ? Icons.format_list_bulleted : Icons.format_list_bulleted,
       (UiLayout.cable, 0) => selected ? Icons.live_tv : Icons.live_tv_outlined,
-      (UiLayout.orbit, 0) => Icons.donut_large,
-      (UiLayout.mood, 0) => selected ? Icons.mood : Icons.mood_outlined,
       (UiLayout.mosaic, 0) => selected ? Icons.grid_view_rounded : Icons.grid_view,
       (UiLayout.tonight, 0) => selected ? Icons.event_note : Icons.event_note_outlined,
       (UiLayout.globe, 0) => selected ? Icons.public : Icons.public_outlined,
@@ -77,45 +78,47 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
       (UiLayout.console, 0) => Icons.terminal,
       (UiLayout.deck, 0) => selected ? Icons.style : Icons.style_outlined,
       (UiLayout.lounge, 0) => selected ? Icons.weekend : Icons.weekend_outlined,
+      (UiLayout.madlib, 0) => selected ? Icons.edit_note : Icons.edit_note,
+      (UiLayout.matchday, 0) => selected ? Icons.sports_soccer : Icons.sports_soccer_outlined,
+      (UiLayout.easy, 0) => selected ? Icons.accessibility_new : Icons.accessibility_new,
+      (UiLayout.wall, 0) => selected ? Icons.grid_view_rounded : Icons.grid_view,
       (UiLayout.cable, 1) => selected ? Icons.list : Icons.list,
       _ => selected ? kDests[i].selectedIcon : kDests[i].icon,
     };
 
 /// The tabs of a top navigation bar, in order (settings has its own button).
 List<int> topTabs(UiLayout l) => switch (l) {
-      UiLayout.prime => [0, 1, 3, 4, 5],
-      UiLayout.coverflow => [0, 3, 4, 1, 2, 5],
-      _ => [0, 1, 2, 3, 4, 5],
+      UiLayout.prime => [0, 1, 3, 4, 7, 5],
+      _ => [0, 1, 2, 3, 4, 7, 5],
     };
 
 /// The five items of the phone's bottom bar for each layout, then what "More" holds.
 ({List<int> bar, List<int> more}) phoneTabs(UiLayout l) => switch (l) {
-      UiLayout.marquee => (bar: [0, 1, 2, 3], more: [4, 5, 6]),
-      UiLayout.control => (bar: [0, 1, 2, 5], more: [3, 4, 6]),
-      UiLayout.spotlight => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
-      UiLayout.prime => (bar: [0, 1, 3, 4], more: [5, 6]),
-      UiLayout.coverflow => (bar: [0, 3, 4, 1], more: [2, 5, 6]),
+      UiLayout.marquee => (bar: [0, 1, 2, 3], more: [4, 7, 5, 6]),
+      UiLayout.control => (bar: [0, 1, 2, 5], more: [3, 4, 7, 6]),
+      UiLayout.spotlight => (bar: [0, 1, 3, 4], more: [2, 7, 5, 6]),
+      UiLayout.prime => (bar: [0, 1, 3, 4], more: [7, 5, 6]),
       UiLayout.hub => (bar: [0, 5, 6], more: <int>[]),
-      UiLayout.daylight => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
-      UiLayout.cable => (bar: [0, 2, 3], more: [1, 4, 5, 6]),
+      UiLayout.daylight => (bar: [0, 1, 3], more: [2, 4, 7, 5, 6]),
+      UiLayout.cable => (bar: [0, 2, 3], more: [1, 4, 7, 5, 6]),
       // The list on Home is the menu, so the bar only appears inside a section (see IndexBackBar).
       UiLayout.indexList => (bar: [0, 5, 6], more: <int>[]),
-      UiLayout.glass => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
-      UiLayout.bento => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
-      UiLayout.library => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
-      // The dial is the menu on a phone, so Orbit shows a bar only inside a section.
-      UiLayout.orbit => (bar: [0, 5, 6], more: <int>[]),
-      UiLayout.mood => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
-      UiLayout.mosaic => (bar: [0, 1, 3], more: [2, 4, 5, 6]),
-      UiLayout.tonight => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
-      UiLayout.globe => (bar: [0, 1, 2, 3], more: [4, 5, 6]),
+      UiLayout.glass => (bar: [0, 1, 3], more: [2, 4, 7, 5, 6]),
+      UiLayout.bento => (bar: [0, 1, 3], more: [2, 4, 7, 5, 6]),
+      UiLayout.mosaic => (bar: [0, 1, 3], more: [2, 4, 7, 5, 6]),
+      UiLayout.tonight => (bar: [0, 1, 3, 4], more: [2, 7, 5, 6]),
+      UiLayout.globe => (bar: [0, 1, 2, 3], more: [4, 7, 5, 6]),
       // A child gets no menu on Home; Grown-ups (behind the PIN) is the way to the rest.
       UiLayout.playground => (bar: [0, 5, 6], more: <int>[]),
-      UiLayout.console => (bar: [0, 1, 2, 3], more: [4, 5, 6]),
-      UiLayout.deck => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
-      UiLayout.lounge => (bar: [0, 2, 3, 4], more: [1, 5, 6]),
+      UiLayout.console => (bar: [0, 1, 2, 3], more: [4, 7, 5, 6]),
+      UiLayout.deck => (bar: [0, 1, 3, 4], more: [2, 7, 5, 6]),
+      UiLayout.lounge => (bar: [0, 2, 3, 4], more: [1, 7, 5, 6]),
+      UiLayout.madlib => (bar: [0, 1, 3, 4], more: [2, 7, 5, 6]),
+      UiLayout.matchday => (bar: [0, 1, 2, 3], more: [4, 7, 5, 6]),
+      // Easy has three buttons on Home and no menu; a bar only appears inside a section.
+      UiLayout.easy => (bar: [0, 5, 6], more: <int>[]),
+      UiLayout.wall => (bar: [0, 1, 3, 4], more: [2, 7, 5, 6]),
     };
-
 /// Bottom navigation for phones: four main screens and a More sheet for the rest.
 class PhoneNav extends StatelessWidget {
   final UiLayout layout;
@@ -282,14 +285,12 @@ class TopNav extends StatelessWidget {
     final soft = layout == UiLayout.daylight;
     final pill = centered || soft;
     final flat = layout == UiLayout.bento;
-    final underline = layout == UiLayout.coverflow;
     final tabs = [
       for (final i in topTabs(layout))
         NavTab(
             label: destLabel(layout, i),
             selected: i == index,
             pill: pill,
-            underline: underline,
             block: flat,
             onTap: () => onSelect(i)),
     ];
@@ -298,7 +299,6 @@ class TopNav extends StatelessWidget {
       icon: Icons.settings_outlined,
       selected: index == 6,
       pill: pill,
-      underline: underline,
       block: flat,
       onTap: () => onSelect(6),
     );
@@ -342,8 +342,7 @@ class TopNav extends StatelessWidget {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-          color: underline ? Colors.transparent : p.surface,
-          border: underline ? null : Border(bottom: BorderSide(color: p.line))),
+          color: p.surface, border: Border(bottom: BorderSide(color: p.line))),
       child: Row(children: [
         if (soft) ...[
           Container(
@@ -353,12 +352,12 @@ class TopNav extends StatelessWidget {
                   BoxDecoration(color: p.accent, shape: BoxShape.circle)),
           const SizedBox(width: 8),
         ],
-        Text(underline ? 'streamboss' : 'STREAMBOSS',
+        Text('STREAMBOSS',
             style: TextStyle(
-                color: underline || soft ? p.text : p.accent,
+                color: soft ? p.text : p.accent,
                 fontWeight: FontWeight.w800,
-                letterSpacing: underline ? -0.2 : 1.6,
-                fontSize: underline ? 20 : 17)),
+                letterSpacing: 1.6,
+                fontSize: 17)),
         const SizedBox(width: 24),
         Expanded(
           child: SingleChildScrollView(

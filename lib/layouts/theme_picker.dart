@@ -30,7 +30,6 @@ class ThemePicker extends StatelessWidget {
     final cur = st.accent;
     final hue = cur == null ? 330.0 : HSVColor.fromColor(cur).hue;
     final painted = st.layout == UiLayout.glass ||
-        st.layout == UiLayout.mood ||
         st.layout == UiLayout.mosaic;
 
     Widget swatch(Color? c, {required String label}) {

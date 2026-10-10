@@ -109,11 +109,11 @@ void main() {
       st.set('layout', 'bento');
       ps.select(b.id);
       ps.update(b.copyWith(ownSettings: true));
-      st.set('layout', 'orbit');
+      st.set('layout', 'wall');
       ps.select(a.id);
       expect(st.layout, UiLayout.bento);
       ps.select(b.id);
-      expect(st.layout, UiLayout.orbit);
+      expect(st.layout, UiLayout.wall);
     });
 
     test('a backup carries the shared settings, not a profile\'s own',

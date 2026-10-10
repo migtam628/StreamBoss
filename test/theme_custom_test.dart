@@ -82,7 +82,7 @@ void main() {
 
     test('layouts that paint their own backdrop keep it, and take the accent',
         () {
-      for (final l in [UiLayout.glass, UiLayout.mood, UiLayout.mosaic]) {
+      for (final l in [UiLayout.glass, UiLayout.mosaic]) {
         final t = Boss.theme(
             layout: l, accent: const Color(0xFFD946EF), background: 'paper');
         expect(palette(t).bg, LayoutPalette.forLayout(l).bg, reason: l.name);

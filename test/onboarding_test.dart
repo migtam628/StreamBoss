@@ -87,10 +87,10 @@ void main() {
     await t.pumpAndSettle();
 
     expect(find.text('Pick a look'), findsOneWidget);
-    await t.ensureVisible(find.text('Coverflow'));
-    await t.tap(find.text('Coverflow'));
+    await t.ensureVisible(find.text('Wall'));
+    await t.tap(find.text('Wall'));
     await t.pumpAndSettle();
-    expect(st.layout, UiLayout.coverflow);
+    expect(st.layout, UiLayout.wall);
     await t.tap(find.text('Next'));
     await t.pumpAndSettle();
 

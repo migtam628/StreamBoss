@@ -5,13 +5,12 @@ import '../services/crash_guard.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../layouts/glass_view.dart';
-import '../layouts/library_view.dart';
-import '../layouts/mood_view.dart';
 import '../layouts/mosaic_view.dart';
 import '../layouts/shell_nav.dart';
 import '../layouts/ui_layout.dart';
 import '../widgets/tv.dart';
 import 'browse_screen.dart';
+import 'anime_screen.dart';
 import 'crash_notice.dart';
 import 'guide_screen.dart';
 import 'home_screen.dart';
@@ -26,6 +25,9 @@ class Shell extends StatefulWidget {
 }
 
 class _ShellState extends State<Shell> {
+  /// The rail lists Anime after Series; Settings stays last.
+  static const _railOrder = [0, 1, 2, 3, 4, 7, 5, 6];
+
   late int _i;
   // Tabs are built on first visit only, so e.g. the guide isn't downloaded at login.
   final _visited = <int>{};
@@ -33,7 +35,7 @@ class _ShellState extends State<Shell> {
   @override
   void initState() {
     super.initState();
-    // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings
+    // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings, 7 Anime
     _i = context.read<SettingsState>().startTab.clamp(0, kDests.length - 1);
     _visited.add(_i);
     WidgetsBinding.instance.addPostFrameCallback((_) => _crashNotice());
@@ -72,6 +74,7 @@ class _ShellState extends State<Shell> {
       BrowseScreen(kind: MediaKind.series, catalog: s.shown),
       const SearchScreen(),
       const SettingsScreen(),
+      const AnimeScreen(),
     ];
     final tv = TvScope.of(context);
     final wide = tv || MediaQuery.sizeOf(context).width >= 800;
@@ -84,7 +87,7 @@ class _ShellState extends State<Shell> {
 
     // On a TV, Back from any tab returns to Home first; only Home lets Back leave the app. Index and
     // Cable Box do the same on a phone because their Home is the root of everything else.
-    final backHome = tv || layout == UiLayout.indexList || layout == UiLayout.cable || layout == UiLayout.orbit || layout == UiLayout.playground;
+    final backHome = tv || layout == UiLayout.indexList || layout == UiLayout.cable || layout == UiLayout.easy || layout == UiLayout.playground;
     Widget guard(Widget child) => PopScope(
           canPop: !backHome || _i == 0,
           onPopInvokedWithResult: (didPop, _) {
@@ -98,12 +101,13 @@ class _ShellState extends State<Shell> {
       if (layout == UiLayout.marquee) {
         chrome = Row(children: [
           NavigationRail(
-            selectedIndex: _i,
-            onDestinationSelected: select,
+            selectedIndex: _railOrder.indexOf(_i),
+            onDestinationSelected: (v) => select(_railOrder[v]),
             labelType: tv ? NavigationRailLabelType.selected : NavigationRailLabelType.all,
             destinations: [
-              for (final d in kDests)
-                NavigationRailDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selectedIcon), label: Text(d.label)),
+              for (final i in _railOrder)
+                NavigationRailDestination(
+                    icon: Icon(kDests[i].icon), selectedIcon: Icon(kDests[i].selectedIcon), label: Text(kDests[i].label)),
             ],
           ),
           Expanded(child: body),
@@ -111,8 +115,7 @@ class _ShellState extends State<Shell> {
       } else if (layout == UiLayout.hub ||
           layout == UiLayout.indexList ||
           layout == UiLayout.cable ||
-          layout == UiLayout.orbit ||
-          layout == UiLayout.mood ||
+          layout == UiLayout.easy ||
           layout == UiLayout.playground ||
           layout == UiLayout.mosaic) {
         chrome = Column(children: [
@@ -124,8 +127,6 @@ class _ShellState extends State<Shell> {
           Expanded(child: body),
           GlassDock(index: _i, onSelect: select, layout: layout),
         ]);
-      } else if (layout == UiLayout.library) {
-        chrome = LibraryChrome(index: _i, onSelect: select, body: body);
       } else {
         chrome = Column(children: [
           TopNav(layout: layout, index: _i, onSelect: select),
@@ -138,7 +139,7 @@ class _ShellState extends State<Shell> {
     return guard(_frame(layout, Scaffold(
       backgroundColor: _paints(layout) ? Colors.transparent : null,
       body: _Backdrop(layout: layout, child: SafeArea(child: body)),
-      bottomNavigationBar: layout == UiLayout.indexList || layout == UiLayout.orbit || layout == UiLayout.playground
+      bottomNavigationBar: layout == UiLayout.indexList || layout == UiLayout.easy || layout == UiLayout.playground
           ? (_i == 0 ? null : IndexBackBar(index: _i, onSelect: select, layout: layout))
           : layout == UiLayout.glass
               ? SafeArea(
@@ -158,13 +159,12 @@ class _ShellState extends State<Shell> {
   /// Glass paints its backdrop behind the whole screen, bars included.
   Widget _frame(UiLayout layout, Widget scaffold) => switch (layout) {
         UiLayout.glass => GlassBackdrop(child: scaffold),
-        UiLayout.mood => MoodBackdrop(child: scaffold),
         UiLayout.mosaic => MosaicBackdrop(child: scaffold),
         _ => scaffold,
       };
 
   /// Layouts that draw their own backdrop behind the whole screen.
-  static bool _paints(UiLayout l) => l == UiLayout.glass || l == UiLayout.mood || l == UiLayout.mosaic;
+  static bool _paints(UiLayout l) => l == UiLayout.glass || l == UiLayout.mosaic;
 
   void select(int v) => setState(() {
         _i = v;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../screens/open_item.dart';
+import '../services/anime.dart';
 import '../state/app_state.dart';
 import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
@@ -42,6 +43,7 @@ class _IndexHomeState extends State<IndexHome> {
       _Entry('Continue', s.recents.length, null),
       _Entry('Movies', c.movies.length, 3),
       _Entry('Series', c.series.length, 4),
+      _Entry('Anime', animeCounts(c).values.fold<int>(0, (a, b) => a + b), 7),
       const _Entry('Guide', null, 2),
       const _Entry('Settings', null, 6),
     ];

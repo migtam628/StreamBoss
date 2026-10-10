@@ -99,8 +99,8 @@ class GlassDock extends StatelessWidget {
       child: GlassPanel(
         radius: 40,
         padding: const EdgeInsets.all(6),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          for (var i = 0; i < kDests.length; i++)
+        child: FittedBox(fit: BoxFit.scaleDown, child: Row(mainAxisSize: MainAxisSize.min, children: [
+          for (final i in const [0, 1, 2, 3, 4, 7, 5, 6])
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: NavTab(
@@ -111,7 +111,7 @@ class GlassDock extends StatelessWidget {
                 onTap: () => onSelect(i),
               ),
             ),
-        ]),
+        ])),
       ),
     );
   }

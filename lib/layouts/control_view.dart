@@ -11,6 +11,7 @@ import '../widgets/live_preview.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
+import '../widgets/vod_filter_bar.dart';
 import 'common.dart';
 import 'ui_layout.dart';
 
@@ -45,7 +46,7 @@ class _ControlViewState extends State<ControlView> {
     final live = widget.kind == MediaKind.live;
     final base = widget.catalog.itemsFor(widget.kind);
     // Live channels follow the shared filter (words, quality, country, favorites, guide data).
-    final all = live ? s.filterChannels(base) : base;
+    final all = live ? s.filterChannels(base) : s.filterVod(widget.kind == MediaKind.series ? 'series' : 'movie', base);
     final items =
         _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
     if (base.isEmpty) {
@@ -61,11 +62,11 @@ class _ControlViewState extends State<ControlView> {
           _focused = null;
         });
 
-    final Widget list = live && items.isEmpty
+    final Widget list = items.isEmpty && all.length != base.length || live && items.isEmpty
         ? Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('No channels match the filters.',
+              child: Text(live ? 'No channels match the filters.' : 'No titles match the filters.',
                   style: TextStyle(color: p.muted, fontSize: 16)),
             ),
           )
@@ -110,9 +111,13 @@ class _ControlViewState extends State<ControlView> {
             ),
           );
 
+    Widget filterBar(int n) => live
+        ? ChannelFilterBar(shown: n)
+        : VodFilterBar(list: widget.kind == MediaKind.series ? 'series' : 'movie', noun: widget.kind == MediaKind.series ? 'series' : 'movies', shown: n);
+
     if (!wide) {
       return Column(children: [
-        if (live) ChannelFilterBar(shown: items.length),
+        filterBar(items.length),
         ChipRow(
           labels: ['All', for (final c in cats) c.name],
           selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
@@ -146,7 +151,7 @@ class _ControlViewState extends State<ControlView> {
       ),
       Expanded(
         child: Column(children: [
-          if (live) ChannelFilterBar(shown: items.length),
+          filterBar(items.length),
           Expanded(child: list),
         ]),
       ),

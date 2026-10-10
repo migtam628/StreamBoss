@@ -12,19 +12,19 @@ import 'cable_view.dart';
 import 'common.dart';
 import 'daylight_view.dart';
 import 'glass_view.dart';
-import 'coverflow_view.dart';
 import 'hub_view.dart';
 import 'index_view.dart';
-import 'library_view.dart';
-import 'mood_view.dart';
 import 'console_view.dart';
 import 'deck_view.dart';
 import 'lounge_view.dart';
+import 'madlib_view.dart';
+import 'matchday_view.dart';
+import 'easy_view.dart';
+import 'wall_view.dart';
 import 'globe_view.dart';
 import 'playground_view.dart';
 import 'tonight_view.dart';
 import 'mosaic_view.dart';
-import 'orbit_view.dart';
 import 'prime_view.dart';
 import 'spotlight_view.dart';
 import 'ui_layout.dart';
@@ -300,12 +300,6 @@ class LayoutHome extends StatelessWidget {
         return const GlassHome();
       case UiLayout.bento:
         return const BentoHome();
-      case UiLayout.library:
-        return const LibraryHome();
-      case UiLayout.orbit:
-        return const OrbitHome();
-      case UiLayout.mood:
-        return const MoodHome();
       case UiLayout.mosaic:
         return const MosaicHome();
       case UiLayout.tonight:
@@ -320,34 +314,19 @@ class LayoutHome extends StatelessWidget {
         return const DeckHome();
       case UiLayout.lounge:
         return const LoungeHome();
-      case UiLayout.coverflow:
-        final seen2 = <String>{};
-        List<MediaItem> uniq2(Iterable<MediaItem> xs) => [
-              for (final x in xs)
-                if (seen2.add(x.key)) x
-            ];
-        return CoverflowView(sections: [
-          (
-            'All',
-            uniq2([
-              ...s.recents,
-              ...s.favoriteItems,
-              ...c.movies.take(40),
-              ...c.series.take(40)
-            ])
-          ),
-          if (s.recents.isNotEmpty) ('Continue', s.recents),
-          if (s.favoriteItems.isNotEmpty) ('My list', s.favoriteItems),
-          ..._personalSections(s),
-          if (c.movies.isNotEmpty) ('Movies', c.movies.take(60).toList()),
-          if (c.series.isNotEmpty) ('Series', c.series.take(60).toList()),
-          if (c.live.isNotEmpty) ('Live', c.live.take(60).toList()),
-        ]);
+      case UiLayout.madlib:
+        return const MadlibHome();
+      case UiLayout.matchday:
+        return const MatchdayHome();
+      case UiLayout.easy:
+        return const EasyHome();
+      case UiLayout.wall:
+        return const WallHome();
     }
   }
 }
 
-/// [personalShelves] as the (title, items) pairs that Spotlight and Coverflow use. Empty ones are left out.
+/// [personalShelves] as the (title, items) pairs that Spotlight uses. Empty ones are left out.
 List<(String, List<MediaItem>)> _personalSections(AppState s) {
   final r = s.recommendation;
   return [

@@ -13,6 +13,7 @@ const consoleCommands = <ConsoleCommand>[
   ConsoleCommand('/guide', 'what is on', tab: 2),
   ConsoleCommand('/movies', 'movies', tab: 3),
   ConsoleCommand('/series', 'series', tab: 4),
+  ConsoleCommand('/anime', 'anime', tab: 7),
   ConsoleCommand('/search', 'the full search screen', tab: 5),
   ConsoleCommand('/settings', 'settings, sources and profiles', tab: 6),
   ConsoleCommand('/list', 'my list'),

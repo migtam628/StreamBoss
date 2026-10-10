@@ -18,8 +18,8 @@ class Boss {
     Color? accent,
     String background = 'layout',
   }) {
-    // Glass, Mood and Mosaic paint their own backdrop, so only the accent applies to them.
-    final paints = layout == UiLayout.glass || layout == UiLayout.mood || layout == UiLayout.mosaic;
+    // Glass and Mosaic paint their own backdrop, so only the accent applies to them.
+    final paints = layout == UiLayout.glass || layout == UiLayout.mosaic;
     final p = LayoutPalette.forLayout(layout).customized(accent: accent, background: background, keepBackground: paints);
     final base = p.light ? ThemeData.light(useMaterial3: true) : ThemeData.dark(useMaterial3: true);
 

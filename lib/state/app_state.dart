@@ -15,6 +15,7 @@ import '../services/stream_check.dart';
 import '../services/net_config.dart';
 import '../services/provider_url.dart';
 import '../services/channel_filter.dart';
+import '../services/vod_filter.dart';
 import '../services/tmdb.dart';
 import '../services/xmltv.dart';
 import '../services/free_playlists.dart';
@@ -591,6 +592,51 @@ class AppState extends ChangeNotifier {
         categoryName: liveCategoryName,
         isFavorite: isFavorite,
         hasGuide: (c) => programmesFor(c).isNotEmpty,
+      );
+
+  // --- Movie, series and anime filters ------------------------------------------------------
+
+  /// One filter per list: 'movie', 'series' or 'anime' (and 'anime-live' for anime channels).
+  final Map<String, VodFilter> vodFilters = {};
+
+  VodFilter vodFilter(String list) => vodFilters[list] ?? VodFilter.none;
+
+  void setVodFilter(String list, VodFilter f) {
+    if (f == vodFilter(list)) return;
+    if (f == VodFilter.none) {
+      vodFilters.remove(list);
+    } else {
+      vodFilters[list] = f;
+    }
+    notifyListeners();
+  }
+
+  Map<String, String>? _vodCatNames;
+  Catalog? _vodCatNamesFor;
+
+  /// The category name of a movie or series ("" when it has none).
+  String vodCategoryName(MediaItem i) {
+    final c = shown;
+    if (_vodCatNames == null || !identical(_vodCatNamesFor, c)) {
+      _vodCatNames = {
+        for (final x in [...c.movieCategories, ...c.seriesCategories]) x.id: x.name
+      };
+      _vodCatNamesFor = c;
+    }
+    return _vodCatNames![i.categoryId] ?? '';
+  }
+
+  /// Whether this title was opened lately or has a resume position.
+  bool isStarted(MediaItem i) =>
+      positions.containsKey(i.key) || recents.any((e) => e.key == i.key);
+
+  /// [items] narrowed by the filter of [list].
+  List<MediaItem> filterVod(String list, List<MediaItem> items) => applyVodFilter(
+        items,
+        vodFilter(list),
+        categoryName: vodCategoryName,
+        isFavorite: isFavorite,
+        started: isStarted,
       );
 
   // --- Recommendations ----------------------------------------------------------------------

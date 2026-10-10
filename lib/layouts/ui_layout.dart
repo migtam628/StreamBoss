@@ -5,8 +5,7 @@ enum LayoutGroup {
   everyday('Everyday', 'Rows of posters and a menu. The safe choices.'),
   liveTv('Live TV', 'Built around channels and what is on now.'),
   suggest('Decide for me', 'Start from a suggestion or a question instead of a menu.'),
-  simple('Simple and family', 'Few things on screen, easy to learn.'),
-  unusual('Something different', 'Unusual ways to move through a library.');
+  simple('Simple and family', 'Few things on screen, easy to learn.');
 
   final String label, blurb;
   const LayoutGroup(this.label, this.blurb);
@@ -23,8 +22,6 @@ enum UiLayout {
       'A poster wall. The focused title gets a details panel; navigation is one pill.'),
   prime('Prime Time',
       'The TV guide is Home: details of the highlighted show above a time grid of every channel.'),
-  coverflow('Coverflow',
-      'One big poster at a time with its neighbors fanned out. Flip through and press play.'),
   hub('Hub',
       'A launcher of big colored tiles, with what you were watching underneath. Nothing to learn.'),
   daylight('Daylight',
@@ -37,12 +34,6 @@ enum UiLayout {
       'Frosted panels floating over a soft colored backdrop, with a small dock at the bottom.'),
   bento('Bento',
       'Home is a board of flat colored tiles: continue, live now, a guide strip, your list and search.'),
-  library('Library',
-      'Like a media server: a tree on the left, dense rows on the right, a thin breadcrumb on top.'),
-  orbit('Orbit',
-      'A big dial. Spin it to a section and its titles fan out beside it. Left and Right turn it.'),
-  mood('Mood',
-      'Asks what you are in the mood for, then shows a shelf for it. Calm, spacious, one idea at a time.'),
   mosaic('Mosaic',
       'Four channel tiles at once with the sound on one of them. Made for sport and news days.'),
   tonight('Tonight',
@@ -56,7 +47,15 @@ enum UiLayout {
   deck('Deck',
       'A deck of picks for tonight. Skip, save or play with four keys, or swipe on a phone.'),
   lounge('Lounge',
-      'A live channel playing in the top half and a strip of channels under it. Move along the strip to surf; OK goes full screen.');
+      'A live channel playing in the top half and a strip of channels under it. Move along the strip to surf; OK goes full screen.'),
+  madlib('Madlib',
+      'Home is one sentence you fill in: "Tonight I feel like a movie that is funny, under 2 hours." Matching titles appear underneath.'),
+  matchday('Matchday',
+      'Sport by kick-off. Today\'s events from the guide in time order, each with the channels that carry it.'),
+  easy('Easy',
+      'Three huge buttons, high contrast and plain words: Watch TV, Movies and shows, Find. Nothing else on screen.'),
+  wall('Wall',
+      'One big poster wall you move across. The focused poster grows and shows its details; hold OK to zoom out.');
 
   final String label;
   final String blurb;
@@ -64,11 +63,10 @@ enum UiLayout {
 
   /// Where the layout picker lists this look.
   LayoutGroup get group => switch (this) {
-        marquee || daylight || spotlight || control || bento || glass => LayoutGroup.everyday,
-        cable || prime || mosaic || lounge || globe => LayoutGroup.liveTv,
-        tonight || deck || mood || console => LayoutGroup.suggest,
-        hub || indexList || playground => LayoutGroup.simple,
-        coverflow || orbit || library => LayoutGroup.unusual,
+        marquee || daylight || spotlight || control || bento || glass || wall => LayoutGroup.everyday,
+        cable || prime || mosaic || lounge || globe || matchday => LayoutGroup.liveTv,
+        tonight || deck || madlib || console => LayoutGroup.suggest,
+        hub || indexList || playground || easy => LayoutGroup.simple,
       };
 
   static UiLayout fromKey(String key) => UiLayout.values
@@ -150,16 +148,6 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     muted: Color(0xFF93A3C8),
     line: Color(0xFF1B2748),
   );
-  static const coverflow = LayoutPalette(
-    bg: Color(0xFF0E0B0A),
-    surface: Color(0xFF1A1412),
-    surfaceHi: Color(0xFF2A201B),
-    accent: Color(0xFFFF6A3D),
-    accent2: Color(0xFFF3E9DC),
-    text: Color(0xFFF3E9DC),
-    muted: Color(0xFFA89A8C),
-    line: Color(0x1FF3E9DC),
-  );
   static const hub = LayoutPalette(
     bg: Color(0xFF12131A),
     surface: Color(0xFF1B1C26),
@@ -223,37 +211,6 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     text: Color(0xFFF6F4F1),
     muted: Color(0xFFA8A2B5),
     line: Color(0xFF3A3447),
-  );
-  static const library = LayoutPalette(
-    bg: Color(0xFF20272E),
-    surface: Color(0xFF181E24),
-    surfaceHi: Color(0xFF2B343C),
-    accent: Color(0xFFCFA95B),
-    accent2: Color(0xFF8DB07A),
-    text: Color(0xFFDBE1E6),
-    muted: Color(0xFF93A0AB),
-    line: Color(0xFF333D47),
-  );
-
-  static const orbit = LayoutPalette(
-    bg: Color(0xFF2A0E1E),
-    surface: Color(0xFF3A1428),
-    surfaceHi: Color(0xFF4A1A35),
-    accent: Color(0xFFF0CF86),
-    accent2: Color(0xFFB9CBA7),
-    text: Color(0xFFE6ECD8),
-    muted: Color(0xFFBBA6B0),
-    line: Color(0x66F0CF86),
-  );
-  static const mood = LayoutPalette(
-    bg: Color(0xFF131E3B),
-    surface: Color(0xFF243059),
-    surfaceHi: Color(0xFF33406F),
-    accent: Color(0xFFFFD0B0),
-    accent2: Color(0xFFD9A199),
-    text: Color(0xFFFDF1EE),
-    muted: Color(0xFFCBC5E2),
-    line: Color(0x40FFFFFF),
   );
   static const mosaic = LayoutPalette(
     bg: Color(0xFF0F5B30),
@@ -332,21 +289,59 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     line: Color(0xFF3A3942),
   );
 
+  static const madlib = LayoutPalette(
+    bg: Color(0xFFF4EEFB),
+    surface: Color(0xFFFFFFFF),
+    surfaceHi: Color(0xFFE2D6F7),
+    accent: Color(0xFF7A3CFF),
+    accent2: Color(0xFF5A22D6),
+    text: Color(0xFF2A2340),
+    muted: Color(0xFF6F6296),
+    line: Color(0xFFD9CCEF),
+    brightness: Brightness.light,
+  );
+  static const matchday = LayoutPalette(
+    bg: Color(0xFF0D1114),
+    surface: Color(0xFF161D21),
+    surfaceHi: Color(0xFF1F2A1A),
+    accent: Color(0xFFC6FF3A),
+    accent2: Color(0xFFFF4D3D),
+    text: Color(0xFFF1F5F2),
+    muted: Color(0xFF8D9A94),
+    line: Color(0xFF232D33),
+  );
+  static const easy = LayoutPalette(
+    bg: Color(0xFF000000),
+    surface: Color(0xFF1A1A1A),
+    surfaceHi: Color(0xFF2B2B2B),
+    accent: Color(0xFFFFE14D),
+    accent2: Color(0xFF4DD2FF),
+    text: Color(0xFFFFFFFF),
+    muted: Color(0xFFD0D0D0),
+    line: Color(0xFFFFFFFF),
+  );
+  static const wall = LayoutPalette(
+    bg: Color(0xFF16110F),
+    surface: Color(0xFF241B16),
+    surfaceHi: Color(0xFF33261E),
+    accent: Color(0xFFFF9646),
+    accent2: Color(0xFFFFB070),
+    text: Color(0xFFF6EEE6),
+    muted: Color(0xFFA89684),
+    line: Color(0xFF4A3A2E),
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
         UiLayout.spotlight => spotlight,
         UiLayout.prime => prime,
-        UiLayout.coverflow => coverflow,
         UiLayout.hub => hub,
         UiLayout.daylight => daylight,
         UiLayout.cable => cable,
         UiLayout.indexList => indexList,
         UiLayout.glass => glass,
         UiLayout.bento => bento,
-        UiLayout.library => library,
-        UiLayout.orbit => orbit,
-        UiLayout.mood => mood,
         UiLayout.mosaic => mosaic,
         UiLayout.tonight => tonight,
         UiLayout.globe => globe,
@@ -354,6 +349,10 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.console => console,
         UiLayout.deck => deck,
         UiLayout.lounge => lounge,
+        UiLayout.madlib => madlib,
+        UiLayout.matchday => matchday,
+        UiLayout.easy => easy,
+        UiLayout.wall => wall,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).

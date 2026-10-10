@@ -139,6 +139,9 @@ every release. The first build signed with your key has to be installed after un
   in a preview. Live, the Guide and the Control Room share channel filters (words, quality, country, favorites, guide data, order)
 - Cast to TV (experimental): the player's Cast button finds Chromecasts and TVs with Chromecast built in on your Wi-Fi and
   plays the stream there (not on the web build; untested on real hardware). For AirPlay use the system's Screen Mirroring
+- Movies, Series and the Anime page each have a filter: words, rating (6+, 7+, 8+), year (read from the title), favorites, not watched
+  yet, and an order. Anime is its own page (Settings > Open on can start there) that gathers the categories named anime, manga,
+  donghua, shonen and similar, and titles tagged "(Anime)", across series, movies and channels
 - Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
   - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel
@@ -159,12 +162,10 @@ every release. The first build signed with your key has to be installed after un
   slim icon rail, rows of posters), **Control Room** (categories, a numbered channel list with what is on now, and a
   details pane; built for flipping live channels), **Spotlight** (a poster wall where the focused title gets a details
   panel, with a single navigation pill), **Prime Time** (the TV guide is Home, with the highlighted programme's details
-  above it), **Coverflow** (one big title at a time with its neighbors fanned out), **Hub** (a launcher of big colored
+  above it), **Hub** (a launcher of big colored
   tiles), **Daylight** (the light one: white cards, one green accent), **Cable Box** (opens on a channel with a
   now/next banner; Up and Down change channel), **Index** (big type, almost no posters, the lightest to run), **Glass** (frosted panels over a soft
-  backdrop, with a dock), **Bento** (a board of flat colored tiles), **Library** (a tree on the left and dense rows,
-  like a media server), **Orbit** (sections on a big dial that you spin), **Mood** (asks what you feel like watching, then
-  shows a shelf), **Mosaic** (four channel tiles at once with the sound on one), **Tonight** (an evening planner: one timeline of what is on now, what starts later, what you are halfway through and what you saved), **Globe** (live TV by country on a dotted world map), **Playground** (big colored tiles for a Kids profile, with a bedtime and a PIN-guarded Grown-ups button), **Console** (a prompt that finds things as you type, with slash commands) and **Deck** (a deck of picks to skip, save or play), **Lounge** (a live channel in the top half and a strip to surf). Each has its own colors and a phone version.
+  backdrop, with a dock), **Bento** (a board of flat colored tiles), **Mosaic** (four channel tiles at once with the sound on one), **Tonight** (an evening planner: one timeline of what is on now, what starts later, what you are halfway through and what you saved), **Globe** (live TV by country on a dotted world map), **Playground** (big colored tiles for a Kids profile, with a bedtime and a PIN-guarded Grown-ups button), **Console** (a prompt that finds things as you type, with slash commands) and **Deck** (a deck of picks to skip, save or play), **Lounge** (a live channel in the top half and a strip to surf), **Madlib** (a sentence you fill in: "Tonight I feel like a movie that is funny..."), **Matchday** (today's sport by kick-off, with the channels that carry each event), **Easy** (three huge buttons, high contrast) and **Wall** (the whole library as one poster wall, with zoom). Layouts from earlier versions that were retired (Coverflow, Library, Orbit, Mood) open as Marquee. Each has its own colors and a phone version.
   Cable Box and Mosaic play their channels live on the home screen (muted, except the Mosaic tile that has the sound; only
   while visible; Settings > Appearance > Live pictures turns it off)
 - Free public channels: Settings > Source (or the connect screen) can browse the public iptv-org and Free-TV playlist

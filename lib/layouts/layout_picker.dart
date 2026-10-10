@@ -299,38 +299,6 @@ class _Wireframe extends StatelessWidget {
             ),
           ),
         ]),
-      UiLayout.coverflow => Column(children: [
-          const SizedBox(height: 6),
-          Expanded(
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  for (final w in [8.0, 12.0, 18.0, 12.0, 8.0])
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Opacity(
-                        opacity: w == 18 ? 1 : (w == 12 ? 0.7 : 0.4),
-                        child: Container(
-                          width: w * 1.4,
-                          height: w * 2.1,
-                          decoration: BoxDecoration(
-                            color: w == 18 ? pal.accent : soft,
-                            borderRadius: BorderRadius.circular(3),
-                            border: w == 18
-                                ? Border.all(color: Colors.white, width: 1.2)
-                                : null,
-                          ),
-                        ),
-                      ),
-                    ),
-                ]),
-          ),
-          box(Colors.white, w: 40, h: 6),
-          const SizedBox(height: 4),
-          box(pal.accent, w: 26, h: 7, r: 5),
-          const SizedBox(height: 6),
-        ]),
       UiLayout.hub => Padding(
           padding: const EdgeInsets.all(8),
           child: Column(children: [
@@ -643,107 +611,6 @@ class _Wireframe extends StatelessWidget {
             const Expanded(flex: 1, child: ColoredBox(color: Color(0xFF62B6FF), child: SizedBox.expand())),
           ]),
         ),
-      UiLayout.library => Column(children: [
-          Container(height: 10, color: pal.surface, alignment: Alignment.centerLeft, padding: const EdgeInsets.only(left: 6), child: box(pal.accent, w: 28, h: 3, r: 1)),
-          Expanded(
-            child: Row(children: [
-              Container(
-                  width: 44,
-                  color: pal.surface,
-                  padding: const EdgeInsets.all(5),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    for (var i = 0; i < 6; i++)
-                      Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Container(
-                              color: i == 2 ? pal.accent.withValues(alpha: 0.3) : Colors.transparent,
-                              child: box(i == 2 ? pal.accent : pal.muted, w: [30, 26, 32, 22, 28, 24][i].toDouble(), h: 3, r: 1))),
-                  ])),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
-                  child: Column(children: [
-                    for (var i = 0; i < 5; i++)
-                      Expanded(
-                          child: Container(
-                              decoration: BoxDecoration(
-                                  color: i == 1 ? pal.accent.withValues(alpha: 0.18) : Colors.transparent,
-                                  border: Border(bottom: BorderSide(color: pal.line))),
-                              child: Row(children: [
-                                box(pal.surfaceHi, w: 7, h: 10, r: 1),
-                                const SizedBox(width: 4),
-                                box(pal.text, w: [40, 34, 46, 30, 38][i].toDouble(), h: 3, r: 1),
-                                const Spacer(),
-                                box(pal.muted, w: 12, h: 2, r: 1),
-                              ]))),
-                  ]),
-                ),
-              ),
-            ]),
-          ),
-        ]),
-      UiLayout.orbit => Stack(children: [
-          Positioned(
-              left: -34,
-              top: 6,
-              child: Container(
-                  width: 84,
-                  height: 84,
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: pal.accent.withValues(alpha: 0.7), width: 2)))),
-          Positioned(
-              left: -22,
-              top: 18,
-              child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: pal.line, width: 1)))),
-          Positioned(left: 26, top: 40, child: box(pal.accent, w: 22, h: 8, r: 5)),
-          Positioned(left: 24, top: 18, child: box(pal.accent2.withValues(alpha: 0.6), w: 16, h: 6, r: 4)),
-          Positioned(left: 24, top: 62, child: box(pal.accent2.withValues(alpha: 0.6), w: 16, h: 6, r: 4)),
-          Positioned(
-              left: 66,
-              right: 10,
-              top: 12,
-              child: Column(children: [
-                for (var i = 0; i < 4; i++)
-                  Padding(
-                      padding: EdgeInsets.only(left: [8, 14, 14, 8][i].toDouble(), bottom: 4),
-                      child: Container(
-                          height: 12,
-                          decoration: BoxDecoration(
-                              color: i == 1 ? pal.accent : pal.surfaceHi,
-                              borderRadius: BorderRadius.circular(5)))),
-              ])),
-        ]),
-      UiLayout.mood => Container(
-          decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF131E3B), Color(0xFF52507F), Color(0xFFD9A199)])),
-          child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                box(pal.accent, w: 24, h: 3, r: 2),
-                const SizedBox(height: 4),
-                box(Colors.white, w: 80, h: 7),
-                const SizedBox(height: 8),
-                Wrap(spacing: 4, runSpacing: 4, children: [
-                  for (var i = 0; i < 6; i++)
-                    box(i == 1 ? pal.accent : Colors.white.withValues(alpha: 0.25), w: 30, h: 10, r: 6),
-                ]),
-                const Spacer(),
-                Row(children: [
-                  for (var i = 0; i < 4; i++)
-                    Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: box(Colors.white.withValues(alpha: 0.28), w: 22, h: 26, r: 4)),
-                ]),
-              ]))),
       UiLayout.mosaic => Container(
           color: const Color(0xFF14693A),
           padding: const EdgeInsets.all(6),
@@ -919,6 +786,65 @@ class _Wireframe extends StatelessWidget {
                   Transform.rotate(angle: 0.1, child: Transform.translate(offset: const Offset(7, 0), child: box(pal.text.withValues(alpha: 0.85), w: 26, h: 36, r: 4))),
                   Container(width: 28, height: 40, decoration: BoxDecoration(color: pal.text, borderRadius: BorderRadius.circular(4), border: Border.all(color: pal.accent, width: 2))),
                 ])),
+          ]),
+        ),
+      UiLayout.madlib => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Wrap(spacing: 3, runSpacing: 3, children: [
+              box(pal.text, w: 22, h: 6),
+              box(pal.accent, w: 16, h: 7, r: 3),
+              box(pal.text, w: 12, h: 6),
+              box(pal.surfaceHi, w: 24, h: 7, r: 3),
+              box(pal.text, w: 10, h: 6),
+              box(pal.surfaceHi, w: 18, h: 7, r: 3),
+            ]),
+            const Spacer(),
+            Row(children: [for (var i = 0; i < 5; i++) Padding(padding: const EdgeInsets.only(right: 3), child: box(i == 0 ? pal.accent : pal.surfaceHi, w: 16, h: 24, r: 3))]),
+          ]),
+        ),
+      UiLayout.matchday => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(children: [
+            Expanded(
+                flex: 3,
+                child: Column(children: [
+                  for (var i = 0; i < 4; i++)
+                    Container(
+                        height: 9,
+                        margin: const EdgeInsets.only(bottom: 3),
+                        decoration: BoxDecoration(
+                            color: pal.surface,
+                            borderRadius: BorderRadius.circular(2),
+                            border: i == 0 ? Border.all(color: pal.accent, width: 1.5) : null),
+                        child: Row(children: [const SizedBox(width: 3), box(i == 0 ? pal.accent2 : pal.muted, w: 8, h: 4), const SizedBox(width: 3), box(pal.text, w: 30, h: 3)])),
+                ])),
+            const SizedBox(width: 6),
+            Expanded(flex: 2, child: Container(decoration: BoxDecoration(color: pal.surface, borderRadius: BorderRadius.circular(3)), padding: const EdgeInsets.all(4), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [box(pal.text, w: 24, h: 5), const SizedBox(height: 3), box(pal.accent, w: 28, h: 6, r: 2), const SizedBox(height: 2), box(pal.surfaceHi, w: 28, h: 6, r: 2)]))),
+          ]),
+        ),
+      UiLayout.easy => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(children: [
+            for (var i = 0; i < 3; i++)
+              Expanded(
+                  child: Container(
+                      margin: EdgeInsets.only(right: i == 2 ? 0 : 4),
+                      decoration: BoxDecoration(
+                          color: i == 0 ? pal.accent : (i == 1 ? pal.text : pal.bg),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: i == 0 ? pal.accent2 : pal.text, width: i == 0 ? 2 : 1)),
+                      child: Center(child: box(i == 2 ? pal.text : pal.bg, w: 14, h: 5)))),
+          ]),
+        ),
+      UiLayout.wall => Padding(
+          padding: const EdgeInsets.all(6),
+          child: Stack(alignment: Alignment.center, children: [
+            Column(children: [
+              for (var r = 0; r < 3; r++)
+                Expanded(child: Row(children: [for (var c = 0; c < 7; c++) Expanded(child: Padding(padding: const EdgeInsets.all(1.5), child: Container(color: pal.surfaceHi.withValues(alpha: 0.7))))])),
+            ]),
+            Container(width: 30, height: 44, decoration: BoxDecoration(color: pal.accent2, border: Border.all(color: pal.accent, width: 2), borderRadius: BorderRadius.circular(3))),
           ]),
         ),
       UiLayout.lounge => Padding(

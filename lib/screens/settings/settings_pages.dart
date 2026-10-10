@@ -544,7 +544,7 @@ class AppearancePage extends StatelessWidget {
         title: 'Open on',
         subtitle: 'The screen shown when the app starts',
         value: st.startTab,
-        options: const [(0, 'Home'), (1, 'Live TV'), (2, 'Guide'), (3, 'Movies'), (4, 'Series'), (5, 'Search')],
+        options: const [(0, 'Home'), (1, 'Live TV'), (2, 'Guide'), (3, 'Movies'), (4, 'Series'), (7, 'Anime'), (5, 'Search')],
         onChanged: (v) => st.set('startTab', v),
       ),
     ]);
