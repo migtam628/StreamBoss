@@ -38,7 +38,11 @@ enum UiLayout {
   globe('Globe',
       'Live TV by country. A dotted world map with a pin on every country that has channels; pick one to see its channels.'),
   playground('Playground',
-      'Made for a Kids profile. Big colored tiles, a keep-watching card, a bedtime timer and no menu. Grown-ups asks for the PIN.');
+      'Made for a Kids profile. Big colored tiles, a keep-watching card, a bedtime timer and no menu. Grown-ups asks for the PIN.'),
+  console('Console',
+      'A prompt. Type to find channels, movies and series as you type, or start with a slash for a command. Plain and fast.'),
+  deck('Deck',
+      'A deck of picks for tonight. Skip, save or play with four keys, or swipe on a phone.');
 
   final String label;
   final String blurb;
@@ -273,6 +277,27 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     brightness: Brightness.light,
   );
 
+  static const console = LayoutPalette(
+    bg: Color(0xFF110C04),
+    surface: Color(0xFF1D1507),
+    surfaceHi: Color(0xFF2B2008),
+    accent: Color(0xFFFFB000),
+    accent2: Color(0xFFC9A24D),
+    text: Color(0xFFFFF0CC),
+    muted: Color(0xFF8F7231),
+    line: Color(0xFF3B2F12),
+  );
+  static const deck = LayoutPalette(
+    bg: Color(0xFF1735D6),
+    surface: Color(0xFF2A4BFF),
+    surfaceHi: Color(0xFF0F2299),
+    accent: Color(0xFFFF7A1A),
+    accent2: Color(0xFFFFB266),
+    text: Color(0xFFFFF4E0),
+    muted: Color(0xFFCFD8FF),
+    line: Color(0x66FFF4E0),
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
@@ -292,6 +317,8 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.tonight => tonight,
         UiLayout.globe => globe,
         UiLayout.playground => playground,
+        UiLayout.console => console,
+        UiLayout.deck => deck,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).

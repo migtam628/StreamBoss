@@ -7,6 +7,7 @@ import '../services/time_format.dart';
 import '../services/xmltv.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../widgets/live_preview.dart';
 import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
@@ -96,7 +97,20 @@ class _PrimeHeader extends StatelessWidget {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(fit: StackFit.expand, children: [
-                    if (ch.poster != null)
+                    // What is on now plays here a moment after the cursor lands on it; the logo shows until then.
+                    if (prog.isNow)
+                      LivePreview(
+                        key: ValueKey(ch.key),
+                        channel: ch,
+                        fallback: ch.poster == null
+                            ? const SizedBox.shrink()
+                            : Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: NetImage(ch.poster!,
+                                    fit: BoxFit.contain,
+                                    fallback: () => const SizedBox.shrink())),
+                      )
+                    else if (ch.poster != null)
                       Padding(
                           padding: const EdgeInsets.all(14),
                           child: NetImage(ch.poster!,

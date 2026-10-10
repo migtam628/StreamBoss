@@ -14,6 +14,7 @@ import '../services/search.dart';
 import '../services/stream_check.dart';
 import '../services/net_config.dart';
 import '../services/provider_url.dart';
+import '../services/channel_filter.dart';
 import '../services/tmdb.dart';
 import '../services/xmltv.dart';
 import '../services/free_playlists.dart';
@@ -103,7 +104,7 @@ class AppState extends ChangeNotifier {
 
   /// Removes everything a deleted profile saved.
   Future<void> forgetProfile(String id) async {
-    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings']) {
+    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings', 'deckSkips']) {
       await _prefs?.remove('$base:$id');
     }
   }
@@ -115,7 +116,14 @@ class AppState extends ChangeNotifier {
     positions.clear();
     recentSearches.clear();
     collections.clear();
+    deckSkips.clear();
     if (p == null) return;
+    try {
+      final raw = p.getString(_k('deckSkips'));
+      if (raw != null) {
+        (jsonDecode(raw) as Map<String, dynamic>).forEach((k, v) => deckSkips[k] = v as int);
+      }
+    } catch (_) {}
     try {
       final raw = p.getString(_k('collections'));
       if (raw != null) {
@@ -525,6 +533,65 @@ class AppState extends ChangeNotifier {
       if (_posterWaiting.isNotEmpty) _posterWaiting.removeAt(0)();
     }
   }
+
+  // --- Deck ---------------------------------------------------------------------------------
+
+  /// Titles the viewer said "not tonight" to in the Deck layout, with when (milliseconds). Kept per profile.
+  final Map<String, int> deckSkips = {};
+
+  /// How long a skipped title stays out of the deck.
+  static const deckSkipFor = Duration(days: 30);
+
+  void skipForDeck(MediaItem i) {
+    deckSkips[i.key] = DateTime.now().millisecondsSinceEpoch;
+    _prefs?.setString(_k('deckSkips'), jsonEncode(deckSkips));
+    notifyListeners();
+  }
+
+  void clearDeckSkips() {
+    deckSkips.clear();
+    _prefs?.remove(_k('deckSkips'));
+    notifyListeners();
+  }
+
+  /// Keys of titles skipped within the last [deckSkipFor].
+  Set<String> get deckSkippedKeys {
+    final cut = DateTime.now().subtract(deckSkipFor).millisecondsSinceEpoch;
+    return {for (final e in deckSkips.entries) if (e.value >= cut) e.key};
+  }
+
+  // --- Channel filter -----------------------------------------------------------------------
+
+  /// The filter on the live lists, shared by Live and the Guide so it carries from one to the other.
+  ChannelFilter channelFilter = ChannelFilter.none;
+
+  void setChannelFilter(ChannelFilter f) {
+    if (f == channelFilter) return;
+    channelFilter = f;
+    notifyListeners();
+  }
+
+  /// The category name of a live channel ("" when it has none).
+  String liveCategoryName(MediaItem ch) => _liveCatNames(shown)[ch.categoryId] ?? '';
+
+  Map<String, String>? _catNames;
+  Catalog? _catNamesFor;
+  Map<String, String> _liveCatNames(Catalog c) {
+    if (_catNames == null || !identical(_catNamesFor, c)) {
+      _catNames = {for (final x in c.liveCategories) x.id: x.name};
+      _catNamesFor = c;
+    }
+    return _catNames!;
+  }
+
+  /// [channels] narrowed by the shared filter.
+  List<MediaItem> filterChannels(List<MediaItem> channels) => applyChannelFilter(
+        channels,
+        channelFilter,
+        categoryName: liveCategoryName,
+        isFavorite: isFavorite,
+        hasGuide: (c) => programmesFor(c).isNotEmpty,
+      );
 
   // --- Recommendations ----------------------------------------------------------------------
 

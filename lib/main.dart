@@ -15,7 +15,9 @@ import 'state/profiles_state.dart';
 import 'state/settings_state.dart';
 import 'theme.dart';
 import 'services/time_format.dart';
+import 'services/mini_player.dart';
 import 'widgets/live_preview.dart';
+import 'widgets/mini_player_overlay.dart';
 import 'widgets/screensaver.dart';
 import 'widgets/tv.dart';
 
@@ -59,6 +61,7 @@ class StreamBossApp extends StatelessWidget {
     final scale = st.textScale;
     final tv = st.isTv;
     return MaterialApp(
+      navigatorKey: MiniPlayer.navigatorKey,
       title: 'StreamBoss',
       debugShowCheckedModeBanner: false,
       theme: Boss.theme(tv: tv, layout: st.layout, accent: st.accent, background: st.background),
@@ -75,7 +78,10 @@ class StreamBossApp extends StatelessWidget {
                 images: screensaverImages(s),
                 clock: () => fmtTime(DateTime.now(), use24h: st.use24h),
               ),
-              child: child ?? const SizedBox.shrink(),
+              child: Stack(children: [
+                Positioned.fill(child: child ?? const SizedBox.shrink()),
+                const MiniPlayerOverlay(),
+              ]),
             ),
           ),
         ),

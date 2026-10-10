@@ -843,6 +843,47 @@ class _Wireframe extends StatelessWidget {
             ])),
           ]),
         ),
+      UiLayout.console => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+                height: 14,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(border: Border.all(color: pal.accent, width: 1.5), borderRadius: BorderRadius.circular(3)),
+                child: Row(children: [box(pal.accent, w: 4, h: 6, r: 1), const SizedBox(width: 3), box(pal.text, w: 18, h: 4), box(pal.accent, w: 3, h: 7, r: 0)])),
+            const SizedBox(height: 4),
+            Row(children: [for (var i = 0; i < 3; i++) Padding(padding: const EdgeInsets.only(right: 3), child: box(i == 0 ? pal.accent : pal.line, w: 12, h: 5, r: 2))]),
+            const SizedBox(height: 5),
+            for (var i = 0; i < 5; i++)
+              Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Container(
+                      height: 7,
+                      color: i == 2 ? pal.accent : Colors.transparent,
+                      child: Row(children: [const SizedBox(width: 3), box(i == 2 ? pal.bg : pal.muted, w: 6, h: 3), const SizedBox(width: 4), box(i == 2 ? pal.bg : pal.text, w: 36 + i * 4.0, h: 3)]))),
+          ]),
+        ),
+      UiLayout.deck => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(children: [
+            Expanded(
+                flex: 3,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  box(pal.accent2, w: 22, h: 3),
+                  const SizedBox(height: 3),
+                  box(pal.text, w: 34, h: 8),
+                  const SizedBox(height: 3),
+                  box(pal.muted, w: 30, h: 3),
+                ])),
+            Expanded(
+                flex: 4,
+                child: Stack(alignment: Alignment.center, children: [
+                  Transform.rotate(angle: 0.2, child: Transform.translate(offset: const Offset(14, 0), child: box(pal.text.withValues(alpha: 0.7), w: 24, h: 34, r: 4))),
+                  Transform.rotate(angle: 0.1, child: Transform.translate(offset: const Offset(7, 0), child: box(pal.text.withValues(alpha: 0.85), w: 26, h: 36, r: 4))),
+                  Container(width: 28, height: 40, decoration: BoxDecoration(color: pal.text, borderRadius: BorderRadius.circular(4), border: Border.all(color: pal.accent, width: 2))),
+                ])),
+          ]),
+        ),
       UiLayout.spotlight => Column(children: [
           const SizedBox(height: 5),
           box(Colors.white24, w: 64, h: 8, r: 5),

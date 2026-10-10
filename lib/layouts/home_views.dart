@@ -17,6 +17,8 @@ import 'hub_view.dart';
 import 'index_view.dart';
 import 'library_view.dart';
 import 'mood_view.dart';
+import 'console_view.dart';
+import 'deck_view.dart';
 import 'globe_view.dart';
 import 'playground_view.dart';
 import 'tonight_view.dart';
@@ -311,6 +313,10 @@ class LayoutHome extends StatelessWidget {
         return const GlobeHome();
       case UiLayout.playground:
         return const PlaygroundHome();
+      case UiLayout.console:
+        return const ConsoleHome();
+      case UiLayout.deck:
+        return const DeckHome();
       case UiLayout.coverflow:
         final seen2 = <String>{};
         List<MediaItem> uniq2(Iterable<MediaItem> xs) => [

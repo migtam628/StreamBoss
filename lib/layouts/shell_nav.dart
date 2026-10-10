@@ -52,6 +52,8 @@ String destLabel(UiLayout l, int i) => switch ((l, i)) {
       (UiLayout.tonight, 0) => 'Tonight',
       (UiLayout.globe, 0) => 'Globe',
       (UiLayout.playground, 0) => 'Playground',
+      (UiLayout.console, 0) => 'Console',
+      (UiLayout.deck, 0) => 'Picks',
       (UiLayout.cable, 0) => 'Live',
       (UiLayout.cable, 1) => 'Channels',
       _ => kDests[i].label,
@@ -71,6 +73,8 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
       (UiLayout.tonight, 0) => selected ? Icons.event_note : Icons.event_note_outlined,
       (UiLayout.globe, 0) => selected ? Icons.public : Icons.public_outlined,
       (UiLayout.playground, 0) => selected ? Icons.child_care : Icons.child_care_outlined,
+      (UiLayout.console, 0) => Icons.terminal,
+      (UiLayout.deck, 0) => selected ? Icons.style : Icons.style_outlined,
       (UiLayout.cable, 1) => selected ? Icons.list : Icons.list,
       _ => selected ? kDests[i].selectedIcon : kDests[i].icon,
     };
@@ -105,6 +109,8 @@ List<int> topTabs(UiLayout l) => switch (l) {
       UiLayout.globe => (bar: [0, 1, 2, 3], more: [4, 5, 6]),
       // A child gets no menu on Home; Grown-ups (behind the PIN) is the way to the rest.
       UiLayout.playground => (bar: [0, 5, 6], more: <int>[]),
+      UiLayout.console => (bar: [0, 1, 2, 3], more: [4, 5, 6]),
+      UiLayout.deck => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
     };
 
 /// Bottom navigation for phones: four main screens and a More sheet for the rest.

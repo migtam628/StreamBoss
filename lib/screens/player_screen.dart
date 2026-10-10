@@ -12,6 +12,7 @@ import '../services/chapters.dart';
 import '../services/crash_guard.dart';
 import '../services/mpv_props.dart';
 import '../services/next_episode.dart';
+import '../services/mini_player.dart';
 import '../services/pip.dart';
 import '../services/provider_url.dart';
 import '../services/xtream_client.dart';
@@ -44,6 +45,9 @@ class PlayerScreen extends StatefulWidget {
   /// Playing a past programme from the provider's archive: nothing is added to history or resume positions.
   final bool catchUp;
 
+  /// A player the in-app mini window was already running; it carries on here without restarting.
+  final MiniSession? adopt;
+
   const PlayerScreen({
     super.key,
     required this.title,
@@ -53,6 +57,7 @@ class PlayerScreen extends StatefulWidget {
     this.startAt,
     this.episodes,
     this.catchUp = false,
+    this.adopt,
   });
 
   @override
@@ -63,8 +68,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   // Warnings and errors from libmpv go to the playback log (see CrashGuard).
   late final SettingsState _settings = context.read<SettingsState>();
   // TV boxes have little memory: a smaller demuxer buffer (libmpv default here is 32 MB forward + 32 MB back).
-  late final Player _player = Player(
-      configuration: PlayerConfiguration(logLevel: MPVLogLevel.warn, bufferSize: _settings.isTv ? 16 * 1024 * 1024 : 32 * 1024 * 1024));
+  late final Player _player = widget.adopt?.player ??
+      Player(
+          configuration: PlayerConfiguration(
+              logLevel: MPVLogLevel.warn, bufferSize: _settings.isTv ? 16 * 1024 * 1024 : 32 * 1024 * 1024));
   late final VideoController _controller;
   late final AppState _app = context.read<AppState>();
 
@@ -94,6 +101,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   bool _canPip = false;
   String? _error;
   bool _reportedPlaying = false;
+  bool _handedOff = false; // the player now belongs to the mini window, so it must not be disposed here
 
   // How far behind the live picture this is. The live edge is where the first picture was, moving on
   // with the clock, so a pause, a stall or a rewind all show up as time behind.
@@ -128,19 +136,22 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void initState() {
     super.initState();
     Screensaver.busy.value++;
+    // Only one stream at a time: a mini player running something else stops when a full player opens.
+    if (widget.adopt == null && MiniPlayer.instance.active) scheduleMicrotask(MiniPlayer.instance.close);
     _index = _queue == null ? 0 : _queue!.indexWhere((e) => e.key == widget.item.key).clamp(0, _queue!.length - 1);
     WidgetsBinding.instance.addObserver(this);
     final surface = _settings.surfaceOutput;
     CrashGuard.begin('${_live ? 'live' : 'vod'} host=${Uri.tryParse(widget.url)?.host} '
         'decoder=${_settings.decoder} output=${surface ? 'surface' : 'gpu'}');
-    _controller = VideoController(
-      _player,
-      configuration: VideoControllerConfiguration(
-        enableHardwareAcceleration: _settings.decoder != 'software',
-        vo: surface ? 'mediacodec_embed' : null,
-        hwdec: surface ? 'mediacodec' : null,
-      ),
-    );
+    _controller = widget.adopt?.controller ??
+        VideoController(
+          _player,
+          configuration: VideoControllerConfiguration(
+            enableHardwareAcceleration: _settings.decoder != 'software',
+            vo: surface ? 'mediacodec_embed' : null,
+            hwdec: surface ? 'mediacodec' : null,
+          ),
+        );
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
     // Browsers may deny the wake lock (no user activation / policy); that must not surface as an error.
@@ -203,6 +214,19 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   Future<void> _start() async {
+    if (widget.adopt != null) {
+      // The stream is already open and playing: take over its state instead of opening it again.
+      final st = _player.state;
+      _playing = st.playing;
+      _buffering = st.buffering;
+      _dur = st.duration;
+      _pos.value = st.position;
+      _reportedPlaying = true;
+      CrashGuard.mark('playing');
+      _loadChapters();
+      _onChannelChanged();
+      return;
+    }
     try {
       await applyBuffer(_player, _settings.bufferSecs);
       if (_live) await allowRewind(_player, _settings.isTv ? 24 : 48);
@@ -315,9 +339,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _lagTimer?.cancel();
     _root.dispose();
     _playBtn.dispose();
-    WakelockPlus.disable().catchError((_) {});
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    _player.dispose();
+    if (!_handedOff) {
+      WakelockPlus.disable().catchError((_) {});
+      _player.dispose();
+    }
     CrashGuard.end();
     super.dispose();
   }
@@ -675,6 +701,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _goLast();
       return KeyEventResult.handled;
     }
+    if (k == LogicalKeyboardKey.keyP || k == LogicalKeyboardKey.keyM) {
+      _minimize();
+      return KeyEventResult.handled;
+    }
     if (k == LogicalKeyboardKey.keyC && _queue != null && _queue!.length > 1) {
       _pickChannel();
       return KeyEventResult.handled;
@@ -937,6 +967,24 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   Future<void> _enterPip() async {
     await Pip.enter();
+  }
+
+  /// Picture-in-picture inside the app: close this screen and keep the stream going in a small window
+  /// above everything, which opens this screen again when tapped.
+  void _minimize() {
+    if (_error != null) return;
+    _handedOff = true;
+    _savePosition(notify: true);
+    MiniPlayer.instance.start(MiniSession(
+      player: _player,
+      controller: _controller,
+      item: _cur,
+      title: _title,
+      queue: _queue,
+      episodes: widget.episodes,
+      catchUp: widget.catchUp,
+    ));
+    Navigator.of(context).pop();
   }
 
   void _toggleStats() {
@@ -1250,7 +1298,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 if (shadersSupported)
                   _btn(Icons.auto_fix_high, 'Shaders', _pickShaders, on: _settings.shaderEnabled.isNotEmpty),
                 _btn(Icons.bedtime, 'Sleep timer', _pickSleep, on: _sleepAt != null),
-                if (_canPip) _btn(Icons.picture_in_picture_alt, 'Picture-in-picture', _enterPip),
+                _btn(Icons.picture_in_picture, 'Mini player (P)', _minimize),
+                if (_canPip) _btn(Icons.picture_in_picture_alt, 'Picture-in-picture (system)', _enterPip),
                 _btn(Icons.analytics_outlined, 'Stats', _toggleStats, on: _stats),
               ],
             ),

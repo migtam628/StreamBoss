@@ -8,6 +8,7 @@ import '../layouts/ui_layout.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../widgets/channel_filter_bar.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
 
@@ -26,6 +27,7 @@ class BrowseScreen extends StatelessWidget {
       case UiLayout.glass:
       case UiLayout.mood:
       case UiLayout.playground:
+      case UiLayout.deck:
         return _MarqueeBrowse(kind: kind, catalog: catalog);
       case UiLayout.library:
         return ControlView(kind: kind, catalog: catalog);
@@ -38,6 +40,7 @@ class BrowseScreen extends StatelessWidget {
       case UiLayout.prime:
       case UiLayout.tonight:
       case UiLayout.globe:
+      case UiLayout.console:
         return kind == MediaKind.live ? ControlView(kind: kind, catalog: catalog) : _MarqueeBrowse(kind: kind, catalog: catalog);
       case UiLayout.coverflow:
         final cf = catalog.categoriesFor(kind);
@@ -78,25 +81,31 @@ class _MarqueeBrowseState extends State<_MarqueeBrowse> {
     final s = context.watch<AppState>();
     final size = context.watch<SettingsState>().posterScale;
     final cats = widget.catalog.categoriesFor(widget.kind);
-    final all = widget.catalog.itemsFor(widget.kind);
+    final live = widget.kind == MediaKind.live;
+    final base = widget.catalog.itemsFor(widget.kind);
+    final all = live ? s.filterChannels(base) : base;
     final items =
         _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
-    final live = widget.kind == MediaKind.live;
 
-    if (all.isEmpty) {
+    if (base.isEmpty) {
       return Center(
           child: Text('Nothing here yet.',
               style: TextStyle(color: LayoutPalette.of(context).muted)));
     }
 
     return Column(children: [
+      if (live) ChannelFilterBar(shown: items.length),
       ChipRow(
         labels: ['All', for (final c in cats) c.name],
         selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
         onSelect: (i) => setState(() => _cat = i == 0 ? null : cats[i - 1].id),
       ),
       Expanded(
-        child: GridView.builder(
+        child: live && items.isEmpty
+            ? Center(
+                child: Text('No channels match the filters.',
+                    style: TextStyle(color: LayoutPalette.of(context).muted)))
+            : GridView.builder(
           padding: const EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: (live ? 220 : 160) * size,

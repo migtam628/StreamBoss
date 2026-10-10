@@ -6,6 +6,8 @@ import '../services/time_format.dart';
 import '../services/xtream_client.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../widgets/channel_filter_bar.dart';
+import '../widgets/live_preview.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
@@ -40,11 +42,13 @@ class _ControlViewState extends State<ControlView> {
     final tv = TvScope.of(context);
     final wide = tv || MediaQuery.sizeOf(context).width >= 800;
     final cats = widget.catalog.categoriesFor(widget.kind);
-    final all = widget.catalog.itemsFor(widget.kind);
+    final live = widget.kind == MediaKind.live;
+    final base = widget.catalog.itemsFor(widget.kind);
+    // Live channels follow the shared filter (words, quality, country, favorites, guide data).
+    final all = live ? s.filterChannels(base) : base;
     final items =
         _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
-    final live = widget.kind == MediaKind.live;
-    if (all.isEmpty) {
+    if (base.isEmpty) {
       return Center(
           child: Text('Nothing here yet.', style: TextStyle(color: p.muted)));
     }
@@ -57,7 +61,15 @@ class _ControlViewState extends State<ControlView> {
           _focused = null;
         });
 
-    final Widget list = live
+    final Widget list = live && items.isEmpty
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('No channels match the filters.',
+                  style: TextStyle(color: p.muted, fontSize: 16)),
+            ),
+          )
+        : live
         ? ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             itemCount: items.length,
@@ -100,6 +112,7 @@ class _ControlViewState extends State<ControlView> {
 
     if (!wide) {
       return Column(children: [
+        if (live) ChannelFilterBar(shown: items.length),
         ChipRow(
           labels: ['All', for (final c in cats) c.name],
           selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
@@ -131,7 +144,12 @@ class _ControlViewState extends State<ControlView> {
           ]),
         ),
       ),
-      Expanded(child: list),
+      Expanded(
+        child: Column(children: [
+          if (live) ChannelFilterBar(shown: items.length),
+          Expanded(child: list),
+        ]),
+      ),
       SizedBox(
         width: 340,
         child: Container(
@@ -361,13 +379,23 @@ class _PreviewPane extends StatelessWidget {
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(fit: StackFit.expand, children: [
-              if (item.poster != null)
-                Padding(
-                  padding: EdgeInsets.all(live ? 18 : 0),
-                  child: NetImage(item.poster!,
-                      fit: live ? BoxFit.contain : BoxFit.cover,
-                      fallback: () => const SizedBox.shrink()),
-                ),
+              // A channel plays here (muted) a moment after it is highlighted; its logo shows until then.
+              if (live)
+                LivePreview(
+                  key: ValueKey(item.key),
+                  channel: item,
+                  fallback: item.poster == null
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: NetImage(item.poster!,
+                              fit: BoxFit.contain,
+                              fallback: () => const SizedBox.shrink()),
+                        ),
+                )
+              else if (item.poster != null)
+                NetImage(item.poster!,
+                    fit: BoxFit.cover, fallback: () => const SizedBox.shrink()),
               if (live)
                 Positioned(
                   left: 10,
