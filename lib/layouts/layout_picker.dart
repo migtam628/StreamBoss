@@ -788,6 +788,61 @@ class _Wireframe extends StatelessWidget {
                     ]))),
           ]),
         ),
+      UiLayout.globe => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(children: [
+            Expanded(
+                flex: 6,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(
+                      child: Stack(children: [
+                    for (final (l, t, w, h) in const [(2.0, 4.0, 22.0, 14.0), (30.0, 3.0, 16.0, 12.0), (8.0, 24.0, 12.0, 14.0), (34.0, 20.0, 18.0, 16.0)])
+                      Positioned(left: l, top: t, child: box(pal.accent2.withValues(alpha: 0.55), w: w, h: h, r: 3)),
+                    Positioned(left: 34, top: 14, child: Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: pal.accent))),
+                  ])),
+                  box(Colors.white, w: 36, h: 7, r: 2),
+                  const SizedBox(height: 3),
+                  Row(children: [for (var i = 0; i < 3; i++) Padding(padding: const EdgeInsets.only(right: 3), child: box(i == 0 ? pal.accent : pal.line, w: 12, h: 5, r: 3))]),
+                ])),
+            const SizedBox(width: 6),
+            Expanded(
+                flex: 4,
+                child: Container(
+                    decoration: BoxDecoration(color: pal.surface, borderRadius: BorderRadius.circular(4), border: Border.all(color: pal.line)),
+                    padding: const EdgeInsets.all(3),
+                    child: Column(children: [
+                      for (var i = 0; i < 4; i++)
+                        Padding(padding: const EdgeInsets.only(bottom: 3), child: box(i == 0 ? pal.surfaceHi : pal.line, w: 60, h: 9, r: 3)),
+                    ]))),
+          ]),
+        ),
+      UiLayout.playground => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: pal.accent)),
+              const SizedBox(width: 4),
+              box(pal.text, w: 28, h: 6, r: 2),
+            ]),
+            const SizedBox(height: 5),
+            Expanded(
+                child: Row(children: [
+              Expanded(flex: 4, child: Container(decoration: BoxDecoration(color: pal.accent2, borderRadius: BorderRadius.circular(5)))),
+              const SizedBox(width: 4),
+              Expanded(
+                  flex: 5,
+                  child: GridView.count(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        for (final c in const [Color(0xFFFF5A5F), Color(0xFF7C5CFF), Color(0xFF2FB8CC), Color(0xFF3FC46A), Color(0xFFFFD23F), Color(0xFFFF9F45)])
+                          Container(decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4))),
+                      ])),
+            ])),
+          ]),
+        ),
       UiLayout.spotlight => Column(children: [
           const SizedBox(height: 5),
           box(Colors.white24, w: 64, h: 8, r: 5),

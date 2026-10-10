@@ -84,7 +84,7 @@ class _ShellState extends State<Shell> {
 
     // On a TV, Back from any tab returns to Home first; only Home lets Back leave the app. Index and
     // Cable Box do the same on a phone because their Home is the root of everything else.
-    final backHome = tv || layout == UiLayout.indexList || layout == UiLayout.cable || layout == UiLayout.orbit;
+    final backHome = tv || layout == UiLayout.indexList || layout == UiLayout.cable || layout == UiLayout.orbit || layout == UiLayout.playground;
     Widget guard(Widget child) => PopScope(
           canPop: !backHome || _i == 0,
           onPopInvokedWithResult: (didPop, _) {
@@ -113,6 +113,7 @@ class _ShellState extends State<Shell> {
           layout == UiLayout.cable ||
           layout == UiLayout.orbit ||
           layout == UiLayout.mood ||
+          layout == UiLayout.playground ||
           layout == UiLayout.mosaic) {
         chrome = Column(children: [
           if (_i != 0) HubBar(index: _i, onSelect: select, layout: layout),
@@ -137,7 +138,7 @@ class _ShellState extends State<Shell> {
     return guard(_frame(layout, Scaffold(
       backgroundColor: _paints(layout) ? Colors.transparent : null,
       body: _Backdrop(layout: layout, child: SafeArea(child: body)),
-      bottomNavigationBar: layout == UiLayout.indexList || layout == UiLayout.orbit
+      bottomNavigationBar: layout == UiLayout.indexList || layout == UiLayout.orbit || layout == UiLayout.playground
           ? (_i == 0 ? null : IndexBackBar(index: _i, onSelect: select, layout: layout))
           : layout == UiLayout.glass
               ? SafeArea(

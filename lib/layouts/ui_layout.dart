@@ -34,7 +34,11 @@ enum UiLayout {
   mosaic('Mosaic',
       'Four channel tiles at once with the sound on one of them. Made for sport and news days.'),
   tonight('Tonight',
-      'An evening planner. One timeline of what is on now, what starts later, what you are halfway through and what you saved.');
+      'An evening planner. One timeline of what is on now, what starts later, what you are halfway through and what you saved.'),
+  globe('Globe',
+      'Live TV by country. A dotted world map with a pin on every country that has channels; pick one to see its channels.'),
+  playground('Playground',
+      'Made for a Kids profile. Big colored tiles, a keep-watching card, a bedtime timer and no menu. Grown-ups asks for the PIN.');
 
   final String label;
   final String blurb;
@@ -247,6 +251,28 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     brightness: Brightness.light,
   );
 
+  static const globe = LayoutPalette(
+    bg: Color(0xFF070B1D),
+    surface: Color(0xFF10163A),
+    surfaceHi: Color(0xFF1B2358),
+    accent: Color(0xFFFF6F61),
+    accent2: Color(0xFF8FA4FF),
+    text: Color(0xFFE8ECFF),
+    muted: Color(0xFF8F9BD6),
+    line: Color(0xFF2B3570),
+  );
+  static const playground = LayoutPalette(
+    bg: Color(0xFFFFF4DC),
+    surface: Color(0xFFFFFFFF),
+    surfaceHi: Color(0xFFFFE4A3),
+    accent: Color(0xFF7C5CFF),
+    accent2: Color(0xFFFF5A5F),
+    text: Color(0xFF2B2350),
+    muted: Color(0xFF6D6590),
+    line: Color(0x1F2B2350),
+    brightness: Brightness.light,
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
@@ -264,6 +290,8 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.mood => mood,
         UiLayout.mosaic => mosaic,
         UiLayout.tonight => tonight,
+        UiLayout.globe => globe,
+        UiLayout.playground => playground,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).

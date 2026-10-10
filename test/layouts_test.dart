@@ -206,6 +206,18 @@ void main() {
           expect(find.byType(IndexBackBar), findsNothing);
           return;
         }
+        if (layout == UiLayout.playground) {
+          // No menu for a child: Grown-ups is the only way out, and a slim back bar returns.
+          expect(find.byType(NavigationBar), findsNothing);
+          await t.tap(find.text('Grown-ups'));
+          await t.pumpAndSettle();
+          expect(tester(t), isNull);
+          expect(find.byType(IndexBackBar), findsOneWidget);
+          await t.tap(find.text('Playground'));
+          await t.pumpAndSettle();
+          expect(find.byType(IndexBackBar), findsNothing);
+          return;
+        }
         expect(find.byType(NavigationBar), findsOneWidget);
         final tabs = phoneTabs(layout);
         expect(find.text('More'),
@@ -261,6 +273,12 @@ void main() {
             await t.pumpAndSettle();
             expect(tester(t), isNull);
             await t.tap(find.text('Orbit').first);
+          } else if (layout == UiLayout.playground) {
+            // Home has no menu; Grown-ups opens Settings, and the bar returns to Home.
+            await t.tap(find.text('Grown-ups').first);
+            await t.pumpAndSettle();
+            expect(tester(t), isNull);
+            await t.tap(find.text('Playground').first);
           } else if (layout == UiLayout.cable) {
             await t.tap(find.text(k == 1 ? 'CHANNELS' : 'MOVIES').first);
             await t.pumpAndSettle();

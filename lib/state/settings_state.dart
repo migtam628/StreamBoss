@@ -41,6 +41,7 @@ class SettingsState extends ChangeNotifier {
     'tvWidth': 1280, // TV mode lays the UI out on a canvas this many logical pixels wide
     'onboarded': false, // the first-run setup has been done or skipped (this device)
     'layout': 'marquee', // marquee | control | spotlight
+    'bedtime': 'off', // Playground: off or HH:MM; after it the Home says all done until morning
     'screensaver': 'auto', // auto | off | 2 | 5 | 10 | 20 | 30 (minutes idle). Auto is 10 on a TV, off elsewhere
     'accentColor': 0, // 0 = the layout's own accent, else an ARGB color
     'background': 'layout', // layout | black | charcoal | midnight | forest | plum | paper
@@ -81,7 +82,7 @@ class SettingsState extends ChangeNotifier {
   /// and hears, and what it hides. Everything else is about the device and stays shared.
   static const profileKeys = {
     'layout', 'accentColor', 'background', 'uiScale', 'posterSize', 'startTab', 'audioLang', 'subLang', 'subsOn', 'subSize', 'subColor',
-    'subBg', 'subBold', 'subBottom', 'hideAdult', 'sortAz', 'use24h', 'mergeDuplicates', 'livePreview',
+    'subBg', 'subBold', 'subBottom', 'hideAdult', 'sortAz', 'use24h', 'mergeDuplicates', 'livePreview', 'bedtime',
   };
 
   // The values of the profile in use when it has its own settings; they win over the shared ones.
@@ -186,6 +187,7 @@ class SettingsState extends ChangeNotifier {
   Color? get accent => _g<int>('accentColor') == 0 ? null : Color(_g<int>('accentColor'));
   String get background => _g('background');
   String get screensaver => _g('screensaver');
+  String get bedtime => _g('bedtime');
 
   /// Minutes without input before the screensaver starts; 0 = never.
   int get screensaverMinutes {

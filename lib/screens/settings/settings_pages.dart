@@ -491,6 +491,14 @@ class AppearancePage extends StatelessWidget {
         subtitle: 'Press any key or touch the screen to come back',
         onTap: () => Screensaver.preview.value++,
       ),
+      ChoiceRow<String>(
+        icon: Icons.bedtime_outlined,
+        title: 'Playground bedtime',
+        subtitle: 'The Playground layout shows "All done for today" from this time until 5 in the morning.',
+        value: st.bedtime,
+        options: const [('off', 'Off'), ('18:00', '6 PM'), ('19:00', '7 PM'), ('20:00', '8 PM'), ('21:00', '9 PM')],
+        onChanged: (v) => st.set('bedtime', v),
+      ),
       const SettingsHeader('Size'),
       ChoiceRow<double>(
         icon: Icons.text_fields,
