@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../state/settings_state.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../widgets/tv_slider.dart';
 
 /// Accent colors to pick from. A hue slider covers the rest.
 const accentChoices = <Color>[
@@ -124,7 +125,7 @@ class ThemePicker extends StatelessWidget {
         Row(children: [
           const Icon(Icons.palette_outlined, size: 20),
           Expanded(
-            child: Slider(
+            child: TvSlider(
               value: hue.clamp(0, 360).toDouble(),
               max: 360,
               divisions: 72,

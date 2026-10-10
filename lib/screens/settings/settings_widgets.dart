@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../layouts/ui_layout.dart';
+import '../../widgets/tv_slider.dart';
 
 /// Small building blocks shared by every settings page. All rows are plain ListTiles, so they
 /// take focus from a D-pad / keyboard and show the theme's focus highlight.
@@ -128,7 +129,7 @@ class SliderRow extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
         leading: icon == null ? null : Icon(icon),
         title: Text('$title: ${label(value)}'),
-        subtitle: Slider(
+        subtitle: TvSlider(
           value: value.clamp(min, max),
           min: min,
           max: max,

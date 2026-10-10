@@ -30,6 +30,7 @@ import '../widgets/airplay_button.dart';
 import '../widgets/cast_sheet.dart';
 import '../widgets/channel_sheet.dart';
 import '../widgets/screensaver.dart';
+import '../widgets/tv_slider.dart';
 import '../widgets/tv_text_field.dart';
 
 /// Full-screen player. Remote / keyboard behaviour (mpvNova-style):
@@ -1440,7 +1441,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                   return Row(children: [
                     Text(_fmt(p), style: const TextStyle(fontSize: 12)),
                     Expanded(
-                      child: Slider(
+                      child: TvSlider(
                         value: p.inMilliseconds.toDouble().clamp(0.0, max <= 0 ? 1.0 : max).toDouble(),
                         max: max <= 0 ? 1 : max,
                         activeColor: Boss.accent,
