@@ -26,6 +26,8 @@ dependencies:
   qr_flutter: ^4.1.0
   archive: ^4.0.0
   crypto: ^3.0.0
+  cast: ^2.1.0
+  bonsoir: ">=5.1.0 <6.0.0" # cast 2.1.0 does not build against bonsoir 6 and later
 
 dev_dependencies:
   flutter_test:

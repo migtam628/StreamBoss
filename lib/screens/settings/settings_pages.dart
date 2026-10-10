@@ -17,7 +17,10 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app_info.dart';
 import '../../models/media.dart';
+import '../../services/cast_service.dart';
+import '../../services/countries.dart';
 import '../../services/crash_guard.dart';
+import '../../services/library_view.dart' show isKidsCategory;
 import '../../services/http_client.dart';
 import '../../services/mpv_props.dart';
 import '../../services/net_config.dart';
@@ -1178,11 +1181,26 @@ class _AboutPageState extends State<AboutPage> {
     final st = context.read<SettingsState>();
     final lib = app.catalog;
     final settings = st.toMap()..remove('shaderCustom');
+    final countries = groupByCountry(lib);
+    // Category names that name no country, to improve the parser. Names only, never addresses.
+    final unmatched = [
+      for (final c in lib.liveCategories)
+        if (countryOf(c.name) == null) c.name
+    ];
+    final kids = [
+      for (final c in [...lib.liveCategories, ...lib.movieCategories, ...lib.seriesCategories])
+        if (isKidsCategory(c.name)) c.name
+    ];
     return [
       'StreamBoss ${appVersion(i.version)} (build ${i.buildNumber})',
       'Platform: ${kIsWeb ? 'web' : defaultTargetPlatform.name}',
       'Source: ${app.active?.type.name ?? 'none'}${app.usingXtreamApi ? ' (Xtream API)' : ''}',
       'Library: ${lib.live.length} channels, ${lib.movies.length} movies, ${lib.series.length} series',
+      'Layout: ${st.layout.name}, TV mode ${st.isTv ? 'on' : 'off'}, video output ${st.videoOutput}, live pictures ${st.livePreview ? 'on' : 'off'}',
+      'Cast: ${castSupported ? 'available (experimental)' : 'not on this platform'}',
+      'Countries found: ${countries.length}${countries.isEmpty ? '' : ' (${countries.take(8).map((g) => '${g.country.code} ${g.channels.length}').join(', ')})'}',
+      'Live categories with no country: ${unmatched.length}${unmatched.isEmpty ? '' : ' (${unmatched.take(12).join(' | ')})'}',
+      'Kids categories matched: ${kids.length}${kids.isEmpty ? '' : ' (${kids.take(8).join(' | ')})'}',
       'Guide: ${app.hasGuideSource ? 'available' : 'none'}${app.guideError != null ? ' (error: ${app.guideError})' : ''}',
       'Settings: ${jsonEncode(settings)}',
     ].join('\n');

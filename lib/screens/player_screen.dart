@@ -12,6 +12,7 @@ import '../services/chapters.dart';
 import '../services/crash_guard.dart';
 import '../services/mpv_props.dart';
 import '../services/next_episode.dart';
+import '../services/cast_service.dart';
 import '../services/mini_player.dart';
 import '../services/pip.dart';
 import '../services/provider_url.dart';
@@ -22,6 +23,7 @@ import 'open_item.dart';
 import '../state/settings_state.dart';
 import '../services/subtitle_search.dart';
 import '../theme.dart';
+import '../widgets/cast_sheet.dart';
 import '../widgets/screensaver.dart';
 
 /// Full-screen player. Remote / keyboard behaviour (mpvNova-style):
@@ -987,6 +989,27 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     Navigator.of(context).pop();
   }
 
+  void _cast() {
+    final src = _queue != null ? _source(_index) : _vod;
+    final url = src.streamUrl;
+    if (url == null) {
+      _flash('Nothing to cast yet');
+      return;
+    }
+    showCastSheet(
+      context,
+      url: url,
+      title: _title,
+      live: _live,
+      poster: src.poster,
+      onStarted: () {
+        _player.pause();
+        _flash('Casting. Playing here is paused.');
+        if (mounted) Navigator.of(context).maybePop();
+      },
+    );
+  }
+
   void _toggleStats() {
     setState(() => _stats = !_stats);
     _statsTimer?.cancel();
@@ -1299,6 +1322,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                   _btn(Icons.auto_fix_high, 'Shaders', _pickShaders, on: _settings.shaderEnabled.isNotEmpty),
                 _btn(Icons.bedtime, 'Sleep timer', _pickSleep, on: _sleepAt != null),
                 _btn(Icons.picture_in_picture, 'Mini player (P)', _minimize),
+                if (castSupported) _btn(Icons.cast, 'Cast to TV (experimental)', _cast),
                 if (_canPip) _btn(Icons.picture_in_picture_alt, 'Picture-in-picture (system)', _enterPip),
                 _btn(Icons.analytics_outlined, 'Stats', _toggleStats, on: _stats),
               ],

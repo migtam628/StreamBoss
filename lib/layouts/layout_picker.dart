@@ -6,46 +6,83 @@ import 'ui_layout.dart';
 
 /// Settings > Appearance > Layout: pick one of the looks. Each card draws a small
 /// wireframe of the layout in its own colors.
-class LayoutPicker extends StatelessWidget {
+class LayoutPicker extends StatefulWidget {
   const LayoutPicker({super.key});
+
+  @override
+  State<LayoutPicker> createState() => _LayoutPickerState();
+}
+
+class _LayoutPickerState extends State<LayoutPicker> {
+  /// The layout in use when this page opened, so a bad pick can be undone in one press.
+  UiLayout? _before;
 
   @override
   Widget build(BuildContext context) {
     final st = context.watch<SettingsState>();
+    final cur = LayoutPalette.of(context);
+    void pick(UiLayout l) {
+      if (l == st.layout) return;
+      setState(() => _before ??= st.layout);
+      st.set('layout', l.name);
+    }
+
+    Widget cardsFor(List<UiLayout> layouts, double width) {
+      final cards = [for (final l in layouts) _LayoutCard(layout: l, selected: st.layout == l, onTap: () => pick(l))];
+      if (width >= 640) {
+        final per = width >= 840 ? 3 : 2;
+        return Column(children: [
+          for (var i = 0; i < cards.length; i += per)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                for (var k = 0; k < per; k++)
+                  Expanded(
+                      child: Padding(
+                          padding: EdgeInsets.only(right: k == per - 1 ? 0 : 12),
+                          child: i + k < cards.length ? cards[i + k] : const SizedBox())),
+              ]),
+            ),
+        ]);
+      }
+      return Column(children: [for (final w in cards) Padding(padding: const EdgeInsets.only(bottom: 10), child: w)]);
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: LayoutBuilder(builder: (context, c) {
-        final cards = [
-          for (final l in UiLayout.values)
-            _LayoutCard(
-                layout: l,
-                selected: st.layout == l,
-                onTap: () => st.set('layout', l.name)),
-        ];
-        if (c.maxWidth >= 640) {
-          final per = c.maxWidth >= 840 ? 3 : 2;
-          return Column(children: [
-            for (var i = 0; i < cards.length; i += per)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var k = 0; k < per; k++)
-                        Expanded(
-                            child: Padding(
-                                padding: EdgeInsets.only(
-                                    right: k == per - 1 ? 0 : 12),
-                                child: i + k < cards.length
-                                    ? cards[i + k]
-                                    : const SizedBox())),
-                    ]),
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (_before != null && _before != st.layout)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: FocusSurface(
+                radius: 12,
+                semanticLabel: 'Go back to ${_before!.label}',
+                onTap: () {
+                  st.set('layout', _before!.name);
+                  setState(() => _before = null);
+                },
+                builder: (_, __) => Container(
+                  color: cur.surfaceHi,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(children: [
+                    Icon(Icons.undo, color: cur.accent, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text('Not for you? Go back to ${_before!.label}', style: const TextStyle(fontWeight: FontWeight.w700))),
+                  ]),
+                ),
               ),
-          ]);
-        }
-        return Column(children: [
-          for (final w in cards)
-            Padding(padding: const EdgeInsets.only(bottom: 10), child: w)
+            ),
+          for (final g in LayoutGroup.values) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(2, 6, 2, 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(g.label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: cur.accent)),
+                Text(g.blurb, style: TextStyle(fontSize: 13, color: cur.muted)),
+              ]),
+            ),
+            cardsFor([for (final l in UiLayout.values) if (l.group == g) l], c.maxWidth),
+          ],
         ]);
       }),
     );
@@ -882,6 +919,22 @@ class _Wireframe extends StatelessWidget {
                   Transform.rotate(angle: 0.1, child: Transform.translate(offset: const Offset(7, 0), child: box(pal.text.withValues(alpha: 0.85), w: 26, h: 36, r: 4))),
                   Container(width: 28, height: 40, decoration: BoxDecoration(color: pal.text, borderRadius: BorderRadius.circular(4), border: Border.all(color: pal.accent, width: 2))),
                 ])),
+          ]),
+        ),
+      UiLayout.lounge => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(children: [
+            Expanded(
+                child: Container(
+                    decoration: BoxDecoration(color: pal.surfaceHi, borderRadius: BorderRadius.circular(4)),
+                    alignment: Alignment.bottomLeft,
+                    padding: const EdgeInsets.all(4),
+                    child: box(pal.accent, w: 20, h: 4))),
+            const SizedBox(height: 4),
+            Row(children: [
+              for (var i = 0; i < 5; i++)
+                Padding(padding: const EdgeInsets.only(right: 3), child: box(i == 1 ? pal.accent : pal.surface, w: 22, h: 12, r: 3)),
+            ]),
           ]),
         ),
       UiLayout.spotlight => Column(children: [

@@ -54,6 +54,7 @@ String destLabel(UiLayout l, int i) => switch ((l, i)) {
       (UiLayout.playground, 0) => 'Playground',
       (UiLayout.console, 0) => 'Console',
       (UiLayout.deck, 0) => 'Picks',
+      (UiLayout.lounge, 0) => 'Lounge',
       (UiLayout.cable, 0) => 'Live',
       (UiLayout.cable, 1) => 'Channels',
       _ => kDests[i].label,
@@ -75,6 +76,7 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
       (UiLayout.playground, 0) => selected ? Icons.child_care : Icons.child_care_outlined,
       (UiLayout.console, 0) => Icons.terminal,
       (UiLayout.deck, 0) => selected ? Icons.style : Icons.style_outlined,
+      (UiLayout.lounge, 0) => selected ? Icons.weekend : Icons.weekend_outlined,
       (UiLayout.cable, 1) => selected ? Icons.list : Icons.list,
       _ => selected ? kDests[i].selectedIcon : kDests[i].icon,
     };
@@ -111,6 +113,7 @@ List<int> topTabs(UiLayout l) => switch (l) {
       UiLayout.playground => (bar: [0, 5, 6], more: <int>[]),
       UiLayout.console => (bar: [0, 1, 2, 3], more: [4, 5, 6]),
       UiLayout.deck => (bar: [0, 1, 3, 4], more: [2, 5, 6]),
+      UiLayout.lounge => (bar: [0, 2, 3, 4], more: [1, 5, 6]),
     };
 
 /// Bottom navigation for phones: four main screens and a More sheet for the rest.

@@ -137,6 +137,8 @@ every release. The first build signed with your key has to be installed after un
 - A mini player: picture-in-picture inside the app, a small draggable window that keeps playing while you browse and
   opens the full player again with the same stream. The Guide, the Control Room and Prime Time play the selected channel
   in a preview. Live, the Guide and the Control Room share channel filters (words, quality, country, favorites, guide data, order)
+- Cast to TV (experimental): the player's Cast button finds Chromecasts and TVs with Chromecast built in on your Wi-Fi and
+  plays the stream there (not on the web build; untested on real hardware). For AirPlay use the system's Screen Mirroring
 - Backup / restore (clipboard JSON; passwords are never included)
 - Player (media_kit / libmpv: MKV, TS, HLS, MP4), designed around remote use like mpvNova:
   - controls hidden: OK = pause, Left/Right = seek 10s, Up/Down = next/previous channel
@@ -153,7 +155,7 @@ every release. The first build signed with your key has to be installed after un
 - Phone setup: on the connect screen, "Set up from your phone" shows a QR code and a 4-digit PIN; the phone opens a small
   page served by the app on your home network and sends the login back, so no typing with a remote. The server runs only
   while that screen is open, locks after 5 wrong PINs, and nothing leaves the local network (native apps only)
-- Twenty layouts, chosen in Settings > Appearance > Layout (the choice is per device): **Marquee** (a featured title on Home, a
+- Twenty-one layouts (grouped in the picker, with a one-press way back to the one you had), chosen in Settings > Appearance > Layout (the choice is per device): **Marquee** (a featured title on Home, a
   slim icon rail, rows of posters), **Control Room** (categories, a numbered channel list with what is on now, and a
   details pane; built for flipping live channels), **Spotlight** (a poster wall where the focused title gets a details
   panel, with a single navigation pill), **Prime Time** (the TV guide is Home, with the highlighted programme's details
@@ -162,7 +164,7 @@ every release. The first build signed with your key has to be installed after un
   now/next banner; Up and Down change channel), **Index** (big type, almost no posters, the lightest to run), **Glass** (frosted panels over a soft
   backdrop, with a dock), **Bento** (a board of flat colored tiles), **Library** (a tree on the left and dense rows,
   like a media server), **Orbit** (sections on a big dial that you spin), **Mood** (asks what you feel like watching, then
-  shows a shelf), **Mosaic** (four channel tiles at once with the sound on one), **Tonight** (an evening planner: one timeline of what is on now, what starts later, what you are halfway through and what you saved), **Globe** (live TV by country on a dotted world map), **Playground** (big colored tiles for a Kids profile, with a bedtime and a PIN-guarded Grown-ups button), **Console** (a prompt that finds things as you type, with slash commands) and **Deck** (a deck of picks to skip, save or play). Each has its own colors and a phone version.
+  shows a shelf), **Mosaic** (four channel tiles at once with the sound on one), **Tonight** (an evening planner: one timeline of what is on now, what starts later, what you are halfway through and what you saved), **Globe** (live TV by country on a dotted world map), **Playground** (big colored tiles for a Kids profile, with a bedtime and a PIN-guarded Grown-ups button), **Console** (a prompt that finds things as you type, with slash commands) and **Deck** (a deck of picks to skip, save or play), **Lounge** (a live channel in the top half and a strip to surf). Each has its own colors and a phone version.
   Cable Box and Mosaic play their channels live on the home screen (muted, except the Mosaic tile that has the sound; only
   while visible; Settings > Appearance > Live pictures turns it off)
 - Free public channels: Settings > Source (or the connect screen) can browse the public iptv-org and Free-TV playlist
@@ -184,6 +186,7 @@ Platform folders are generated, not committed:
 ```sh
 flutter create . --project-name streamboss --org com.streamboss
 dart run tool/patch_macos.dart     # macOS: network entitlement (the sandboxed app can't connect without it)
+dart run tool/patch_ios.dart       # iOS: Bonjour + local-network text so Cast can find TVs
 dart run tool/patch_android.dart   # Android TV / Google TV / Fire TV manifest (leanback launcher, INTERNET, cleartext http, the switchable icons)
 dart run tool/patch_icons.dart     # the StreamBoss icon in the generated iOS, macOS, Windows and web projects
 flutter pub get

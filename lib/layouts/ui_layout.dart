@@ -1,5 +1,17 @@
 import 'package:flutter/material.dart';
 
+/// How the layout picker groups the looks, so a long roster stays easy to scan.
+enum LayoutGroup {
+  everyday('Everyday', 'Rows of posters and a menu. The safe choices.'),
+  liveTv('Live TV', 'Built around channels and what is on now.'),
+  suggest('Decide for me', 'Start from a suggestion or a question instead of a menu.'),
+  simple('Simple and family', 'Few things on screen, easy to learn.'),
+  unusual('Something different', 'Unusual ways to move through a library.');
+
+  final String label, blurb;
+  const LayoutGroup(this.label, this.blurb);
+}
+
 /// The selectable looks (Settings > Appearance > Layout). Each one changes the navigation,
 /// the Home screen and the browse screens, and carries its own palette.
 enum UiLayout {
@@ -42,11 +54,22 @@ enum UiLayout {
   console('Console',
       'A prompt. Type to find channels, movies and series as you type, or start with a slash for a command. Plain and fast.'),
   deck('Deck',
-      'A deck of picks for tonight. Skip, save or play with four keys, or swipe on a phone.');
+      'A deck of picks for tonight. Skip, save or play with four keys, or swipe on a phone.'),
+  lounge('Lounge',
+      'A live channel playing in the top half and a strip of channels under it. Move along the strip to surf; OK goes full screen.');
 
   final String label;
   final String blurb;
   const UiLayout(this.label, this.blurb);
+
+  /// Where the layout picker lists this look.
+  LayoutGroup get group => switch (this) {
+        marquee || daylight || spotlight || control || bento || glass => LayoutGroup.everyday,
+        cable || prime || mosaic || lounge || globe => LayoutGroup.liveTv,
+        tonight || deck || mood || console => LayoutGroup.suggest,
+        hub || indexList || playground => LayoutGroup.simple,
+        coverflow || orbit || library => LayoutGroup.unusual,
+      };
 
   static UiLayout fromKey(String key) => UiLayout.values
       .firstWhere((l) => l.name == key, orElse: () => UiLayout.marquee);
@@ -298,6 +321,17 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
     line: Color(0x66FFF4E0),
   );
 
+  static const lounge = LayoutPalette(
+    bg: Color(0xFF17161A),
+    surface: Color(0xFF232228),
+    surfaceHi: Color(0xFF302F37),
+    accent: Color(0xFF2DD4BF),
+    accent2: Color(0xFF99F0E4),
+    text: Color(0xFFF2F1F4),
+    muted: Color(0xFF9C9AA6),
+    line: Color(0xFF3A3942),
+  );
+
   static LayoutPalette forLayout(UiLayout l) => switch (l) {
         UiLayout.marquee => marquee,
         UiLayout.control => control,
@@ -319,6 +353,7 @@ class LayoutPalette extends ThemeExtension<LayoutPalette> {
         UiLayout.playground => playground,
         UiLayout.console => console,
         UiLayout.deck => deck,
+        UiLayout.lounge => lounge,
       };
 
   /// The palette of the current theme; Marquee's when none is installed (tests, previews).

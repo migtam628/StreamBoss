@@ -32,6 +32,7 @@ class BrowseScreen extends StatelessWidget {
       case UiLayout.library:
         return ControlView(kind: kind, catalog: catalog);
       case UiLayout.cable:
+      case UiLayout.lounge:
       case UiLayout.indexList:
       case UiLayout.bento:
       case UiLayout.orbit:

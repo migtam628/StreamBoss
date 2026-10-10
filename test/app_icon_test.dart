@@ -86,6 +86,8 @@ void main() {
       final st = await pump(t);
       await t.scrollUntilVisible(find.text('APP ICON'), 400, scrollable: find.byType(Scrollable).first);
       expect(find.text('APP ICON'), findsOneWidget);
+      await t.drag(find.byType(Scrollable).first, const Offset(0, -250));
+      await t.pumpAndSettle();
       for (final i in AppIcon.values) {
         expect(find.text(i.label), findsOneWidget, reason: i.label);
       }
