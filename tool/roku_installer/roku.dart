@@ -46,12 +46,13 @@ String digestAuthorization({
   final ha2 = _md5('$method:$uri');
   final response =
       useQop ? _md5('$ha1:$nonce:$nc:$cn:auth:$ha2') : _md5('$ha1:$nonce:$ha2');
+  // The order curl uses, which is what a Roku's small web server has been tried with.
   final parts = [
     'username="$user"',
     'realm="$realm"',
     'nonce="$nonce"',
     'uri="$uri"',
-    if (useQop) ...['qop=auth', 'nc=$nc', 'cnonce="$cn"'],
+    if (useQop) ...['cnonce="$cn"', 'nc=$nc', 'qop=auth'],
     'response="$response"',
     if (challenge['opaque'] != null) 'opaque="${challenge['opaque']}"',
     'algorithm=MD5',
@@ -75,6 +76,7 @@ String _randomHex(int bytes) {
   required String fileField,
   required String fileName,
   required List<int> file,
+  String fileType = 'application/octet-stream',
   String? boundary,
 }) {
   final b = boundary ?? '----streamboss${_randomHex(8)}';
@@ -84,7 +86,7 @@ String _randomHex(int bytes) {
         '--$b\r\nContent-Disposition: form-data; name="${e.key}"\r\n\r\n${e.value}\r\n'));
   }
   out.add(utf8.encode(
-      '--$b\r\nContent-Disposition: form-data; name="$fileField"; filename="$fileName"\r\nContent-Type: application/octet-stream\r\n\r\n'));
+      '--$b\r\nContent-Disposition: form-data; name="$fileField"; filename="$fileName"\r\nContent-Type: $fileType\r\n\r\n'));
   out.add(file);
   out.add(utf8.encode('\r\n--$b--\r\n'));
   return (body: out.toBytes(), contentType: 'multipart/form-data; boundary=$b');
@@ -95,7 +97,11 @@ enum InstallOutcome { installed, identical, failed, unknown }
 class InstallResult {
   final InstallOutcome outcome;
   final String message;
-  const InstallResult(this.outcome, this.message);
+
+  /// What the Roku printed on its debug console while installing (the line of a compile error), if we could read it.
+  final String details;
+  const InstallResult(this.outcome, this.message, {this.details = ''});
+  InstallResult withDetails(String d) => InstallResult(outcome, message, details: d);
   bool get ok =>
       outcome == InstallOutcome.installed ||
       outcome == InstallOutcome.identical;
@@ -125,6 +131,25 @@ InstallResult parseInstallResult(String html) {
   }
   return const InstallResult(InstallOutcome.unknown,
       'The Roku answered, but not with a message this installer knows.');
+}
+
+/// The lines of a Roku's debug console worth showing after a failed install: errors, compile messages, file names.
+String consoleErrors(String log, {int max = 12}) {
+  final lines = log
+      .split(RegExp(r'[\r\n]+'))
+      .map((l) => l.trim())
+      .where((l) => l.isNotEmpty)
+      .toList();
+  final hits = <String>[];
+  for (final l in lines) {
+    if (RegExp(r'error|fail|compil|pkg:/|not found|undefined', caseSensitive: false)
+            .hasMatch(l) &&
+        !hits.contains(l)) {
+      hits.add(l.length > 220 ? '${l.substring(0, 220)}...' : l);
+    }
+  }
+  final shown = hits.isNotEmpty ? hits : lines.reversed.take(8).toList().reversed.toList();
+  return shown.length > max ? shown.sublist(shown.length - max).join('\n') : shown.join('\n');
 }
 
 // --- Finding Rokus -------------------------------------------------------------------------------------------
@@ -186,12 +211,16 @@ class RokuClient {
   final String host;
   final int installerPort; // 80 on a real Roku
   final int ecpPort; // 8060 on a real Roku
+  final int consolePort; // 8085 on a real Roku: the debug console, where it prints compile errors
+  final Duration consoleWait; // how long to listen to it after a failed install
   final Duration timeout;
   final HttpClient _http;
 
   RokuClient(this.host,
       {this.installerPort = 80,
       this.ecpPort = 8060,
+      this.consolePort = 8085,
+      this.consoleWait = const Duration(seconds: 2),
       this.timeout = const Duration(seconds: 20)})
       : _http = HttpClient()..connectionTimeout = const Duration(seconds: 6);
 
@@ -264,8 +293,50 @@ class RokuClient {
   }
 
   /// Sends [zip] to the Roku's installer. [user] is `rokudev`; [password] is the one chosen on the TV.
+  ///
+  /// Roku firmware differs in what its upload form wants (the button is "Install" or "Replace", and some versions
+  /// want an empty `passwd` field), so a 400 ("bad request") is answered by trying the next way of sending it.
   Future<InstallResult> install(List<int> zip, String password,
       {String user = 'rokudev', String fileName = 'streamboss.zip'}) async {
+    const ways = [
+      _UploadWay('Replace', true, 'application/octet-stream'),
+      _UploadWay('Install', true, 'application/octet-stream'),
+      _UploadWay('Install', false, 'application/octet-stream'),
+      _UploadWay('Replace', false, 'application/zip'),
+    ];
+    var lastBody = '';
+    for (final way in ways) {
+      final r = await _upload(zip, password, user, fileName, way);
+      if (r.status == 401) {
+        throw const RokuException(
+            'The Roku refused the password. It is the one you chose on the TV when you turned developer mode on (the user name is rokudev).');
+      }
+      if (r.status == 400) {
+        lastBody = r.body;
+        continue;
+      }
+      if (r.status != 200) {
+        throw RokuException(
+            'The Roku answered ${r.status}${_snippet(r.body)}.');
+      }
+      return parseInstallResult(r.body);
+    }
+    throw RokuException(
+        'The Roku answered 400 (bad request) to every way this installer sends the file${_snippet(lastBody)}. '
+        'Try the Roku\'s own upload page instead (docs/ROKU.md, "Install by hand").');
+  }
+
+  static String _snippet(String body) {
+    final text = body
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (text.isEmpty) return '';
+    return ' ("${text.length > 160 ? '${text.substring(0, 160)}...' : text}")';
+  }
+
+  Future<({int status, String body})> _upload(List<int> zip, String password,
+      String user, String fileName, _UploadWay way) async {
     const path = '/plugin_install';
     // 1. An unsigned request, to get the challenge.
     final probe = await (await _http.getUrl(_installer(path)).timeout(timeout))
@@ -282,9 +353,10 @@ class RokuClient {
     final challenge = parseChallenge(header);
     // 2. The upload, signed.
     final mp = buildMultipart(
-        fields: const {'mysubmit': 'Install'},
+        fields: {'mysubmit': way.submit, if (way.passwdField) 'passwd': ''},
         fileField: 'archive',
         fileName: fileName,
+        fileType: way.fileType,
         file: zip);
     final req = await _http.postUrl(_installer(path)).timeout(timeout);
     req.headers
@@ -301,13 +373,33 @@ class RokuClient {
     req.add(mp.body);
     final res = await req.close().timeout(const Duration(minutes: 2));
     final body = await res.transform(utf8.decoder).join();
-    if (res.statusCode == 401) {
-      throw const RokuException(
-          'The Roku refused the password. It is the one you chose on the TV when you turned developer mode on (the user name is rokudev).');
+    return (status: res.statusCode, body: body);
+  }
+
+  /// [install], and when it does not work, the Roku's own words: its debug console is read while the file goes
+  /// in, and the error lines (a compile error names the file and line) are put in [InstallResult.details].
+  Future<InstallResult> installWithLog(List<int> zip, String password,
+      {String user = 'rokudev',
+      String fileName = 'streamboss.zip'}) async {
+    final log = StringBuffer();
+    Socket? console;
+    try {
+      console = await Socket.connect(host, consolePort,
+          timeout: const Duration(seconds: 3));
+      console.listen((d) => log.write(utf8.decode(d, allowMalformed: true)),
+          onError: (_) {}, cancelOnError: true);
+    } catch (_) {
+      console = null; // no console to read: the install still goes ahead
     }
-    if (res.statusCode != 200)
-      throw RokuException('The Roku answered ${res.statusCode}.');
-    return parseInstallResult(body);
+    try {
+      final r = await install(zip, password, user: user, fileName: fileName);
+      if (r.ok || console == null) return r;
+      await Future<void>.delayed(consoleWait);
+      final details = consoleErrors(log.toString());
+      return details.isEmpty ? r : r.withDetails(details);
+    } finally {
+      console?.destroy();
+    }
   }
 
   /// Starts the sideloaded channel.
@@ -316,6 +408,13 @@ class RokuClient {
     final res = await req.close().timeout(timeout);
     await res.drain<void>();
   }
+}
+
+class _UploadWay {
+  final String submit; // the value of the form's button: Install or Replace
+  final bool passwdField; // an empty `passwd` field, as the Roku's own page sends
+  final String fileType;
+  const _UploadWay(this.submit, this.passwdField, this.fileType);
 }
 
 class RokuException implements Exception {

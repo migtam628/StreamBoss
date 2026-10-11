@@ -97,8 +97,8 @@ function parseM3u(body as String) as Object
             ' skip
         else if Left(line, 7) = "#EXTINF" then
             attrs = {}
-            for each m in attrRe.MatchAll(line)
-                attrs[LCase(m[1])] = m[2]
+            for each hit in attrRe.MatchAll(line)
+                attrs[LCase(hit[1])] = hit[2]
             end for
             ' the title follows the first comma that is outside quotes
             comma = 0
@@ -114,7 +114,10 @@ function parseM3u(body as String) as Object
             end for
             name = ""
             if comma > 0 then name = Mid(line, comma + 1).Trim()
-            if name = "" then name = "Channel " + (n + 1).ToStr()
+            if name = "" then
+                number = n + 1
+                name = "Channel " + number.ToStr()
+            end if
         else if Left(line, 1) <> "#" then
             group = "Other"
             if attrs["group-title"] <> invalid and attrs["group-title"] <> "" then group = attrs["group-title"]

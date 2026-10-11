@@ -47,6 +47,12 @@ If the Roku has *Settings > System > Advanced system settings > Control by mobil
 **Limited**, the installer cannot press keys for you and cannot start the channel; it says so, and you do those
 two things by hand.
 
+**If it says "Install Failure: Compilation Failed"** the Roku accepted the file but could not compile the channel.
+The Roku prints the exact line on its debug console: the installer reads it and shows it under the error (send me
+those lines). To see it yourself, before installing run `telnet <the Roku's address> 8085` (on a Mac or Linux
+`nc <address> 8085`), install again from another window and read what scrolls past; `Syntax Error` lines name the
+file and line.
+
 > The installer is tested against a stand-in for a Roku's developer web server, not against a real Roku. If it
 > does not work on yours, use the browser steps below and tell me what it printed.
 

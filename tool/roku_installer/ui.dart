@@ -81,6 +81,7 @@ class InstallerUi {
   List<_Step> _steps = [];
   String _state = 'idle'; // idle, running, done, failed
   String _message = '';
+  String _details = ''; // what the Roku printed, when an install failed
   bool _launchFailed = false;
 
   static String _newToken() {
@@ -274,6 +275,7 @@ class InstallerUi {
     ];
     _state = 'running';
     _message = '';
+    _details = '';
     _launchFailed = false;
     unawaited(_run(host, password));
     return {'started': true};
@@ -290,13 +292,14 @@ class InstallerUi {
         ..note = '${file.name} (${file.tag})';
       i++;
       _steps[i].state = 'run';
-      final result = await c.install(file.bytes, password);
+      final result = await c.installWithLog(file.bytes, password);
       if (!result.ok) {
         _steps[i]
           ..state = 'fail'
           ..note = result.message;
         _state = 'failed';
         _message = result.message;
+        _details = result.details;
         return;
       }
       _steps[i]
@@ -336,6 +339,7 @@ class InstallerUi {
   Map<String, Object?> _status() => {
         'state': _state,
         'message': _message,
+        'details': _details,
         'steps': [for (final s in _steps) s.toJson()],
       };
 }

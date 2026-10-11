@@ -42,6 +42,7 @@ code,kbd{font:14px ui-monospace,Menlo,Consolas,monospace;background:var(--bg);bo
 .ic.run{border-color:var(--accent);border-top-color:transparent;animation:spin 1s linear infinite}
 .ic.done{background:var(--ok);border-color:var(--ok);color:#fff}
 .ic.fail{background:var(--bad);border-color:var(--bad);color:#fff}
+.log{margin:10px 0 0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto}
 .note{display:block;color:var(--dim);font-size:14px;overflow-wrap:anywhere}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.ic.run{animation:none}}
@@ -234,6 +235,10 @@ footer{color:var(--dim);font-size:14px;margin-top:20px;display:flex;justify-cont
         r.className = 'result bad';
         r.appendChild(el('h3', '', 'It did not install'));
         r.appendChild(el('p', '', st.message || 'Something went wrong.'));
+        if(st.details){
+          r.appendChild(el('p', 'muted', 'What the Roku printed (send this if you ask for help):'));
+          r.appendChild(el('pre', 'log', st.details));
+        }
         r.appendChild(el('p', 'muted', 'Fix that and press Install again.'));
       }
     }).catch(function(e){ busy = false; $('install').disabled = false; $('result').hidden = false; $('result').className = 'result bad'; $('result').textContent = e.message; });

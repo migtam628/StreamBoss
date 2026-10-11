@@ -163,7 +163,8 @@ void main() {
       final c = roku.client();
       final r = await c.install(zip, 'hunter2');
       expect(r.outcome, InstallOutcome.installed);
-      expect(roku.uploadedSubmit, 'Install');
+      expect(roku.uploadedSubmit, 'Replace');
+      expect(roku.uploadedPasswd, '');
       expect(roku.uploadedFile, zip);
       await c.launchDev();
       expect(roku.launched, isTrue);
@@ -187,6 +188,106 @@ void main() {
       roku.result = 'Identical to previous version -- not replacing.';
       expect((await c.install([0x50, 0x4b], 'hunter2')).ok, isTrue);
       c.close();
+    });
+
+    group('a Roku that is particular about the upload', () {
+      final zip = [0x50, 0x4b, 3, 4, 1, 2, 3];
+
+      test('a 400 is answered by trying the other button name', () async {
+        roku.acceptSubmits = {'Install'};
+        final c = roku.client();
+        final r = await c.install(zip, 'hunter2');
+        expect(r.ok, isTrue);
+        expect(roku.attempts, ['Replace+passwd', 'Install+passwd']);
+        expect(roku.uploadedFile, zip);
+        c.close();
+      });
+
+      test('a 400 for the empty passwd field is answered by leaving it out', () async {
+        roku.rejectPasswdField = true;
+        final c = roku.client();
+        expect((await c.install(zip, 'hunter2')).ok, isTrue);
+        expect(roku.attempts.last, isNot(contains('passwd')));
+        expect(roku.uploadedFile, zip);
+        c.close();
+      });
+
+      test('a Roku that wants the passwd field gets it on the first try', () async {
+        roku.requirePasswdField = true;
+        final c = roku.client();
+        expect((await c.install(zip, 'hunter2')).ok, isTrue);
+        expect(roku.attempts, ['Replace+passwd']);
+        c.close();
+      });
+
+      test('a wrong password is not retried', () async {
+        roku.acceptSubmits = {'Install'};
+        final c = roku.client();
+        await expectLater(c.install(zip, 'wrong'), throwsA(isA<RokuException>()));
+        expect(roku.attempts, isEmpty);
+        c.close();
+      });
+
+      test('when every way gets a 400 the answer says so, with what the Roku said', () async {
+        roku.alwaysBadRequest = true;
+        final c = roku.client();
+        await expectLater(
+            c.install(zip, 'hunter2'),
+            throwsA(isA<RokuException>().having((e) => e.message, 'message',
+                allOf(contains('400'), contains('Bad Request'), contains('upload page')))));
+        expect(roku.attempts, hasLength(4));
+        c.close();
+      });
+    });
+
+    group('the Roku\'s own words after a failed install', () {
+      final zip = [0x50, 0x4b, 3, 4, 1, 2, 3];
+
+      test('a compile error from the debug console comes with the result', () async {
+        roku.result = 'Application Received: 7 bytes stored.<br>Install Failure: Compilation Failed. MainScene';
+        roku.consoleText =
+            "------ Compiling dev 'StreamBoss' ------\r\n"
+            'Syntax Error. (compile error &h02) in pkg:/components/MainScene.brs(27)\r\n'
+            '------ Running dev ------\r\n';
+        final c = roku.client();
+        final r = await c.installWithLog(zip, 'hunter2');
+        expect(r.ok, isFalse);
+        expect(r.message, contains('Compilation Failed'));
+        expect(r.details, contains('MainScene.brs(27)'));
+        expect(r.details, isNot(contains('Running dev')));
+        c.close();
+      });
+
+      test('a good install carries no details', () async {
+        roku.consoleText = 'Something harmless\r\n';
+        final c = roku.client();
+        final r = await c.installWithLog(zip, 'hunter2');
+        expect(r.ok, isTrue);
+        expect(r.details, isEmpty);
+        c.close();
+      });
+
+      test('a Roku with no console still installs and still reports', () async {
+        roku.result = 'Install Failure: Compilation Failed.';
+        final c = RokuClient('127.0.0.1',
+            installerPort: roku.installer.port,
+            ecpPort: roku.ecp.port,
+            consolePort: 1);
+        final r = await c.installWithLog(zip, 'hunter2');
+        expect(r.ok, isFalse);
+        expect(r.details, isEmpty);
+        c.close();
+      });
+
+      test('the lines worth showing are picked out of a noisy console', () {
+        const log = 'boot noise\r\nmore noise\r\n'
+            'Syntax Error. (compile error &h02) in pkg:/components/MainScene.brs(27)\r\n'
+            'Syntax Error. (compile error &h02) in pkg:/components/MainScene.brs(27)\r\n'
+            'Dev: Compilation failed\r\nlast line\r\n';
+        expect(consoleErrors(log), 'Syntax Error. (compile error &h02) in pkg:/components/MainScene.brs(27)\nDev: Compilation failed');
+        expect(consoleErrors('one\ntwo\nthree'), 'one\ntwo\nthree');
+        expect(consoleErrors(''), '');
+      });
     });
 
     test('the Developer Settings sequence is the remote\'s own', () async {

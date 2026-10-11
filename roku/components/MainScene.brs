@@ -14,7 +14,7 @@ sub init()
 
     m.lib = { live: [], movies: [], series: [], liveCats: [], movieCats: [], seriesCats: [] }
     m.tabNames = ["Live", "Movies", "Series", "My List", "Search", "Settings"]
-    m.tab = 0
+    m.tabIdx = 0
     m.curCats = []
     m.curItems = []
     m.savedItems = invalid ' list to restore after leaving an episode view
@@ -23,8 +23,8 @@ sub init()
     m.playItem = invalid
     m.lastSaved = 0
     m.favs = regReadJson("fav", [])
-    m.pos = regReadJson("pos", {})
-    m.cfg = regReadJson("cfg", { type: "", url: "", user: "", pass: "" })
+    m.resume = regReadJson("pos", {})
+    m.cfg = regReadJson("cfg", { kind: "", url: "", user: "", pass: "" })
 
     buildTabs()
     m.tabs.observeField("itemFocused", "onTabFocus")
@@ -38,7 +38,7 @@ sub init()
     m.fetch.observeField("result", "onFetchResult")
     m.top.findNode("osdTimer").observeField("fire", "onOsdTimer")
 
-    if m.cfg.type = "" then
+    if m.cfg.kind = "" then
         showSetup()
     else
         connect()
@@ -88,9 +88,9 @@ end sub
 
 sub refreshSetup()
     typeName = "Xtream"
-    if m.cfg.type = "m3u" then typeName = "M3U playlist"
+    if m.cfg.kind = "m3u" then typeName = "M3U playlist"
     rows = ["Source type: " + typeName]
-    if m.cfg.type = "m3u" then
+    if m.cfg.kind = "m3u" then
         rows.push("Playlist URL: " + m.cfg.url)
     else
         rows.push("Server URL: " + m.cfg.url)
@@ -110,7 +110,7 @@ end sub
 sub onSetupSelect()
     row = m.setupRows[m.setup.itemSelected]
     if Left(row, 11) = "Source type" then
-        if m.cfg.type = "m3u" then m.cfg.type = "xtream" else m.cfg.type = "m3u"
+        if m.cfg.kind = "m3u" then m.cfg.kind = "xtream" else m.cfg.kind = "m3u"
         refreshSetup()
     else if Left(row, 12) = "Playlist URL" or Left(row, 10) = "Server URL" then
         askText("URL", "url", false)
@@ -119,11 +119,11 @@ sub onSetupSelect()
     else if Left(row, 8) = "Password" then
         askText("Password", "pass", true)
     else if row = "Connect" then
-        if m.cfg.type = "" then m.cfg.type = "xtream"
+        if m.cfg.kind = "" then m.cfg.kind = "xtream"
         regWrite("cfg", FormatJson(m.cfg))
         connect()
     else if row = "Try demo mode" then
-        m.cfg = { type: "demo", url: "", user: "", pass: "" }
+        m.cfg = { kind: "demo", url: "", user: "", pass: "" }
         connect()
     end if
 end sub
@@ -164,11 +164,11 @@ end sub
 sub connect()
     hideSetup()
     setStatus("Loading your library...")
-    if m.cfg.type = "demo" then
+    if m.cfg.kind = "demo" then
         applyLibrary(demoLibrary())
         return
     end if
-    m.fetch.request = { type: m.cfg.type, cfg: m.cfg }
+    m.fetch.request = { kind: m.cfg.kind, cfg: m.cfg }
     m.fetch.control = "RUN"
 end sub
 
@@ -176,7 +176,7 @@ sub onFetchResult()
     res = m.fetch.result
     if res = invalid then return
 
-    if res.type = "episodes" then
+    if res.kind = "episodes" then
         if res.ok then showEpisodes(res.episodes) else setStatus("Episodes failed: " + res.error)
         return
     end if
@@ -193,7 +193,7 @@ sub applyLibrary(res as Object)
     m.lib = res
     m.connected = true
     srcName = "Demo"
-    if m.cfg.type <> "demo" then srcName = m.cfg.url
+    if m.cfg.kind <> "demo" then srcName = m.cfg.url
     setStatus(srcName + "   " + m.lib.live.count().ToStr() + " channels, " + m.lib.movies.count().ToStr() + " movies, " + m.lib.series.count().ToStr() + " series")
     m.tabs.jumpToItem = 0
     showTab(0)
@@ -218,7 +218,7 @@ sub onTabSelect()
 end sub
 
 sub showTab(idx as Integer)
-    m.tab = idx
+    m.tabIdx = idx
     m.savedItems = invalid
     if idx = 0 then
         setCats(m.lib.liveCats)
@@ -244,14 +244,14 @@ sub setCats(cats as Object)
     for each c in cats
         m.curCats.push(c)
     end for
-    if m.tab >= 3 then m.curCats = []
+    if m.tabIdx >= 3 then m.curCats = []
     titles = []
     for each c in m.curCats
         titles.push(c.name)
     end for
     m.cats.content = makeList(titles)
     m.cats.jumpToItem = 0
-    if m.tab < 3 then showCategory(0)
+    if m.tabIdx < 3 then showCategory(0)
 end sub
 
 sub onCatFocus()
@@ -266,8 +266,8 @@ sub showCategory(idx as Integer)
     if m.curCats.count() = 0 then return
     if idx < 0 or idx >= m.curCats.count() then return
     source = m.lib.live
-    if m.tab = 1 then source = m.lib.movies
-    if m.tab = 2 then source = m.lib.series
+    if m.tabIdx = 1 then source = m.lib.movies
+    if m.tabIdx = 2 then source = m.lib.series
     catId = m.curCats[idx].id
     if catId = "" then
         setItems(source)
@@ -301,7 +301,7 @@ end sub
 
 sub onItemSelect()
     idx = m.items.itemSelected
-    if m.tab = 5 then
+    if m.tabIdx = 5 then
         runSetting(idx)
         return
     end if
@@ -324,7 +324,7 @@ sub runSetting(idx as Integer)
         regWrite("fav", "[]")
         setStatus("My List cleared")
     else if idx = 3 then
-        m.pos = {}
+        m.resume = {}
         regWrite("pos", "{}")
         setStatus("Resume history cleared")
     else
@@ -365,14 +365,14 @@ end sub
 ' ---- series ----------------------------------------------------------------
 
 sub openSeries(item as Object)
-    if m.cfg.type <> "xtream" then
+    if m.cfg.kind <> "xtream" then
         setStatus("Series are only available on Xtream sources")
         return
     end if
     m.savedItems = m.curItems
     m.seriesTitle = item.name
     setStatus("Loading episodes...")
-    m.fetch.request = { type: "episodes", cfg: m.cfg, seriesId: item.id }
+    m.fetch.request = { kind: "episodes", cfg: m.cfg, seriesId: item.id }
     m.fetch.control = "RUN"
 end sub
 
@@ -411,22 +411,22 @@ sub toggleFavorite(item as Object)
     m.favs = kept
     regWrite("fav", FormatJson(kept))
     if removed then setStatus("Removed from My List") else setStatus("Added to My List")
-    if m.tab = 3 then setItems(m.favs)
+    if m.tabIdx = 3 then setItems(m.favs)
 end sub
 
 sub savePosition(item as Object, secs as Integer, total as Integer)
     if item.kind = "live" or total < 120 then return
     k = itemKey(item)
     if secs > total * 0.97 then
-        m.pos.Delete(k)
+        m.resume.Delete(k)
     else if secs > 10 then
-        m.pos[k] = secs
+        m.resume[k] = secs
     end if
-    if m.pos.Count() > 80 then
-        keys = m.pos.Keys()
-        m.pos.Delete(keys[0])
+    if m.resume.Count() > 80 then
+        keys = m.resume.Keys()
+        m.resume.Delete(keys[0])
     end if
-    regWrite("pos", FormatJson(m.pos))
+    regWrite("pos", FormatJson(m.resume))
 end sub
 
 ' ---- playback --------------------------------------------------------------
@@ -448,7 +448,7 @@ sub startItem(idx as Integer)
     content.streamFormat = guessFormat(item.url)
     content.live = (item.kind = "live")
     k = itemKey(item)
-    if item.kind <> "live" and m.pos[k] <> invalid then content.PlayStart = m.pos[k]
+    if item.kind <> "live" and m.resume[k] <> invalid then content.PlayStart = m.resume[k]
     m.lastSaved = 0
     m.video.content = content
     m.video.control = "play"
@@ -473,8 +473,8 @@ end sub
 sub onVideoState()
     state = m.video.state
     if state = "finished" and m.playItem <> invalid and m.playItem.kind <> "live" then
-        m.pos.Delete(itemKey(m.playItem))
-        regWrite("pos", FormatJson(m.pos))
+        m.resume.Delete(itemKey(m.playItem))
+        regWrite("pos", FormatJson(m.resume))
         closeVideo()
     else if state = "error" then
         setStatus("Playback error: " + m.video.errorMsg)
@@ -525,7 +525,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         return false
     end if
 
-    if key = "options" and m.items.hasFocus() and m.tab <> 5 then
+    if key = "options" and m.items.hasFocus() and m.tabIdx <> 5 then
         idx = m.items.itemFocused
         if idx >= 0 and idx < m.curItems.count() then toggleFavorite(m.curItems[idx])
         return true
@@ -536,7 +536,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             setItems(m.savedItems)
             m.savedItems = invalid
             return true
-        else if m.items.hasFocus() and m.tab < 3 then
+        else if m.items.hasFocus() and m.tabIdx < 3 then
             m.cats.setFocus(true)
             return true
         else if m.items.hasFocus() or m.cats.hasFocus() then
@@ -547,7 +547,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     end if
 
     if key = "right" then
-        if m.tabs.hasFocus() and m.tab < 3 then
+        if m.tabs.hasFocus() and m.tabIdx < 3 then
             m.cats.setFocus(true)
             return true
         else if m.tabs.hasFocus() or m.cats.hasFocus() then
@@ -555,7 +555,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             return true
         end if
     else if key = "left" then
-        if m.items.hasFocus() and m.tab < 3 then
+        if m.items.hasFocus() and m.tabIdx < 3 then
             m.cats.setFocus(true)
             return true
         else if m.items.hasFocus() or m.cats.hasFocus() then

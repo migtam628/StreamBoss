@@ -8,6 +8,20 @@ import '../../tool/roku_installer/roku.dart';
 /// remote-control port on another.
 class FakeRoku {
   late HttpServer installer, ecp;
+  late ServerSocket console;
+  final _consoleClients = <Socket>[];
+
+  /// What the debug console prints while a file is being installed (a compile error, say).
+  String consoleText = '';
+
+  /// A firmware that is particular about the upload: only these button values are accepted (null: any), an empty
+  /// `passwd` field is refused or required, or everything is refused with 400.
+  Set<String>? acceptSubmits;
+  bool rejectPasswdField = false;
+  bool requirePasswdField = false;
+  bool alwaysBadRequest = false;
+  final attempts = <String>[]; // "Replace+passwd", "Install", ... for each upload that arrived
+  String? uploadedPasswd;
   final password = 'hunter2';
   final keys = <String>[];
   var launched = false;
@@ -50,8 +64,25 @@ class FakeRoku {
       }
       if (req.method == 'POST') {
         final text = latin1.decode(body.toBytes());
-        uploadedSubmit =
+        final submit =
             RegExp(r'name="mysubmit"\r\n\r\n([^\r]*)').firstMatch(text)?[1];
+        final hasPasswd = text.contains('name="passwd"');
+        attempts.add('$submit${hasPasswd ? '+passwd' : ''}');
+        if (alwaysBadRequest ||
+            (acceptSubmits != null && !acceptSubmits!.contains(submit)) ||
+            (rejectPasswdField && hasPasswd) ||
+            (requirePasswdField && !hasPasswd)) {
+          req.response.statusCode = 400;
+          req.response.write('<html><body>Bad Request</body></html>');
+          await req.response.close();
+          return;
+        }
+        uploadedSubmit = submit;
+        uploadedPasswd =
+            RegExp(r'name="passwd"\r\n\r\n([^\r]*)').firstMatch(text)?[1];
+        for (final c in _consoleClients) {
+          c.write(consoleText);
+        }
         final start =
             text.indexOf('\r\n\r\n', text.indexOf('name="archive"')) + 4;
         final end = text.lastIndexOf('\r\n--');
@@ -63,6 +94,8 @@ class FakeRoku {
       }
       await req.response.close();
     });
+    console = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    console.listen(_consoleClients.add);
     ecp = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     ecp.listen((req) async {
       await req.drain<void>();
@@ -81,9 +114,16 @@ class FakeRoku {
     });
   }
 
-  RokuClient client() =>
-      RokuClient('127.0.0.1', installerPort: installer.port, ecpPort: ecp.port);
+  RokuClient client() => RokuClient('127.0.0.1',
+      installerPort: installer.port,
+      ecpPort: ecp.port,
+      consolePort: console.port,
+      consoleWait: const Duration(milliseconds: 150));
   Future<void> stop() async {
+    for (final c in _consoleClients) {
+      c.destroy();
+    }
+    await console.close();
     await installer.close(force: true);
     await ecp.close(force: true);
   }

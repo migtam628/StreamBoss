@@ -168,6 +168,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm i -g brighterscript brs-node
+      - run: python3 ../tool/roku_lint.py .   # what the Roku's own compiler rejects but bsc lets through
       - run: bsc --project bsconfig.json --copyToStaging=false --createPackage=false
       - run: brs-cli components/lib/Common.brs tests/common.test.brs | tee /tmp/roku-test.txt && grep -q "ALL PASSED" /tmp/roku-test.txt
       - run: zip -r "../StreamBoss-${{ inputs.version || 'dev' }}-roku.zip" manifest source components images

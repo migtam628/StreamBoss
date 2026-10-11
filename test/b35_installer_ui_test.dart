@@ -199,7 +199,7 @@ void main() {
       final steps = (st['steps'] as List).cast<Map>();
       expect(steps.map((s) => s['state']), everyElement('done'));
       expect(steps.first['note'], contains('StreamBoss-test-roku.zip'));
-      expect(roku.uploadedSubmit, 'Install');
+      expect(roku.uploadedSubmit, 'Replace');
       expect(roku.uploadedFile, zip);
       expect(roku.launched, isTrue);
     });
@@ -226,6 +226,17 @@ void main() {
       st = await finished();
       expect(st['state'], 'done');
       expect(roku.launched, isTrue);
+    });
+
+    test('a compile error on the Roku shows the line the Roku printed', () async {
+      roku.result = 'Application Received: 7 bytes stored.<br>Install Failure: Compilation Failed. MainScene';
+      roku.consoleText = 'Syntax Error. (compile error &h02) in pkg:/components/MainScene.brs(27)\r\n';
+      ui = await open();
+      await call('/api/install', json: {'host': '127.0.0.1', 'password': roku.password});
+      final st = await finished();
+      expect(st['state'], 'failed');
+      expect(st['message'], contains('Compilation Failed'));
+      expect(st['details'], contains('MainScene.brs(27)'));
     });
 
     test('a failed install shows what the Roku said', () async {

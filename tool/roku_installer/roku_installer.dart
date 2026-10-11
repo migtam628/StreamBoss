@@ -171,8 +171,11 @@ Future<int> main(List<String> args) async {
     final password = _arg(args, '--password') ??
         _ask('Developer password you chose on the TV:', secret: true);
     stdout.writeln('Installing $label ...');
-    final result = await roku.install(zip, password);
+    final result = await roku.installWithLog(zip, password);
     stdout.writeln(result.message);
+    if (result.details.isNotEmpty) {
+      stdout.writeln('\nWhat the Roku printed:\n${result.details}');
+    }
     if (!result.ok) return 1;
     if (!args.contains('--no-launch')) {
       try {
