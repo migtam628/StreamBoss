@@ -20,12 +20,14 @@ newest channel, sends it to the Roku and starts it, so there is no zip to handle
 
 1. Download the installer for your computer from the
    [Releases page](https://github.com/migtam628/StreamBoss/releases) (Assets):
-   `StreamBoss-<version>-roku-installer-windows.exe`, `...-macos` (Apple silicon) or `...-linux`.
+   `StreamBoss-<version>-roku-installer-windows.exe`, `...-macos.zip` (Apple silicon) or `...-linux.tar.gz`.
    - **Windows:** double-click it. If Windows SmartScreen warns, choose *More info* then *Run anyway* (the file
      is not code-signed).
-   - **macOS:** in Terminal, `chmod +x StreamBoss-*-roku-installer-macos && ./StreamBoss-*-roku-installer-macos`
-     (or right-click, *Open*, the first time). Intel Macs: use the browser steps below.
-   - **Linux:** `chmod +x` it and run it in a terminal.
+   - **macOS:** unzip it (double-click the .zip) and double-click **Install StreamBoss on Roku.command**. It opens
+     Terminal and runs the installer. The first time macOS may say it cannot verify the file (it is not
+     notarized): right-click the file, choose *Open*, then *Open* again. If you moved the files apart, keep
+     `roku-installer` next to the `.command` file. Intel Macs: use the browser steps below.
+   - **Linux:** `tar xzf StreamBoss-*-roku-installer-linux.tar.gz && ./roku-installer` in a terminal.
 2. It lists the Rokus on your network and you pick one (or type the address from Roku **Settings > Network >
    About**). The computer must be on the same network as the Roku.
 3. If **developer mode** is off, the installer offers to open the *Developer Settings* screen on the TV for you

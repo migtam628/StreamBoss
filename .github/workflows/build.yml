@@ -179,9 +179,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, target: windows, exe: ".exe" }
-          - { os: macos-latest,   target: macos,   exe: "" }
-          - { os: ubuntu-latest,  target: linux,   exe: "" }
+          - { os: windows-latest, target: windows }
+          - { os: macos-latest,   target: macos }
+          - { os: ubuntu-latest,  target: linux }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -195,7 +195,24 @@ jobs:
         working-directory: tool/roku_installer
         run: |
           mkdir -p ../../dist
-          dart compile exe roku_installer.dart -o "../../dist/StreamBoss-${{ inputs.version || 'dev' }}-roku-installer-${{ matrix.target }}${{ matrix.exe }}"
+          V="${{ inputs.version || 'dev' }}"
+          case "${{ matrix.target }}" in
+            windows)
+              dart compile exe roku_installer.dart -o "../../dist/StreamBoss-$V-roku-installer-windows.exe" ;;
+            macos)
+              # A bare binary downloads without the executable bit and Finder will not open it, so ship a zip
+              # with a double-clickable .command that opens Terminal and runs it (zip -X keeps the bits).
+              dart compile exe roku_installer.dart -o roku-installer
+              mkdir -p pack
+              cp roku-installer pack/roku-installer
+              cp "Install StreamBoss on Roku.command" pack/
+              chmod +x pack/roku-installer "pack/Install StreamBoss on Roku.command"
+              (cd pack && zip -X -r "../../../dist/StreamBoss-$V-roku-installer-macos.zip" .) ;;
+            linux)
+              dart compile exe roku_installer.dart -o roku-installer
+              chmod +x roku-installer
+              tar -czf "../../dist/StreamBoss-$V-roku-installer-linux.tar.gz" roku-installer ;;
+          esac
       - uses: actions/upload-artifact@v4
         with:
           name: streamboss-roku-installer-${{ matrix.target }}
