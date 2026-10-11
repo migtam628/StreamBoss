@@ -4,6 +4,9 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b27 - 2026-10-11
+- **Roku guide, wireframes and layout.** New [docs/ROKU.md](docs/ROKU.md): how to install the Roku channel (turn on developer mode, upload the zip from the release, update and remove it), how to connect a provider and use it (tabs, categories, My List, search, series, playback, a remote-control table), what it does not do, and a troubleshooting table. It includes twelve wireframes drawn from the channel's real source (setup, keyboard, Live, Movies, episodes, My List, Search, Settings, playback), a table of the exact positions and sizes of every part of the screen, and a diagram of where focus goes. The wireframes are plain SVG files in `docs/roku/wireframes/`, regenerated with `python3 tool/roku_wireframes.py docs/roku/wireframes`. The Roku channel itself is unchanged, and its screens still have not been tried on a real Roku.
+
 ## 0.3.0b26 - 2026-10-10
 - **Quicker, lighter channel changes.**
   - **Only the channel you are on is given to the player.** Before, opening a channel loaded the whole channel list (thousands of entries on a big provider) into the video player, which cost memory and slowed every change; it also let the player move on to the next channel by itself if a stream ended. Now the player has one stream, and the app switches channels itself. This applies to the full-screen player and the mini player. Up/Down zapping still waits for you to stop pressing (b22).

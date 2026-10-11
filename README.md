@@ -32,7 +32,7 @@ On a phone:
 | iOS | Flutter iOS |
 | Web | Flutter web (see note) |
 | Apple TV (tvOS) | Separate native SwiftUI app in [`tvos/`](tvos/) (Flutter doesn't support tvOS) |
-| Roku | Separate native channel in [`roku/`](roku/) (Roku can't run Flutter) |
+| Roku | Separate native channel in [`roku/`](roku/) (Roku can't run Flutter). Install and use: [docs/ROKU.md](docs/ROKU.md) |
 
 Note: browsers block mixed-content (http) streams and most IPTV servers lack CORS headers,
 so web works best with https + CORS-enabled providers.

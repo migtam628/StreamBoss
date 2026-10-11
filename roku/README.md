@@ -1,5 +1,7 @@
 # StreamBoss for Roku
 
+**Install and use guide, wireframes and layout: [docs/ROKU.md](../docs/ROKU.md).**
+
 Roku does not run Flutter, so this is a native SceneGraph / BrightScript channel.
 It is a player only: you supply your own Xtream or M3U provider.
 
