@@ -1,0 +1,10 @@
+name: roku_installer
+description: Installs the StreamBoss channel on a Roku in a few steps (finds the Roku, uploads the channel, starts it).
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  crypto: ^3.0.3

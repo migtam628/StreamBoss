@@ -99,6 +99,12 @@ adb install -r app-arm64-v8a-release.apk
 ```
 
 The APKs are signed for sideloading, not the Play Store (see "Android signing" below).
+
+**Fire TV / Android TV with the Downloader app:** open Downloader and enter the code **1652077** (or **9055023**
+if that one does not work) to fetch the newest StreamBoss.
+
+**Roku:** run the [Roku installer](docs/ROKU.md#install-the-easy-way-the-installer-program) from the release
+assets: it finds the Roku, installs the channel and starts it.
 On a TV the app appears in the apps row with its own banner; use the D-pad to navigate, OK to select,
 Back to go up. Android picture-in-picture is available from the player's controls.
 

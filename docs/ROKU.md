@@ -13,7 +13,36 @@ only**: you bring your own Xtream Codes login or M3U playlist from a service you
 - A computer with a web browser.
 - Your provider's details: either an **Xtream** server URL, username and password, or an **M3U playlist URL**.
 
-## Install (sideload)
+## Install (the easy way: the installer program)
+
+Instead of the browser steps below, run the **StreamBoss Roku installer**. It finds your Roku, downloads the
+newest channel, sends it to the Roku and starts it, so there is no zip to handle and no upload page.
+
+1. Download the installer for your computer from the
+   [Releases page](https://github.com/migtam628/StreamBoss/releases) (Assets):
+   `StreamBoss-<version>-roku-installer-windows.exe`, `...-macos` (Apple silicon) or `...-linux`.
+   - **Windows:** double-click it. If Windows SmartScreen warns, choose *More info* then *Run anyway* (the file
+     is not code-signed).
+   - **macOS:** in Terminal, `chmod +x StreamBoss-*-roku-installer-macos && ./StreamBoss-*-roku-installer-macos`
+     (or right-click, *Open*, the first time). Intel Macs: use the browser steps below.
+   - **Linux:** `chmod +x` it and run it in a terminal.
+2. It lists the Rokus on your network and you pick one (or type the address from Roku **Settings > Network >
+   About**). The computer must be on the same network as the Roku.
+3. If **developer mode** is off, the installer offers to open the *Developer Settings* screen on the TV for you
+   (it sends the remote's secret key sequence). On the TV choose **Enable installer and restart**, accept the
+   licence, **choose a password** and wait for the restart. This one step has to be done on the TV.
+4. Type that password when asked. The channel is installed and starts on the Roku.
+
+Options for scripts: `--ip 192.168.1.40 --password ... --zip StreamBoss-...-roku.zip --no-launch`.
+If the Roku has *Settings > System > Advanced system settings > Control by mobile apps* set to **Disabled** or
+**Limited**, the installer cannot press keys for you and cannot start the channel; it says so, and you do those
+two things by hand.
+
+> The installer is tested against a stand-in for a Roku's developer web server, not against a real Roku. If it
+> does not work on yours, use the browser steps below and tell me what it printed.
+
+## Install by hand (browser)
+
 
 The channel is not in the Roku Channel Store, so it is installed through the Roku's developer mode.
 

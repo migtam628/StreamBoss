@@ -4,6 +4,11 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b32 - 2026-10-11
+- **An easier way to put StreamBoss on a Roku: the Roku installer.** A small program (`StreamBoss-<version>-roku-installer-windows.exe`, `-macos` for Apple silicon, `-linux`, on each release) that replaces the browser upload page. It finds the Rokus on your network, lets you pick one, offers to open the Developer Settings screen on the TV for you, downloads the newest channel from the releases, uploads it with the password you chose on the TV, and starts it. `--ip`, `--password`, `--zip` and `--no-launch` are there for scripts. Steps are in `docs/ROKU.md`. It is tested against a stand-in for a Roku's developer web server, **not a real Roku**: if it fails on yours, say what it printed. The Roku still has to have developer mode turned on once, on the TV.
+- **Fire TV and Android TV:** the README now gives the Downloader codes, **1652077** and **9055023**.
+- **Not in this version:** a Roku Channel Store listing (or a private-channel link, which would be the simplest install of all) needs a Roku developer account and a signed package; the installer is the next best thing without one.
+
 ## 0.3.0b31 - 2026-10-11
 - **Move your data between devices, without the clipboard.** New **Settings > Sync**: create an account (e-mail and password) on a small sync server of your own, sign in on your other devices, and they keep these in step: the settings (not the ones that depend on the device: the layout, screen size, decoder, where you last were), saved sources, profiles and their PIN, My List, collections, watched marks, resume positions, edited channels and reminders. It syncs by itself when StreamBoss opens and closes, a little after you change something, and every ten minutes; **Sync now** does it at once.
   - **Changes from two devices are merged, not overwritten.** Add a favorite on the phone and another on the TV while apart and both are there afterwards; remove a title on one device and it goes from the other too; a setting changed on both is decided by whichever syncs last.
