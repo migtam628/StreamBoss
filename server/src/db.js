@@ -5,8 +5,9 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 export function openDb(dataDir) {
-  mkdirSync(dataDir, { recursive: true });
-  const db = new DatabaseSync(dataDir === ':memory:' ? ':memory:' : join(dataDir, 'streamboss-sync.db'));
+  const memory = dataDir === ':memory:'; // tests
+  if (!memory) mkdirSync(dataDir, { recursive: true });
+  const db = new DatabaseSync(memory ? ':memory:' : join(dataDir, 'streamboss-sync.db'));
   db.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
