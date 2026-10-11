@@ -4,6 +4,11 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b33 - 2026-10-11
+- **A website for StreamBoss.** `site/index.html` is a one-page site (a TV-remote look, dark first with a light switch): a hero, a "Pick your screen" row of tiles that works with the arrow keys and shows the install steps for each device (the Fire TV Downloader codes, the Roku installer, APKs, desktop archives), what the app does, a plain "Player only" statement and the questions people ask first. It opens on the device the visitor is probably using, reads the newest release from GitHub and links straight to its files (falling back to the releases page when GitHub cannot be reached), and works with JavaScript off as far as the links go. The design concepts it came from are in `site/concepts/`.
+- **To put it online:** `.github/workflows/pages.yml` publishes the page to GitHub Pages when `site/` changes on `main`. One setting to turn on first: repository Settings > Pages > Build and deployment > Source: **GitHub Actions**. The address will be `https://migtam628.github.io/StreamBoss/` unless you add a domain.
+- The app itself is unchanged in this version.
+
 ## 0.3.0b32 - 2026-10-11
 - **An easier way to put StreamBoss on a Roku: the Roku installer.** A small program (`StreamBoss-<version>-roku-installer-windows.exe`, `-macos` for Apple silicon, `-linux`, on each release) that replaces the browser upload page. It finds the Rokus on your network, lets you pick one, offers to open the Developer Settings screen on the TV for you, downloads the newest channel from the releases, uploads it with the password you chose on the TV, and starts it. `--ip`, `--password`, `--zip` and `--no-launch` are there for scripts. Steps are in `docs/ROKU.md`. It is tested against a stand-in for a Roku's developer web server, **not a real Roku**: if it fails on yours, say what it printed. The Roku still has to have developer mode turned on once, on the TV.
 - **Fire TV and Android TV:** the README now gives the Downloader codes, **1652077** and **9055023**.

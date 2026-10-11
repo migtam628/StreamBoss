@@ -3,6 +3,8 @@
 A cross-platform IPTV player for the Xtream or M3U service **you already have**. It ships with
 no content. Inspired by apps like Lumen, with its own UI.
 
+The website (a one-page install guide for every device) lives in [`site/`](site/) and is published with GitHub Pages.
+
 ## Screenshots
 
 The 21 layouts on a TV (Settings > Appearance > Layout; every one also has a phone version). Titles and channels are a made-up demo library.
