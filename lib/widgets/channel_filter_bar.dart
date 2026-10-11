@@ -6,6 +6,7 @@ import '../layouts/ui_layout.dart';
 import '../services/channel_filter.dart';
 import '../state/app_state.dart';
 import 'tv.dart';
+import 'voice_search.dart';
 import 'tv_text_field.dart';
 
 /// A search field and a Filters button for the live channel lists. It edits [AppState.channelFilter],
@@ -80,6 +81,7 @@ class _ChannelFilterBarState extends State<ChannelFilterBar> {
             ),
           ),
         ),
+        VoiceButton(onWords: (w) => s.setChannelFilter(s.channelFilter.copyWith(text: w))),
         const SizedBox(width: 8),
         FocusSurface(
           radius: 24,

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../layouts/ui_layout.dart';
 import '../models/media.dart';
 import '../screens/open_item.dart';
+import '../screens/player_screen.dart';
+import '../services/nav_guard.dart';
 import '../services/mini_player.dart';
 import '../services/reminders.dart';
 import '../state/app_state.dart';
@@ -16,6 +18,17 @@ bool openReminderChannel(AppState app, String key) {
   final ch = live.where((c) => c.key == key).firstOrNull ?? app.catalog.live.where((c) => c.key == key).firstOrNull;
   if (ch == null || ch.kind != MediaKind.live) return false;
   openItem(ctx, ch, queue: live);
+  return true;
+}
+
+/// Plays the title chosen in the Android TV "Continue watching" row, from where it stopped. False when it is
+/// not in the history any more (another profile, or cleared).
+bool openResumeTitle(AppState app, String key) {
+  final ctx = MiniPlayer.navigatorKey.currentContext;
+  final item = app.recents.where((e) => e.key == key).firstOrNull;
+  if (ctx == null || item == null || item.streamUrl == null || !NavGuard.allow()) return false;
+  Navigator.of(ctx).push(MaterialPageRoute(
+      builder: (_) => PlayerScreen(title: item.name, url: item.streamUrl!, item: item, startAt: app.resumeFor(item))));
   return true;
 }
 
@@ -47,6 +60,15 @@ class _ReminderHostState extends State<ReminderHost> {
         if (a.pendingOpenChannel != pending) return;
         // Wait for the library when the app was started by the notification and has not loaded it yet.
         if (openReminderChannel(a, pending) || a.catalog.live.isNotEmpty) a.pendingOpenChannel = null;
+      });
+    }
+    final resume = app.pendingResumeKey;
+    if (resume != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final a = context.read<AppState>();
+        if (a.pendingResumeKey != resume) return;
+        a.pendingResumeKey = null;
+        openResumeTitle(a, resume);
       });
     }
     final r = app.bannerReminder;

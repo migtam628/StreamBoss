@@ -11,6 +11,7 @@ void main() {
     exit(1);
   }
   _patchNotifications();
+  _patchVoice(f);
   var x = f.readAsStringSync();
   if (x.contains('NSBonjourServices')) {
     stdout.writeln('Already patched.');
@@ -52,4 +53,20 @@ void _patchNotifications() {
   x = x.replaceFirstMapped(anchor, (m) => '${m[1]}$line');
   d.writeAsStringSync(x);
   stdout.writeln('Patched AppDelegate.swift for reminder notifications.');
+}
+
+/// Voice search: iOS asks the person for the microphone and for speech recognition, and shows these texts.
+void _patchVoice(File plist) {
+  var x = plist.readAsStringSync();
+  if (x.contains('NSSpeechRecognitionUsageDescription')) return;
+  const add = '''
+	<key>NSMicrophoneUsageDescription</key>
+	<string>StreamBoss uses the microphone for voice search.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>StreamBoss uses speech recognition to search by voice.</string>
+''';
+  final i = x.lastIndexOf('</dict>');
+  if (i < 0) return;
+  plist.writeAsStringSync('${x.substring(0, i)}$add${x.substring(i)}');
+  stdout.writeln('Added the voice search texts to Info.plist.');
 }

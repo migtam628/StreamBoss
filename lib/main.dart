@@ -7,6 +7,7 @@ import 'models/media.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/profile_picker_screen.dart';
 import 'screens/setup_screen.dart';
+import 'services/watch_next.dart';
 import 'services/crash_guard.dart';
 import 'services/local_reminder_notifier.dart';
 import 'services/perf_log.dart';
@@ -71,6 +72,12 @@ Future<void> main() async {
     if (launchedBy != null) state.pendingOpenChannel = launchedBy;
   }
   state.startReminderWatch();
+  // Android TV: the Continue watching row on the home screen, and opening the title chosen there.
+  if (AndroidWatchNext.platformSupported) {
+    final wn = AndroidWatchNext(onLaunch: state.openFromWatchNext);
+    state.attachWatchNext(wn);
+    state.pendingResumeKey = await wn.launchKey();
+  }
   WidgetsBinding.instance.addPostFrameCallback((_) => PerfLog.mark('first frame'));
   runApp(MultiProvider(
     providers: [

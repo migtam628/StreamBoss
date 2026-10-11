@@ -132,6 +132,8 @@ every release. The first build signed with your key has to be installed after un
 - Passwords stored in the platform keystore (flutter_secure_storage), not in plain prefs
 - Live TV, Movies, Series (with episodes), categories, search
 - Home shelves: Continue watching, My List (long-press to favorite; on TV use the button on the movie page)
+- Android TV / Google TV: a "Continue watching" row on the system home screen (Watch Next) that resumes the title where you stopped
+- Voice search: a microphone button in the search fields (phones, Macs, Android TV with a voice remote)
 - TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
 - Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header, plain or gzipped `.xml.gz`; D-pad friendly) with a now/next list fallback
 - Four app icons (Crown, Bold B, Signal, Screen) to switch between at will: Settings > Appearance > App icon (Android, Android TV

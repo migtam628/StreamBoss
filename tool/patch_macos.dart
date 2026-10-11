@@ -4,7 +4,11 @@
 // phone-setup page (lib/services/pairing_io.dart) can't accept connections.
 import 'dart:io';
 
-const _keys = ['com.apple.security.network.client', 'com.apple.security.network.server'];
+const _keys = [
+  'com.apple.security.network.client',
+  'com.apple.security.network.server',
+  'com.apple.security.device.audio-input', // voice search
+];
 
 void main() {
   var patched = 0;
@@ -33,6 +37,7 @@ void main() {
   }
   stdout.writeln(patched == 0 ? 'Already patched.' : 'Added network entitlements to $patched file(s).');
   _patchDockIcon();
+  _patchVoiceTexts();
 }
 
 /// Lets the app change its Dock icon (Settings > Appearance > App icon, lib/services/app_icon.dart):
@@ -67,4 +72,22 @@ void _patchDockIcon() {
   x = x.replaceFirst(anchor, '$anchor$channel');
   f.writeAsStringSync(x);
   stdout.writeln('Added the Dock icon channel.');
+}
+
+/// Voice search: macOS shows these texts when it asks for the microphone and speech recognition.
+void _patchVoiceTexts() {
+  final f = File('macos/Runner/Info.plist');
+  if (!f.existsSync()) return;
+  final x = f.readAsStringSync();
+  if (x.contains('NSSpeechRecognitionUsageDescription')) return;
+  const add = '''
+	<key>NSMicrophoneUsageDescription</key>
+	<string>StreamBoss uses the microphone for voice search.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>StreamBoss uses speech recognition to search by voice.</string>
+''';
+  final i = x.lastIndexOf('</dict>');
+  if (i < 0) return;
+  f.writeAsStringSync('${x.substring(0, i)}$add${x.substring(i)}');
+  stdout.writeln('Added the voice search texts to Info.plist.');
 }

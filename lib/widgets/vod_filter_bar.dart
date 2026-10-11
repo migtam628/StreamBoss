@@ -6,6 +6,7 @@ import '../layouts/ui_layout.dart';
 import '../services/vod_filter.dart';
 import '../state/app_state.dart';
 import 'tv.dart';
+import 'voice_search.dart';
 import 'tv_text_field.dart';
 
 /// A search field and a Filters button for the Movies, Series and Anime lists. It edits the
@@ -76,6 +77,7 @@ class _VodFilterBarState extends State<VodFilterBar> {
             ),
           ),
         ),
+        VoiceButton(onWords: (w) => s.setVodFilter(widget.list, s.vodFilter(widget.list).copyWith(text: w))),
         const SizedBox(width: 8),
         FocusSurface(
           radius: 24,

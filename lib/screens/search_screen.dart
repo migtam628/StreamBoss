@@ -8,6 +8,7 @@ import '../services/search.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/media_tile.dart';
+import '../widgets/voice_search.dart';
 import 'open_item.dart';
 import '../widgets/channel_sheet.dart';
 import '../widgets/tv_text_field.dart';
@@ -176,15 +177,22 @@ class _SearchScreenState extends State<SearchScreen> {
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
             hintText: 'Search channels, movies, series',
-            suffixIcon: _q.isEmpty
-                ? null
-                : IconButton(
+            suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [
+              VoiceButton(onWords: (w) {
+                _c.text = w;
+                _c.selection = TextSelection.collapsed(offset: w.length);
+                _setQuery(w);
+                s.rememberSearch(w);
+              }),
+              if (_q.isNotEmpty)
+                IconButton(
                     tooltip: 'Clear',
                     icon: const Icon(Icons.close),
                     onPressed: () {
                       _c.clear();
                       _setQuery('');
                     }),
+            ]),
           ),
           onChanged: _setQuery,
           onSubmitted: (v) => s.rememberSearch(v),

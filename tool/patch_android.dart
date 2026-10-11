@@ -18,6 +18,8 @@ void main() {
     _patchBoot();
     _patchUpdate();
     _patchReminders();
+    _patchVoice();
+    _patchWatchNext();
     stdout.writeln('Already patched.');
     return;
   }
@@ -50,6 +52,8 @@ void main() {
   _patchBoot();
   _patchUpdate();
   _patchReminders();
+  _patchVoice();
+  _patchWatchNext();
   stdout.writeln('Patched AndroidManifest.xml for TV.');
 }
 
@@ -196,6 +200,49 @@ void _patchReminders() {
   stdout.writeln('Patched build.gradle.kts for core library desugaring.');
 }
 
+/// Voice search (the microphone button in the search fields): the speech plugin needs the microphone
+/// permission and, since Android 11, to be allowed to see the device's speech recognition service.
+void _patchVoice() {
+  final f = File('android/app/src/main/AndroidManifest.xml');
+  var x = f.readAsStringSync();
+  if (x.contains('android.permission.RECORD_AUDIO')) return;
+  x = x.replaceFirstMapped(
+      RegExp(r'<manifest[^>]*>'),
+      (m) => '${m[0]}\n'
+          '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n'
+          '    <uses-permission android:name="android.permission.BLUETOOTH"/>\n'
+          '    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>\n'
+          '    <uses-feature android:name="android.hardware.microphone" android:required="false"/>');
+  if (!x.contains('android.speech.RecognitionService')) {
+    const q = '    <queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>\n    </queries>\n';
+    x = x.contains('<queries>') ? x.replaceFirst('<queries>', '<queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>') : x.replaceFirst('<application', '$q    <application');
+  }
+  f.writeAsStringSync(x);
+  stdout.writeln('Added the microphone permission for voice search.');
+}
+
+/// The Continue watching row on the Android TV home screen ("Watch Next"): choosing a card opens the app
+/// through a `streamboss://resume?key=...` link, which MainActivity hands to Dart.
+void _patchWatchNext() {
+  final f = File('android/app/src/main/AndroidManifest.xml');
+  var x = f.readAsStringSync();
+  if (x.contains('android:scheme="streamboss"')) return;
+  const filter = '''            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="streamboss" android:host="resume"/>
+            </intent-filter>
+        </activity>''';
+  x = x.replaceFirst('</activity>', filter);
+  // Flutter would otherwise take the link as a screen to route to; MainActivity hands it to Dart itself.
+  if (!x.contains('flutter_deeplinking_enabled')) {
+    x = x.replaceFirst('</application>', '        <meta-data android:name="flutter_deeplinking_enabled" android:value="false"/>\n    </application>');
+  }
+  f.writeAsStringSync(x);
+  stdout.writeln('Added the streamboss://resume link for the Continue watching row.');
+}
+
 /// Updating from inside the app (Settings > About > Check for updates): the permission to install
 /// packages, which Android also asks the person to allow once for this app.
 void _patchUpdate() {
@@ -243,6 +290,7 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
+import android.os.Bundle
 import android.util.Rational
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -251,6 +299,8 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private var pipChannel: MethodChannel? = null
     private var updateChannel: MethodChannel? = null
+    private var watchNextChannel: MethodChannel? = null
+    private var launchKey: String? = null
     private val installAction = "$pkg.INSTALL_STATUS"
 
     // The system installer reports back here: it asks for the person's go-ahead, then succeeds or fails.
@@ -299,6 +349,67 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    // --- Continue watching: Android TV's Watch Next row ------------------------------------------------
+
+    private fun resumeKey(intent: Intent?): String? {
+        val d = intent?.data ?: return null
+        return if (d.scheme == "streamboss" && d.host == "resume") d.getQueryParameter("key") else null
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        launchKey = resumeKey(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val key = resumeKey(intent)
+        if (key != null) watchNextChannel?.invokeMethod("launch", key)
+    }
+
+    // Replaces the app's Watch Next cards with [items] (maps with key, title, poster, position, duration).
+    private fun publishWatchNext(items: List<Map<String, Any?>>) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val resolver = contentResolver
+        val uri = android.media.tv.TvContract.WatchNextPrograms.CONTENT_URI
+        val existing = HashMap<String, Long>()
+        resolver.query(uri, arrayOf("_id", "internal_provider_id"), null, null, null)?.use { c ->
+            while (c.moveToNext()) {
+                val id = c.getString(1)
+                if (id != null) existing[id] = c.getLong(0)
+            }
+        }
+        val wanted = HashSet<String>()
+        val now = System.currentTimeMillis()
+        for ((index, m) in items.withIndex()) {
+            val key = m["key"] as? String ?: continue
+            wanted.add(key)
+            val poster = (m["poster"] as? String)?.takeIf { it.startsWith("http") }
+            val v = android.content.ContentValues()
+            v.put("watch_next_type", 0) // TYPE_CONTINUE
+            v.put("type", 0) // TYPE_MOVIE
+            v.put("title", m["title"] as? String ?: "")
+            v.put("internal_provider_id", key)
+            v.put("poster_art_uri", poster ?: "android.resource://" + packageName + "/drawable/banner")
+            v.put("poster_art_aspect_ratio", if (poster != null) 6 else 0) // 2:3 poster, else 16:9 banner
+            v.put("duration_millis", (m["duration"] as? Number)?.toInt() ?: 0)
+            v.put("last_playback_position_millis", (m["position"] as? Number)?.toInt() ?: 0)
+            // Newest first: the home screen orders by when you last engaged.
+            v.put("last_engagement_time_utc_millis", now - index * 1000L)
+            v.put(
+                "intent_uri",
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse("streamboss://resume?key=" + android.net.Uri.encode(key)))
+                    .setPackage(packageName).toUri(Intent.URI_INTENT_SCHEME)
+            )
+            val id = existing[key]
+            if (id != null) resolver.update(android.content.ContentUris.withAppendedId(uri, id), v, null, null)
+            else resolver.insert(uri, v)
+        }
+        for ((key, id) in existing) {
+            if (!wanted.contains(key)) resolver.delete(android.content.ContentUris.withAppendedId(uri, id), null, null)
+        }
+    }
+
     // The launcher icons (activity-aliases in the manifest, see tool/patch_android.dart).
     private val iconNames = listOf("crown", "bold", "signal", "screen")
 
@@ -334,6 +445,27 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     } else {
                         result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        val watchNext = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.streamboss/watchnext")
+        watchNextChannel = watchNext
+        watchNext.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "takeLaunch" -> {
+                    val key = launchKey
+                    launchKey = null
+                    result.success(key)
+                }
+                "publish" -> {
+                    try {
+                        @Suppress("UNCHECKED_CAST")
+                        publishWatchNext((call.arguments as? List<Map<String, Any?>>) ?: emptyList())
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false) // no Watch Next on this device
                     }
                 }
                 else -> result.notImplemented()

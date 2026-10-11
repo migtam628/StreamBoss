@@ -7,6 +7,7 @@ import '../../services/perf_log.dart';
 import '../../services/reminders.dart';
 import '../../services/time_format.dart';
 import '../../services/boot_launch.dart';
+import '../../services/watch_next.dart';
 import '../../widgets/screensaver.dart';
 import '../../layouts/common.dart';
 import '../../layouts/ui_layout.dart';
@@ -622,6 +623,18 @@ class AppearancePage extends StatelessWidget {
         options: const [(-1, 'Where I left off'), (0, 'Home'), (1, 'Live TV'), (2, 'Guide'), (3, 'Movies'), (4, 'Series'), (7, 'Anime'), (5, 'Search')],
         onChanged: (v) => st.set('startTab', v),
       ),
+      if (AndroidWatchNext.platformSupported)
+        SwitchRow(
+          icon: Icons.play_circle_outline,
+          title: 'Continue watching on the home screen',
+          subtitle: 'Android TV and Google TV: shows the films and episodes you are partway through as a row on the '
+              'TV home screen, so one press picks up where you stopped. Other devices ignore this.',
+          value: st.watchNextRow,
+          onChanged: (v) {
+            st.set('watchNextRow', v);
+            context.read<AppState>().publishWatchNext();
+          },
+        ),
       if (BootLaunch.supported)
         SwitchRow(
           icon: Icons.power_settings_new,

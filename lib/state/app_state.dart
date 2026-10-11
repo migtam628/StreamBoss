@@ -20,6 +20,7 @@ import '../services/catalog_cache.dart';
 import '../services/perf_log.dart';
 import '../services/reminder_notifier.dart';
 import '../services/reminders.dart';
+import '../services/watch_next.dart';
 import '../services/time_format.dart';
 import '../services/languages.dart';
 import '../services/channel_edits.dart';
@@ -188,6 +189,7 @@ class AppState extends ChangeNotifier {
       for (final s in (p.getStringList(_k('recents')) ?? const []))
         MediaItem.fromJson(jsonDecode(s) as Map<String, dynamic>),
     ]);
+    _watchNextSoon();
   }
 
   /// The catalog as it should be displayed: [catalog] with the user's filters applied.
@@ -627,6 +629,7 @@ class AppState extends ChangeNotifier {
     if (recents.length > 20) recents.removeLast();
     _prefs?.setStringList(
         _k('recents'), [for (final e in recents) jsonEncode(e.toJson())]);
+    _watchNextSoon();
     notifyListeners();
   }
 
@@ -635,12 +638,14 @@ class AppState extends ChangeNotifier {
   void clearRecents() {
     recents.clear();
     _prefs?.remove(_k('recents'));
+    _watchNextSoon();
     notifyListeners();
   }
 
   void clearPositions() {
     positions.clear();
     _prefs?.remove(_k('positions'));
+    _watchNextSoon();
     notifyListeners();
   }
 
@@ -678,9 +683,44 @@ class AppState extends ChangeNotifier {
       _prefs?.setString(_k('durations'), jsonEncode(durations));
     }
     _prefs?.setString(_k('positions'), jsonEncode(positions));
+    _watchNextSoon();
     // Deferred: this runs from State.dispose(), where notifying synchronously would
     // mark widgets dirty while the tree is locked.
     if (notify) Future.microtask(notifyListeners);
+  }
+
+  // --- Continue watching (Android TV home row) ---------------------------------------
+
+  WatchNextSink watchNext = const NoopWatchNext();
+  Timer? _watchNextTimer;
+
+  /// A title chosen in the Android TV home row; the app-wide host opens it and clears this.
+  String? pendingResumeKey;
+
+  /// The titles to resume, newest first.
+  List<ContinueEntry> get continueWatching => continueEntries(recents, positions, durations, watched: watched);
+
+  void attachWatchNext(WatchNextSink sink) {
+    watchNext = sink;
+    publishWatchNext();
+  }
+
+  /// Puts the current "Continue watching" list on the home screen row, or takes it off when the setting is off.
+  Future<void> publishWatchNext() async {
+    if (!watchNext.supported) return;
+    final on = _settings?.watchNextRow ?? true;
+    await watchNext.publish(on ? continueWatching : const []);
+  }
+
+  void _watchNextSoon() {
+    if (!watchNext.supported) return;
+    _watchNextTimer?.cancel();
+    _watchNextTimer = Timer(const Duration(seconds: 3), () => unawaited(publishWatchNext()));
+  }
+
+  void openFromWatchNext(String key) {
+    pendingResumeKey = key;
+    notifyListeners();
   }
 
   // --- Reminders ----------------------------------------------------------------
@@ -818,6 +858,7 @@ class AppState extends ChangeNotifier {
     }
     _prefs?.setStringList(_k('watched'), watched.toList());
     _prefs?.setString(_k('positions'), jsonEncode(positions));
+    _watchNextSoon();
     notifyListeners();
   }
 
