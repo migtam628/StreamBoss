@@ -15,4 +15,7 @@ Never reuse or move a tag. Details: README "Versioning".
 - Do not run `dart format` over the repo (it is not formatted that way and the diff explodes); format only files you create.
 - Gate before pushing: `flutter analyze` (clean) and `flutter test`. Check CI after each push; the build job also runs on Android, macOS, Windows, Linux, web, Roku and tvOS.
 - Branch: develop on `claude/cross-platform-media-app-o0v8rc`; do not open a PR unless asked.
+- `main` holds released code only. When the user says a version is tagged ("done tagged bN") and its CI is green, fast-forward it to
+  the tagged commit and check it: `git fetch origin && git push origin <sha>:refs/heads/main` (never force; if it is not a
+  fast-forward, stop and tell the user). Do not push work in progress to `main`.
 - Never put provider credentials in code, tests or commit messages.
