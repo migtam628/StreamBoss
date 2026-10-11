@@ -15,6 +15,7 @@ import '../widgets/play_options.dart';
 import '../widgets/tv.dart';
 import 'open_item.dart';
 import 'player_screen.dart';
+import '../l10n/l10n.dart';
 
 /// The movie page: a big picture with the title and facts, the play buttons, and tabs for the rest
 /// (Overview, Cast, More like this, Details).
@@ -90,30 +91,30 @@ class _DetailScreenState extends State<DetailScreen> {
             final left = resume == null ? null : Duration(milliseconds: (s.durations[item.key] ?? 0) - resume.inMilliseconds);
             final buttons = Wrap(spacing: 10, runSpacing: 10, children: [
               if (resume == null)
-                button(Icons.play_arrow, watched ? 'Watch again' : 'Play', () => _play(item, req: null), primary: true, autofocus: true)
+                button(Icons.play_arrow, watched ? tr('Watch again') : tr('Play'), () => _play(item, req: null), primary: true, autofocus: true)
               else if (auto) ...[
                 button(Icons.play_arrow, 'Resume ${clock(resume)}', () => _play(item, at: resume, req: null), primary: true, autofocus: true),
-                button(Icons.replay, 'Start over', () {
+                button(Icons.replay, tr('Start over'), () {
                   s.positions.remove(item.key);
                   _play(item, req: null);
                 }),
               ] else ...[
-                button(Icons.play_arrow, 'Play from start', () => _play(item, req: null), primary: true, autofocus: true),
+                button(Icons.play_arrow, tr('Play from start'), () => _play(item, req: null), primary: true, autofocus: true),
                 button(Icons.history, 'Resume ${clock(resume)}', () => _play(item, at: resume, req: null)),
               ],
-              button(Icons.tune, 'Play options', _options),
-              button(s.isFavorite(item) ? Icons.favorite : Icons.favorite_border, s.isFavorite(item) ? 'In My list' : 'My list',
+              button(Icons.tune, tr('Play options'), _options),
+              button(s.isFavorite(item) ? Icons.favorite : Icons.favorite_border, s.isFavorite(item) ? tr('In My list') : tr('My list'),
                   () => s.toggleFavorite(item)),
               button(Icons.collections_bookmark_outlined,
-                  s.collections.values.any((l) => l.contains(item.key)) ? 'In a collection' : 'Collection',
+                  s.collections.values.any((l) => l.contains(item.key)) ? tr('In a collection') : tr('Collection'),
                   () => showCollectionsSheet(context, item)),
               if (t?.trailerKey != null)
-                button(Icons.ondemand_video, 'Trailer', () => launchUrl(Uri.parse('https://www.youtube.com/watch?v=${t!.trailerKey}'), mode: LaunchMode.externalApplication)),
-              button(watched ? Icons.visibility_off_outlined : Icons.check_circle_outline, watched ? 'Mark not watched' : 'Mark watched',
+                button(Icons.ondemand_video, tr('Trailer'), () => launchUrl(Uri.parse('https://www.youtube.com/watch?v=${t!.trailerKey}'), mode: LaunchMode.externalApplication)),
+              button(watched ? Icons.visibility_off_outlined : Icons.check_circle_outline, watched ? tr('Mark not watched') : tr('Mark watched'),
                   () => s.setWatched([item], !watched)),
             ]);
 
-            const tabs = ['Overview', 'Cast', 'More like this', 'Details'];
+            final tabs = [tr('Overview'), tr('Cast'), tr('More like this'), tr('Details')];
             return ListView(children: [
               DetailsHero(
                 title: item.name,
@@ -158,13 +159,13 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget _overview(LayoutPalette p, String? overview, TmdbInfo? t) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: 8),
-        Text(overview ?? 'No description from your provider yet.', style: TextStyle(color: p.text, fontSize: 16, height: 1.45)),
+        Text(overview ?? tr('No description from your provider yet.'), style: TextStyle(color: p.text, fontSize: 16, height: 1.45)),
         if (t != null && t.genres.isNotEmpty) ...[
-          const DetailsHeading('Genres'),
+          DetailsHeading(tr('Genres')),
           MetaChips(t.genres),
         ],
         if (t != null && t.directors.isNotEmpty) ...[
-          const DetailsHeading('Directed by'),
+          DetailsHeading(tr('Directed by')),
           Text(t.directors.join(', '), style: TextStyle(color: p.text)),
         ],
       ]);
@@ -174,7 +175,7 @@ class _DetailScreenState extends State<DetailScreen> {
     if (people.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 12),
-        child: Text('No cast listed. Add a TMDB key in Settings for photos and roles.', style: TextStyle(color: p.muted)),
+        child: Text(tr('No cast listed. Add a TMDB key in Settings for photos and roles.'), style: TextStyle(color: p.muted)),
       );
     }
     return Padding(padding: const EdgeInsets.only(top: 12), child: PeopleWrap(people));
@@ -185,7 +186,7 @@ class _DetailScreenState extends State<DetailScreen> {
     if (more.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 12),
-        child: Text('Nothing else in this category.', style: TextStyle(color: LayoutPalette.of(context).muted)),
+        child: Text(tr('Nothing else in this category.'), style: TextStyle(color: LayoutPalette.of(context).muted)),
       );
     }
     return Padding(
@@ -198,33 +199,33 @@ class _DetailScreenState extends State<DetailScreen> {
     final tech = t?.tech;
     final versions = versionsOf(item, s.shown.movies);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const DetailsHeading('Facts'),
+      DetailsHeading(tr('Facts')),
       FactsTable([
-        ('Year', t?.year),
-        ('Runtime', t?.runtimeMin == null ? null : formatRuntime(t!.runtimeMin!)),
-        ('Genre', (t?.genres.isEmpty ?? true) ? null : t!.genres.join(' · ')),
-        ('Country', (t?.countries.isEmpty ?? true) ? null : t!.countries.join(' · ')),
-        ('Director', (t?.directors.isEmpty ?? true) ? null : t!.directors.join(', ')),
-        ('Age rating', t?.certification),
-        ('Language', lang == null ? null : languageName(lang)),
-        ('Category', s.vodCategoryName(item)),
+        (tr('Year'), t?.year),
+        (tr('Runtime'), t?.runtimeMin == null ? null : formatRuntime(t!.runtimeMin!)),
+        (tr('Genre'), (t?.genres.isEmpty ?? true) ? null : t!.genres.join(' · ')),
+        (tr('Country'), (t?.countries.isEmpty ?? true) ? null : t!.countries.join(' · ')),
+        (tr('Director'), (t?.directors.isEmpty ?? true) ? null : t!.directors.join(', ')),
+        (tr('Age rating'), t?.certification),
+        (tr('Language'), lang == null ? null : languageName(lang)),
+        (tr('Category'), s.vodCategoryName(item)),
       ]),
       if (tech != null) ...[
-        const DetailsHeading('The file'),
+        DetailsHeading(tr('The file')),
         FactsTable([
-          ('Video', [tech.resolution, tech.videoCodec?.toUpperCase()].whereType<String>().join(' · ')),
-          ('Audio', [tech.audioCodec?.toUpperCase(), tech.channels, tech.audioLanguage?.toUpperCase()].whereType<String>().join(' · ')),
-          ('Bitrate', tech.bitrateKbps == null ? null : '${(tech.bitrateKbps! / 1000).toStringAsFixed(1)} Mb/s'),
-          ('Container', tech.container?.toUpperCase()),
+          (tr('Video'), [tech.resolution, tech.videoCodec?.toUpperCase()].whereType<String>().join(' · ')),
+          (tr('Audio'), [tech.audioCodec?.toUpperCase(), tech.channels, tech.audioLanguage?.toUpperCase()].whereType<String>().join(' · ')),
+          (tr('Bitrate'), tech.bitrateKbps == null ? null : '${(tech.bitrateKbps! / 1000).toStringAsFixed(1)} Mb/s'),
+          (tr('Container'), tech.container?.toUpperCase()),
         ]),
       ],
       if (versions.isNotEmpty) ...[
-        const DetailsHeading('Other copies in your library'),
+        DetailsHeading(tr('Other copies in your library')),
         for (final v in versions)
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.movie_outlined, color: p.accent),
-            title: Text(qualityTagOf(v.name) ?? 'Copy', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+            title: Text(qualityTagOf(v.name) ?? tr('Copy'), style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
             subtitle: Text('${v.name}  ·  ${s.vodCategoryName(v)}', maxLines: 1, overflow: TextOverflow.ellipsis),
             onTap: () => openItem(context, v),
           ),

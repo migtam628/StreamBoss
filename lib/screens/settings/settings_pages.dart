@@ -42,6 +42,7 @@ import '../../state/settings_state.dart';
 import '../shader_screen.dart';
 import 'settings_widgets.dart';
 import '../../widgets/tv_text_field.dart';
+import '../../l10n/l10n.dart';
 
 class SettingsSection {
   final String title;
@@ -58,8 +59,8 @@ final settingsSections = <SettingsSection>[
   SettingsSection('Subtitles', 'Size, color, position', Icons.subtitles_outlined, (_) => const SubtitlesPage()),
   SettingsSection('Appearance', 'Text size, posters, start screen', Icons.palette_outlined, (_) => const AppearancePage()),
   SettingsSection('Library & guide', 'Filters, sorting, clock', Icons.video_library_outlined, (_) => const LibraryPage()),
-  SettingsSection('Reminders', 'Programmes you asked to be told about', Icons.notifications_none, (_) => const RemindersPage()),
-  SettingsSection('Profiles & PIN', 'Who is watching, Kids profiles, PIN lock', Icons.family_restroom, (_) => const ProfilesPage()),
+  SettingsSection('Reminders', tr('Programmes you asked to be told about'), Icons.notifications_none, (_) => const RemindersPage()),
+  SettingsSection('Profiles & PIN', tr('Who is watching, Kids profiles, PIN lock'), Icons.family_restroom, (_) => const ProfilesPage()),
   SettingsSection('Network & metadata', 'User-Agent, TMDB', Icons.public, (_) => const NetworkPage()),
   SettingsSection('Data & backup', 'Backup, history, reset', Icons.storage_outlined, (_) => const DataPage()),
   SettingsSection('About', 'Version, updates, support', Icons.info_outline, (_) => const AboutPage()),
@@ -101,8 +102,8 @@ class _SavedLibraryRowState extends State<_SavedLibraryRow> {
                 : 'The library is saved on this device so the next start is quick.';
         return ActionRow(
           icon: Icons.bolt_outlined,
-          title: 'Clear saved library',
-          subtitle: '$status ${mb < 0.05 ? '' : '(${mb.toStringAsFixed(1)} MB) '}The next start loads from the provider again.',
+          title: tr('Clear saved library'),
+          subtitle: '${tr(status)} ${mb < 0.05 ? '' : '(${mb.toStringAsFixed(1)} MB) '}${tr('The next start loads from the provider again.')}',
           onTap: () async {
             await CatalogCache.clear();
             if (!mounted) return;
@@ -128,7 +129,7 @@ class SourcePage extends StatelessWidget {
     final type = active == null
         ? '-'
         : active.type == SourceType.m3u && s.usingXtreamApi
-            ? 'M3U link (using the provider\'s Xtream API)'
+            ? tr('M3U link (using the provider\'s Xtream API)')
             : active.type.name.toUpperCase();
 
     return ListView(children: [
@@ -137,27 +138,28 @@ class SourcePage extends StatelessWidget {
         isThreeLine: true,
         leading: const Icon(Icons.dns),
         title: Text(active?.name ?? 'None'),
-        subtitle: Text('$type${s.sourceCount > 1 ? ' + ${s.sourceCount - 1} more' : ''}\n${lib.live.length} channels · ${lib.movies.length} movies · '
-            '${lib.series.length} series${hidden > 0 ? ' · $hidden hidden by filter' : ''}'),
+        subtitle: Text('$type${s.sourceCount > 1 ? trf(' + {n} more', {'n': s.sourceCount - 1}) : ''}\n'
+            '${trf('{live} channels · {movies} movies · {series} series', {'live': lib.live.length, 'movies': lib.movies.length, 'series': lib.series.length})}'
+            '${hidden > 0 ? trf(' · {n} hidden by filter', {'n': hidden}) : ''}'),
       ),
       if (s.account != null)
         ListTile(
           isThreeLine: true,
           leading: Icon(Icons.verified_user_outlined,
               color: (s.account!.daysLeft() ?? 999) <= 7 ? LayoutPalette.of(context).accent2 : null),
-          title: const Text('Account'),
+          title: Text(tr('Account')),
           subtitle: Text(s.account!.describe().join('\n')),
         ),
       ActionRow(
         icon: Icons.refresh,
-        title: 'Reload library',
-        subtitle: 'Fetch channels, movies and series again',
+        title: tr('Reload library'),
+        subtitle: tr('Fetch channels, movies and series again'),
         onTap: active == null ? null : () => s.activate(active),
       ),
       const _SavedLibraryRow(),
       ActionRow(
         icon: Icons.view_timeline_outlined,
-        title: 'Reload TV guide',
+        title: tr('Reload TV guide'),
         subtitle: s.hasGuideSource ? 'Download the programme guide again' : 'This source has no guide',
         onTap: s.hasGuideSource
             ? () {
@@ -168,17 +170,17 @@ class SourcePage extends StatelessWidget {
       ),
       const SettingsHeader('Channel check'),
       if (kIsWeb)
-        const ListTile(
-          leading: Icon(Icons.fact_check_outlined),
-          title: Text('Check live channels'),
-          subtitle: Text('Needs the app. A browser cannot test other sites\' streams.'),
+        ListTile(
+          leading: const Icon(Icons.fact_check_outlined),
+          title: Text(tr('Check live channels')),
+          subtitle: Text(tr('Needs the app. A browser cannot test other sites\' streams.')),
           enabled: false,
         )
       else if (s.checking)
         ListTile(
           isThreeLine: true,
           leading: const Icon(Icons.fact_check_outlined),
-          title: Text('Checking… ${s.checkDone} of ${s.checkTotal}'),
+          title: Text(trf('Checking… {done} of {total}', {'done': s.checkDone, 'total': s.checkTotal})),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -187,7 +189,7 @@ class SourcePage extends StatelessWidget {
               Text('${s.checkDeadSoFar} offline so far'),
             ]),
           ),
-          trailing: TextButton(onPressed: s.cancelCheck, child: const Text('Stop')),
+          trailing: TextButton(onPressed: s.cancelCheck, child: Text(tr('Stop'))),
         )
       else
         ActionRow(
@@ -201,7 +203,7 @@ class SourcePage extends StatelessWidget {
         ),
       SwitchRow(
         icon: Icons.visibility_off_outlined,
-        title: 'Hide offline channels',
+        title: tr('Hide offline channels'),
         subtitle: s.deadKeys.isEmpty ? 'Run a check first' : 'Removes the ${s.deadKeys.length} channels that failed the last check',
         value: context.watch<SettingsState>().hideDead,
         onChanged: s.deadKeys.isEmpty ? (_) {} : (v) => context.read<SettingsState>().set('hideDead', v),
@@ -209,13 +211,13 @@ class SourcePage extends StatelessWidget {
       if (s.checkedCount > 0 && !s.checking)
         ActionRow(
           icon: Icons.restart_alt,
-          title: 'Forget check results',
-          subtitle: 'Shows every channel again',
+          title: tr('Forget check results'),
+          subtitle: tr('Shows every channel again'),
           onTap: s.forgetCheck,
         ),
       const SettingsHeader('Saved sources'),
       if (s.sources.isEmpty)
-        ListTile(title: Text('No saved sources', style: TextStyle(color: LayoutPalette.of(context).muted))),
+        ListTile(title: Text(tr('No saved sources'), style: TextStyle(color: LayoutPalette.of(context).muted))),
       for (final src in s.sources)
         ListTile(
           isThreeLine: s.extraErrors.containsKey(src.name),
@@ -233,19 +235,19 @@ class SourcePage extends StatelessWidget {
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
             if (active != null && active.name != src.name)
               Tooltip(
-                message: 'Also show this source in the library',
+                message: tr('Also show this source in the library'),
                 child: Switch(
                   value: s.extraSources.contains(src.name),
                   onChanged: (v) => s.setExtraSource(src.name, v),
                 ),
               ),
             IconButton(
-              tooltip: 'Remove',
+              tooltip: tr('Remove'),
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
                 if (await confirmDialog(context,
-                    title: 'Remove "${src.name}"?',
-                    body: 'The saved login is deleted from this device.',
+                    title: trf('Remove "{name}"?', {'name': src.name}),
+                    body: tr('The saved login is deleted from this device.'),
                     confirm: 'Remove')) {
                   s.removeSource(src);
                 }
@@ -257,21 +259,21 @@ class SourcePage extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Text(
-            'Tap a source to make it the main one. The switch on the others adds them to the same library, '
-            'so channels, movies and guides from all of them are listed together. My List and history stay with the main source.',
+            tr('Tap a source to make it the main one. The switch on the others adds them to the same library, '
+            'so channels, movies and guides from all of them are listed together. My List and history stay with the main source.'),
             style: TextStyle(color: LayoutPalette.of(context).muted, fontSize: 13, height: 1.4),
           ),
         ),
       ActionRow(
         icon: Icons.public,
-        title: 'Add free public channels',
-        subtitle: 'Browse public lists by category, country or language and add as many as you like',
+        title: tr('Add free public channels'),
+        subtitle: tr('Browse public lists by category, country or language and add as many as you like'),
         onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreePlaylistsScreen())),
       ),
       ActionRow(
         icon: Icons.add,
-        title: 'Add another source',
-        subtitle: 'Opens the connect screen; your saved sources stay',
+        title: tr('Add another source'),
+        subtitle: tr('Opens the connect screen; your saved sources stay'),
         onTap: s.signOut,
       ),
     ]);
@@ -312,37 +314,37 @@ class PlaybackPage extends StatelessWidget {
       const SettingsHeader('Watching'),
       SwitchRow(
         icon: Icons.history,
-        title: 'Resume automatically',
-        subtitle: 'Play continues where you stopped. When off, you choose between starting over and resuming.',
+        title: tr('Resume automatically'),
+        subtitle: tr('Play continues where you stopped. When off, you choose between starting over and resuming.'),
         value: st.autoResume,
         onChanged: (v) => st.set('autoResume', v),
       ),
       SwitchRow(
         icon: Icons.skip_next_outlined,
-        title: 'Play the next episode',
-        subtitle: 'When an episode ends, the next one starts after a 10 second countdown you can cancel',
+        title: tr('Play the next episode'),
+        subtitle: tr('When an episode ends, the next one starts after a 10 second countdown you can cancel'),
         value: st.autoplayNext,
         onChanged: (v) => st.set('autoplayNext', v),
       ),
       SwitchRow(
         icon: Icons.skip_next_outlined,
-        title: 'Next episode at the credits',
-        subtitle: 'When a file marks its credits, offer the next episode as they start instead of when the file ends. '
-            'Needs "Play the next episode" above.',
+        title: tr('Next episode at the credits'),
+        subtitle: tr('When a file marks its credits, offer the next episode as they start instead of when the file ends. '
+            'Needs "Play the next episode" above.'),
         value: st.creditsNext,
         onChanged: (v) => st.set('creditsNext', v),
       ),
       ChoiceRow<String>(
         icon: Icons.aspect_ratio,
-        title: 'Picture shape',
-        subtitle: 'How video fills the screen. The player button changes it for the video you are watching.',
+        title: tr('Picture shape'),
+        subtitle: tr('How video fills the screen. The player button changes it for the video you are watching.'),
         value: st.aspect,
         options: const [('auto', 'Auto'), ('16:9', '16:9'), ('4:3', '4:3'), ('fill', 'Fill the screen'), ('stretch', 'Stretch')],
         onChanged: (v) => st.set('aspect', v),
       ),
       ChoiceRow<double>(
         icon: Icons.speed,
-        title: 'Default movie speed',
+        title: tr('Default movie speed'),
         value: st.speed,
         options: const [(0.5, '0.5×'), (0.75, '0.75×'), (1.0, '1×'), (1.25, '1.25×'), (1.5, '1.5×'), (2.0, '2×')],
         onChanged: (v) => st.set('speed', v),
@@ -350,23 +352,23 @@ class PlaybackPage extends StatelessWidget {
       const SettingsHeader('Controls'),
       ChoiceRow<int>(
         icon: Icons.fast_forward,
-        title: 'Seek step',
-        subtitle: 'Left / Right arrows and the skip buttons',
+        title: tr('Seek step'),
+        subtitle: tr('Left / Right arrows and the skip buttons'),
         value: st.seekSecs,
         options: const [(5, '5 seconds'), (10, '10 seconds'), (30, '30 seconds')],
         onChanged: (v) => st.set('seekSecs', v),
       ),
       ChoiceRow<int>(
         icon: Icons.skip_next,
-        title: 'Skip-ahead length',
-        subtitle: 'The "skip ahead" button, handy for intros',
+        title: tr('Skip-ahead length'),
+        subtitle: tr('The "skip ahead" button, handy for intros'),
         value: st.skipSecs,
         options: const [(60, '60 seconds'), (90, '90 seconds'), (120, '2 minutes'), (180, '3 minutes')],
         onChanged: (v) => st.set('skipSecs', v),
       ),
       ChoiceRow<int>(
         icon: Icons.visibility_off_outlined,
-        title: 'Hide controls after',
+        title: tr('Hide controls after'),
         value: st.controlsHideSecs,
         options: const [(3, '3 seconds'), (5, '5 seconds'), (8, '8 seconds'), (15, '15 seconds'), (0, 'Never')],
         onChanged: (v) => st.set('controlsHideSecs', v),
@@ -375,30 +377,30 @@ class PlaybackPage extends StatelessWidget {
         const SettingsHeader('Audio & subtitles'),
         ChoiceRow<String>(
           icon: Icons.audiotrack,
-          title: 'Preferred audio language',
-          subtitle: 'Used when a stream offers several tracks',
+          title: tr('Preferred audio language'),
+          subtitle: tr('Used when a stream offers several tracks'),
           value: st.audioLang,
           options: _languages,
           onChanged: (v) => st.set('audioLang', v),
         ),
         ChoiceRow<String>(
           icon: Icons.translate,
-          title: 'Preferred subtitle language',
+          title: tr('Preferred subtitle language'),
           value: st.subLang,
           options: _languages,
           onChanged: (v) => st.set('subLang', v),
         ),
         SwitchRow(
           icon: Icons.closed_caption_outlined,
-          title: 'Show subtitles automatically',
+          title: tr('Show subtitles automatically'),
           value: st.subsOn,
           onChanged: (v) => st.set('subsOn', v),
         ),
         const SettingsHeader('Performance'),
         ChoiceRow<String>(
           icon: Icons.memory,
-          title: 'Decoder',
-          subtitle: 'Hardware is faster and cooler. Use Software if playback crashes or the picture glitches',
+          title: tr('Decoder'),
+          subtitle: tr('Hardware is faster and cooler. Use Software if playback crashes or the picture glitches'),
           value: st.decoder,
           options: const [('auto', 'Hardware (recommended)'), ('software', 'Software')],
           onChanged: (v) => st.set('decoder', v),
@@ -406,43 +408,43 @@ class PlaybackPage extends StatelessWidget {
         if (defaultTargetPlatform == TargetPlatform.android)
           ChoiceRow<String>(
             icon: Icons.tv,
-            title: 'Video output',
-            subtitle: 'Hardware surface is smoothest for movies on Fire TV and Android TV, but cannot draw embedded subtitles or shaders. '
-                'Compatible goes through the GPU. Automatic uses the surface on TVs',
+            title: tr('Video output'),
+            subtitle: tr('Hardware surface is smoothest for movies on Fire TV and Android TV, but cannot draw embedded subtitles or shaders. '
+                'Compatible goes through the GPU. Automatic uses the surface on TVs'),
             value: st.videoOutput,
             options: const [('auto', 'Automatic'), ('surface', 'Hardware surface'), ('compat', 'Compatible')],
             onChanged: (v) => st.set('videoOutput', v),
           ),
         ChoiceRow<int>(
           icon: Icons.network_check,
-          title: 'Network buffer',
-          subtitle: 'Higher means fewer stalls on weak connections but slower channel start',
+          title: tr('Network buffer'),
+          subtitle: tr('Higher means fewer stalls on weak connections but slower channel start'),
           value: st.bufferSecs,
           options: const [(5, 'Low'), (20, 'Normal'), (60, 'High')],
           onChanged: (v) => st.set('bufferSecs', v),
         ),
         SwitchRow(
           icon: Icons.bolt,
-          title: 'Faster channel start',
-          subtitle: 'Looks at less of a live stream before showing it, so channels come up sooner. '
-              'If a channel ever has no picture or sound, turn this off',
+          title: tr('Faster channel start'),
+          subtitle: tr('Looks at less of a live stream before showing it, so channels come up sooner. '
+              'If a channel ever has no picture or sound, turn this off'),
           value: st.fastStart,
           onChanged: (v) => st.set('fastStart', v),
         ),
         if (shadersSupported)
           ListTile(
             leading: const Icon(Icons.auto_fix_high),
-            title: const Text('Shaders'),
+            title: Text(tr('Shaders')),
             subtitle: Text('${st.activeShaders.length} enabled · sharpen, vibrance, grain, custom GLSL'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ShaderScreen())),
           ),
       ] else
-        const ListTile(
-          leading: Icon(Icons.info_outline),
-          title: Text('Browser playback'),
-          subtitle: Text('Your browser decides the decoder, buffering, languages and shaders. '
-              'Use a desktop or mobile app for those options.'),
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: Text(tr('Browser playback')),
+          subtitle: Text(tr('Your browser decides the decoder, buffering, languages and shaders. '
+              'Use a desktop or mobile app for those options.')),
         ),
     ]);
   }
@@ -466,7 +468,7 @@ class SubtitlesPage extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(color: LayoutPalette.of(context).surfaceHi, borderRadius: BorderRadius.circular(12)),
         child: Text(
-          'The quick brown fox jumps over the lazy dog',
+          tr('The quick brown fox jumps over the lazy dog'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: st.subSize * 0.6,
@@ -478,7 +480,7 @@ class SubtitlesPage extends StatelessWidget {
       ),
       SliderRow(
         icon: Icons.format_size,
-        title: 'Size',
+        title: tr('Size'),
         value: st.subSize,
         min: 20,
         max: 64,
@@ -488,7 +490,7 @@ class SubtitlesPage extends StatelessWidget {
       ),
       SliderRow(
         icon: Icons.vertical_align_bottom,
-        title: 'Distance from bottom',
+        title: tr('Distance from bottom'),
         value: st.subBottom,
         min: 0,
         max: 160,
@@ -498,7 +500,7 @@ class SubtitlesPage extends StatelessWidget {
       ),
       ListTile(
         leading: const Icon(Icons.color_lens_outlined),
-        title: const Text('Color'),
+        title: Text(tr('Color')),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           for (final c in _colors)
             Padding(
@@ -516,13 +518,13 @@ class SubtitlesPage extends StatelessWidget {
       ),
       SwitchRow(
         icon: Icons.format_bold,
-        title: 'Bold',
+        title: tr('Bold'),
         value: st.subBold,
         onChanged: (v) => st.set('subBold', v),
       ),
       SwitchRow(
         icon: Icons.crop_square,
-        title: 'Background box',
+        title: tr('Background box'),
         value: st.subBackground,
         onChanged: (v) => st.set('subBg', v),
       ),
@@ -539,6 +541,15 @@ class AppearancePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final st = context.watch<SettingsState>();
     return ListView(children: [
+      const SettingsHeader('Language'),
+      ChoiceRow<String>(
+        icon: Icons.translate,
+        title: tr('App language'),
+        subtitle: tr('The language of menus and messages. Channel names, titles and guides stay as your provider sends them.'),
+        value: st.language,
+        options: [(AppLanguage.system, 'Device language'), for (final l in AppLanguage.all) (l.code, l.name)],
+        onChanged: (v) => st.set('language', v),
+      ),
       const SettingsHeader('Layout'),
       const LayoutPicker(),
       const SettingsHeader('Colors'),
@@ -549,31 +560,31 @@ class AppearancePage extends StatelessWidget {
       ],
       SwitchRow(
         icon: Icons.live_tv,
-        title: 'Live pictures',
-        subtitle: 'Cable Box and Mosaic play their channels right on the home screen. '
-            'Turn this off if your device stutters.',
+        title: tr('Live pictures'),
+        subtitle: tr('Cable Box and Mosaic play their channels right on the home screen. '
+            'Turn this off if your device stutters.'),
         value: st.livePreview,
         onChanged: (v) => st.set('livePreview', v),
       ),
       ChoiceRow<String>(
         icon: Icons.nightlight_outlined,
-        title: 'Screensaver',
-        subtitle: 'Drifting posters when nothing has been pressed for a while and nothing is playing. '
-            'Auto is 10 minutes on a TV and off elsewhere.',
+        title: tr('Screensaver'),
+        subtitle: tr('Drifting posters when nothing has been pressed for a while and nothing is playing. '
+            'Auto is 10 minutes on a TV and off elsewhere.'),
         value: st.screensaver,
         options: const [('auto', 'Auto'), ('off', 'Off'), ('2', '2 min'), ('5', '5 min'), ('10', '10 min'), ('20', '20 min'), ('30', '30 min')],
         onChanged: (v) => st.set('screensaver', v),
       ),
       ActionRow(
         icon: Icons.slideshow_outlined,
-        title: 'Preview the screensaver',
-        subtitle: 'Press any key or touch the screen to come back',
+        title: tr('Preview the screensaver'),
+        subtitle: tr('Press any key or touch the screen to come back'),
         onTap: () => Screensaver.preview.value++,
       ),
       ChoiceRow<String>(
         icon: Icons.bedtime_outlined,
-        title: 'Playground bedtime',
-        subtitle: 'The Playground layout shows "All done for today" from this time until 5 in the morning.',
+        title: tr('Playground bedtime'),
+        subtitle: tr('The Playground layout shows "All done for today" from this time until 5 in the morning.'),
         value: st.bedtime,
         options: const [('off', 'Off'), ('18:00', '6 PM'), ('19:00', '7 PM'), ('20:00', '8 PM'), ('21:00', '9 PM')],
         onChanged: (v) => st.set('bedtime', v),
@@ -581,16 +592,16 @@ class AppearancePage extends StatelessWidget {
       const SettingsHeader('Size'),
       ChoiceRow<double>(
         icon: Icons.text_fields,
-        title: 'Text size',
-        subtitle: 'Larger text is easier to read from the couch',
+        title: tr('Text size'),
+        subtitle: tr('Larger text is easier to read from the couch'),
         value: st.uiScale,
         options: const [(0.85, 'Small'), (1.0, 'Normal'), (1.15, 'Large'), (1.3, 'Extra large')],
         onChanged: (v) => st.set('uiScale', v),
       ),
       ChoiceRow<double>(
         icon: Icons.grid_view,
-        title: 'Poster size',
-        subtitle: 'Bigger posters show fewer per row',
+        title: tr('Poster size'),
+        subtitle: tr('Bigger posters show fewer per row'),
         value: st.posterSize,
         options: const [(0.85, 'Compact'), (1.0, 'Normal'), (1.25, 'Large')],
         onChanged: (v) => st.set('posterSize', v),
@@ -598,7 +609,7 @@ class AppearancePage extends StatelessWidget {
       const SettingsHeader('TV'),
       ChoiceRow<String>(
         icon: Icons.tv,
-        title: 'TV mode',
+        title: tr('TV mode'),
         subtitle: 'A fixed-size screen layout, a bold focus outline, safe screen margins and Back-to-Home. '
             '${SettingsState.detectedTv ? 'This device was detected as a TV.' : 'Auto turns on for Android TV, Google TV and Fire TV.'}',
         value: st.tvMode,
@@ -607,9 +618,9 @@ class AppearancePage extends StatelessWidget {
       ),
       ChoiceRow<int>(
         icon: Icons.zoom_out_map,
-        title: 'TV zoom',
-        subtitle: 'How much fits on the TV screen. Smaller sizes show more; use Larger if text is hard to read from the couch. '
-            'Applies in TV mode',
+        title: tr('TV zoom'),
+        subtitle: tr('How much fits on the TV screen. Smaller sizes show more; use Larger if text is hard to read from the couch. '
+            'Applies in TV mode'),
         value: st.tvWidth,
         options: const [(1120, 'Larger'), (1280, 'Standard'), (1440, 'Smaller'), (1600, 'Smallest')],
         onChanged: (v) => st.set('tvWidth', v),
@@ -617,8 +628,8 @@ class AppearancePage extends StatelessWidget {
       const SettingsHeader('Startup'),
       ChoiceRow<int>(
         icon: Icons.home_outlined,
-        title: 'Open on',
-        subtitle: 'The screen shown when the app starts. Where I left off reopens the last screen, and the last live channel if you were watching one',
+        title: tr('Open on'),
+        subtitle: tr('The screen shown when the app starts. Where I left off reopens the last screen, and the last live channel if you were watching one'),
         value: st.startTab,
         options: const [(-1, 'Where I left off'), (0, 'Home'), (1, 'Live TV'), (2, 'Guide'), (3, 'Movies'), (4, 'Series'), (7, 'Anime'), (5, 'Search')],
         onChanged: (v) => st.set('startTab', v),
@@ -626,9 +637,9 @@ class AppearancePage extends StatelessWidget {
       if (AndroidWatchNext.platformSupported)
         SwitchRow(
           icon: Icons.play_circle_outline,
-          title: 'Continue watching on the home screen',
-          subtitle: 'Android TV and Google TV: shows the films and episodes you are partway through as a row on the '
-              'TV home screen, so one press picks up where you stopped. Other devices ignore this.',
+          title: tr('Continue watching on the home screen'),
+          subtitle: tr('Android TV and Google TV: shows the films and episodes you are partway through as a row on the '
+              'TV home screen, so one press picks up where you stopped. Other devices ignore this.'),
           value: st.watchNextRow,
           onChanged: (v) {
             st.set('watchNextRow', v);
@@ -638,9 +649,9 @@ class AppearancePage extends StatelessWidget {
       if (BootLaunch.supported)
         SwitchRow(
           icon: Icons.power_settings_new,
-          title: 'Open when the device starts',
-          subtitle: 'Opens StreamBoss when the Fire TV or Android TV is switched on or restarted. With Open on set to '
-              'Where I left off it goes straight back to the channel you were watching.',
+          title: tr('Open when the device starts'),
+          subtitle: tr('Opens StreamBoss when the Fire TV or Android TV is switched on or restarted. With Open on set to '
+              'Where I left off it goes straight back to the channel you were watching.'),
           value: st.startOnBoot,
           onChanged: (v) async {
             st.set('startOnBoot', v);
@@ -648,26 +659,26 @@ class AppearancePage extends StatelessWidget {
               final open = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('One more step'),
-                  content: const Text('This version of Android only lets an app open itself at start-up if it may '
-                      '"Display over other apps". Turn that on for StreamBoss on the next screen.'),
+                  title: Text(tr('One more step')),
+                  content: Text(tr('This version of Android only lets an app open itself at start-up if it may '
+                      '"Display over other apps". Turn that on for StreamBoss on the next screen.')),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Not now')),
-                    FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Open settings')),
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Not now'))),
+                    FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Open settings'))),
                   ],
                 ),
               );
               if (open == true && !await BootLaunch.openPermissionSettings() && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('This device has no such screen. Look for StreamBoss under Apps > Special access.')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(tr('This device has no such screen. Look for StreamBoss under Apps > Special access.'))));
               }
             }
           },
         ),
       ChoiceRow<String>(
         icon: Icons.auto_awesome_outlined,
-        title: 'Anime page',
-        subtitle: 'Auto shows it in the menus when your library has anime. On always shows it, Off hides it.',
+        title: tr('Anime page'),
+        subtitle: tr('Auto shows it in the menus when your library has anime. On always shows it, Off hides it.'),
         value: st.animePage,
         options: const [('auto', 'Auto'), ('on', 'Always'), ('off', 'Hidden')],
         onChanged: (v) => st.set('animePage', v),
@@ -688,42 +699,42 @@ class LibraryPage extends StatelessWidget {
       const SettingsHeader('Browsing'),
       SwitchRow(
         icon: Icons.visibility_off_outlined,
-        title: 'Hide adult categories',
-        subtitle: 'Hides categories named adult, XXX or 18+ everywhere. A convenience filter, not a parental lock.',
+        title: tr('Hide adult categories'),
+        subtitle: tr('Hides categories named adult, XXX or 18+ everywhere. A convenience filter, not a parental lock.'),
         value: st.hideAdult,
         onChanged: (v) => st.set('hideAdult', v),
       ),
       SwitchRow(
         icon: Icons.merge_type,
-        title: 'Merge duplicate channels',
-        subtitle: 'Shows one entry when a channel is listed several times (HD, SD, a backup). '
-            'The best copy plays, and the others take over if it fails.',
+        title: tr('Merge duplicate channels'),
+        subtitle: tr('Shows one entry when a channel is listed several times (HD, SD, a backup). '
+            'The best copy plays, and the others take over if it fails.'),
         value: st.mergeDuplicates,
         onChanged: (v) => st.set('mergeDuplicates', v),
       ),
       SwitchRow(
         icon: Icons.sort_by_alpha,
-        title: 'Sort A–Z',
-        subtitle: 'Alphabetical channels, movies, series and categories instead of the provider\'s order',
+        title: tr('Sort A–Z'),
+        subtitle: tr('Alphabetical channels, movies, series and categories instead of the provider\'s order'),
         value: st.sortAz,
         onChanged: (v) => st.set('sortAz', v),
       ),
       ActionRow(
         icon: Icons.edit_note,
-        title: 'Edited channels',
-        subtitle: 'Channels you renamed, hid or pinned to the top. Undo any of them here.',
+        title: tr('Edited channels'),
+        subtitle: tr('Channels you renamed, hid or pinned to the top. Undo any of them here.'),
         onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditedChannelsScreen())),
       ),
       ActionRow(
         icon: Icons.collections_bookmark_outlined,
-        title: 'Collections',
-        subtitle: 'Lists you name, like "Friday movie night". Add to one from a movie or series page.',
+        title: tr('Collections'),
+        subtitle: tr('Lists you name, like "Friday movie night". Add to one from a movie or series page.'),
         onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionsScreen())),
       ),
       const SettingsHeader('TV guide'),
       SwitchRow(
         icon: Icons.schedule,
-        title: '24-hour clock',
+        title: tr('24-hour clock'),
         subtitle: st.use24h ? 'Times like 18:30' : 'Times like 6:30 PM',
         value: st.use24h,
         onChanged: (v) => st.set('use24h', v),
@@ -754,8 +765,8 @@ class RemindersPage extends StatelessWidget {
       const SettingsHeader('Reminders'),
       ChoiceRow<int>(
         icon: Icons.timer_outlined,
-        title: 'Remind me',
-        subtitle: 'How long before a programme starts',
+        title: tr('Remind me'),
+        subtitle: tr('How long before a programme starts'),
         value: st.reminderLead,
         options: [for (final m in reminderLeadChoices) (m, '$m min before')],
         onChanged: (v) async {
@@ -766,17 +777,17 @@ class RemindersPage extends StatelessWidget {
       ListTile(
         leading: const Icon(Icons.info_outline),
         title: Text(app.notifier.supported
-            ? 'Notifications are on: a reminder arrives even when StreamBoss is closed.'
-            : 'On this device a reminder shows as a banner while StreamBoss is open.'),
+            ? tr('Notifications are on: a reminder arrives even when StreamBoss is closed.')
+            : tr('On this device a reminder shows as a banner while StreamBoss is open.')),
         subtitle: Text(app.notifier.supported
-            ? 'If one does not arrive, check that notifications are allowed for StreamBoss in the system settings.'
-            : 'Phones, iPads and Macs can also send a notification when it is closed.'),
+            ? tr('If one does not arrive, check that notifications are allowed for StreamBoss in the system settings.')
+            : tr('Phones, iPads and Macs can also send a notification when it is closed.')),
       ),
       SettingsHeader(app.reminders.isEmpty ? 'No reminders yet' : 'Coming up'),
       if (app.reminders.isEmpty)
         ListTile(
           leading: Icon(Icons.notifications_none, color: p.muted),
-          title: const Text('Open a programme in the guide, or on a channel\'s page, and choose Remind me.'),
+          title: Text(tr('Open a programme in the guide, or on a channel\'s page, and choose Remind me.')),
         ),
       for (final r in app.reminders)
         ListTile(
@@ -784,7 +795,7 @@ class RemindersPage extends StatelessWidget {
           title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: Text('${r.channelName}  ·  ${when(r)}'),
           trailing: IconButton(
-            tooltip: 'Remove',
+            tooltip: tr('Remove'),
             icon: const Icon(Icons.delete_outline),
             onPressed: () => app.removeReminder(r),
           ),
@@ -807,7 +818,7 @@ class ProfilesPage extends StatelessWidget {
       for (final pr in ps.profiles)
         ListTile(
           leading: ProfileAvatar(pr, size: 40),
-          title: Text('${pr.name}${pr.id == ps.currentId ? '  ·  in use' : ''}'),
+          title: Text('${pr.name}${pr.id == ps.currentId ? tr('  ·  in use') : ''}'),
           subtitle: Text([
             if (pr.kids) 'Kids',
             if (pr.locked && ps.hasPin) 'PIN to open',
@@ -819,23 +830,23 @@ class ProfilesPage extends StatelessWidget {
         ),
       ActionRow(
         icon: Icons.person_add_alt_1,
-        title: 'Add a profile',
-        subtitle: ps.canAdd ? 'Each profile keeps its own My List, history and resume positions' : 'The limit is eight profiles',
+        title: tr('Add a profile'),
+        subtitle: ps.canAdd ? tr('Each profile keeps its own My List, history and resume positions') : 'The limit is eight profiles',
         onTap: ps.canAdd ? () => _addProfile(context, ps) : null,
       ),
       if (ps.multiple)
         ActionRow(
           icon: Icons.switch_account_outlined,
-          title: "Who's watching?",
-          subtitle: 'Switch to another profile',
+          title: tr("Who's watching?"),
+          subtitle: tr('Switch to another profile'),
           onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePickerScreen())),
         ),
       const SettingsHeader('PIN lock'),
       if (!ps.hasPin)
         ActionRow(
           icon: Icons.lock_outline,
-          title: 'Set a PIN',
-          subtitle: 'Four digits. Locks Settings while a Kids profile is in use',
+          title: tr('Set a PIN'),
+          subtitle: tr('Four digits. Locks Settings while a Kids profile is in use'),
           onTap: () async {
             final pin = await askNewPin(context);
             if (pin != null) {
@@ -847,10 +858,10 @@ class ProfilesPage extends StatelessWidget {
       else ...[
         ActionRow(
           icon: Icons.password,
-          title: 'Change PIN',
+          title: tr('Change PIN'),
           onTap: () async {
-            if (!await askPin(context, ps, title: 'Current PIN') || !context.mounted) return;
-            final pin = await askNewPin(context, title: 'Choose a new PIN');
+            if (!await askPin(context, ps, title: tr('Current PIN')) || !context.mounted) return;
+            final pin = await askNewPin(context, title: tr('Choose a new PIN'));
             if (pin != null) {
               ps.setPin(pin);
               if (context.mounted) toast(context, 'PIN changed');
@@ -859,11 +870,11 @@ class ProfilesPage extends StatelessWidget {
         ),
         ActionRow(
           icon: Icons.lock_open,
-          title: 'Remove PIN',
-          subtitle: 'Kids profiles stay, but nothing is locked any more',
+          title: tr('Remove PIN'),
+          subtitle: tr('Kids profiles stay, but nothing is locked any more'),
           destructive: true,
           onTap: () async {
-            if (!await askPin(context, ps, title: 'Current PIN') || !context.mounted) return;
+            if (!await askPin(context, ps, title: tr('Current PIN')) || !context.mounted) return;
             ps.clearPin();
             toast(context, 'PIN removed');
           },
@@ -872,9 +883,9 @@ class ProfilesPage extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Text(
-          'With a PIN set: Settings are locked while a Kids profile is in use, leaving a Kids profile asks for the PIN, '
+          tr('With a PIN set: Settings are locked while a Kids profile is in use, leaving a Kids profile asks for the PIN, '
           'and a profile marked "Needs PIN" asks for it too. A Kids profile shows only categories that look made for '
-          'children, judged by their names. This is a family lock for a shared screen, not high security.',
+          'children, judged by their names. This is a family lock for a shared screen, not high security.'),
           style: TextStyle(color: p.muted, height: 1.4),
         ),
       ),
@@ -896,7 +907,7 @@ Future<String?> _askText(BuildContext context, String title, String initial, {St
         onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
         FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: Text(confirm)),
       ],
     ),
@@ -910,25 +921,25 @@ Future<void> _addProfile(BuildContext context, ProfilesState ps) async {
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setS) => AlertDialog(
-        title: const Text('New profile'),
+        title: Text(tr('New profile')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TvTextField(
               controller: c,
               autofocus: true,
               maxLength: 20,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Name')),
+              decoration: InputDecoration(labelText: tr('Name'))),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Kids profile'),
-            subtitle: const Text('Only child-friendly categories'),
+            title: Text(tr('Kids profile')),
+            subtitle: Text(tr('Only child-friendly categories')),
             value: kids,
             onChanged: (v) => setS(() => kids = v),
           ),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Add'))),
         ],
       ),
     ),
@@ -936,7 +947,7 @@ Future<void> _addProfile(BuildContext context, ProfilesState ps) async {
   if (ok == true) {
     ps.add(c.text, kids: kids);
     if (kids && !ps.hasPin && context.mounted) {
-      toast(context, 'Set a PIN below so children cannot leave this profile');
+      toast(context, tr('Set a PIN below so children cannot leave this profile'));
     }
   }
 }
@@ -955,7 +966,7 @@ Future<void> _editProfile(BuildContext context, ProfilesState ps, AppState app, 
                 Navigator.pop(ctx);
                 await switchProfile(context, ps, cur);
               },
-              child: const Text('Use this profile'),
+              child: Text(tr('Use this profile')),
             ),
           SimpleDialogOption(
             onPressed: () async {
@@ -963,11 +974,11 @@ Future<void> _editProfile(BuildContext context, ProfilesState ps, AppState app, 
               final n = await _askText(context, 'Rename profile', cur.name);
               if (n != null && n.isNotEmpty) ps.update(cur.copyWith(name: n));
             },
-            child: const Text('Rename'),
+            child: Text(tr('Rename')),
           ),
           SwitchListTile(
-            title: const Text('Kids profile'),
-            subtitle: const Text('Only child-friendly categories'),
+            title: Text(tr('Kids profile')),
+            subtitle: Text(tr('Only child-friendly categories')),
             value: cur.kids,
             onChanged: (v) {
               ps.update(cur.copyWith(kids: v));
@@ -975,8 +986,8 @@ Future<void> _editProfile(BuildContext context, ProfilesState ps, AppState app, 
             },
           ),
           SwitchListTile(
-            title: const Text('Own settings'),
-            subtitle: const Text('Its own layout, text size, languages, subtitles and filters'),
+            title: Text(tr('Own settings')),
+            subtitle: Text(tr('Its own layout, text size, languages, subtitles and filters')),
             value: cur.ownSettings,
             onChanged: (v) {
               ps.update(cur.copyWith(ownSettings: v));
@@ -985,7 +996,7 @@ Future<void> _editProfile(BuildContext context, ProfilesState ps, AppState app, 
           ),
           if (ps.hasPin)
             SwitchListTile(
-              title: const Text('Needs PIN to open'),
+              title: Text(tr('Needs PIN to open')),
               value: cur.locked,
               onChanged: (v) {
                 ps.update(cur.copyWith(locked: v));
@@ -997,13 +1008,13 @@ Future<void> _editProfile(BuildContext context, ProfilesState ps, AppState app, 
               onPressed: () async {
                 Navigator.pop(ctx);
                 if (await confirmDialog(context,
-                    title: 'Delete "${cur.name}"?',
-                    body: 'Its My List, history and resume positions are deleted from this device.',
+                    title: trf('Delete "{name}"?', {'name': cur.name}),
+                    body: tr('Its My List, history and resume positions are deleted from this device.'),
                     confirm: 'Delete')) {
                   if (ps.remove(cur.id)) await app.forgetProfile(cur.id);
                 }
               },
-              child: Text('Delete', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+              child: Text(tr('Delete'), style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
             ),
         ],
       );
@@ -1021,11 +1032,11 @@ class NetworkPage extends StatelessWidget {
     final v = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Custom User-Agent'),
-        content: TvTextField(controller: c, autofocus: true, decoration: const InputDecoration(hintText: 'e.g. MyPlayer/1.0')),
+        title: Text(tr('Custom User-Agent')),
+        content: TvTextField(controller: c, autofocus: true, decoration: InputDecoration(hintText: tr('e.g. MyPlayer/1.0'))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: const Text('Save')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: Text(tr('Save'))),
         ],
       ),
     );
@@ -1039,17 +1050,17 @@ class NetworkPage extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('OpenSubtitles'),
+        title: Text(tr('OpenSubtitles')),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TvTextField(controller: key, autofocus: true, decoration: const InputDecoration(labelText: 'API key')),
-            TvTextField(controller: user, decoration: const InputDecoration(labelText: 'Username (needed to download)')),
-            TvTextField(controller: pass, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
+            TvTextField(controller: key, autofocus: true, decoration: InputDecoration(labelText: tr('API key'))),
+            TvTextField(controller: user, decoration: InputDecoration(labelText: tr('Username (needed to download)'))),
+            TvTextField(controller: pass, obscureText: true, decoration: InputDecoration(labelText: tr('Password'))),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Save'))),
         ],
       ),
     );
@@ -1065,11 +1076,11 @@ class NetworkPage extends StatelessWidget {
     final v = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('TMDB API key (v3)'),
+        title: Text(tr('TMDB API key (v3)')),
         content: TvTextField(controller: c, autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: const Text('Save')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: Text(tr('Save'))),
         ],
       ),
     );
@@ -1087,16 +1098,16 @@ class NetworkPage extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Connection test'),
+        title: Text(tr('Connection test')),
         content: SizedBox(
           width: 520,
           child: FutureBuilder<String>(
             future: report,
             builder: (_, snap) => !snap.hasData
-                ? const Row(children: [
-                    SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                    SizedBox(width: 12),
-                    Text('Testing…'),
+                ? Row(children: [
+                    const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    const SizedBox(width: 12),
+                    Text(tr('Testing…')),
                   ])
                 : SelectableText(snap.data!, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
           ),
@@ -1107,9 +1118,9 @@ class NetworkPage extends StatelessWidget {
               await Clipboard.setData(ClipboardData(text: await report));
               if (ctx.mounted) toast(ctx, 'Copied');
             },
-            child: const Text('Copy'),
+            child: Text(tr('Copy')),
           ),
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Close'))),
         ],
       ),
     );
@@ -1125,10 +1136,10 @@ class NetworkPage extends StatelessWidget {
       const SettingsHeader('Requests'),
       ChoiceRow<String>(
         icon: Icons.badge_outlined,
-        title: 'User-Agent',
+        title: tr('User-Agent'),
         subtitle: kIsWeb
-            ? 'Browsers do not allow changing this.'
-            : 'Some providers only answer familiar players. Try VLC if a source refuses to connect.',
+            ? tr('Browsers do not allow changing this.')
+            : tr('Some providers only answer familiar players. Try VLC if a source refuses to connect.'),
         value: uaChoice,
         enabled: !kIsWeb,
         options: [('', 'Default'), for (final k in NetConfig.presets.keys) (k, k), ('custom', ua.isEmpty || uaChoice != 'custom' ? 'Custom…' : 'Custom')],
@@ -1144,21 +1155,21 @@ class NetworkPage extends StatelessWidget {
         ListTile(dense: true, title: Text(ua, style: TextStyle(color: LayoutPalette.of(context).muted, fontSize: 12))),
       ActionRow(
         icon: Icons.network_check,
-        title: 'Test connection',
+        title: tr('Test connection'),
         subtitle: kIsWeb
-            ? 'Not available in the browser.'
-            : 'Checks DNS, IPv4 and IPv6 and an HTTP request to your provider. No logins are shown.',
+            ? tr('Not available in the browser.')
+            : tr('Checks DNS, IPv4 and IPv6 and an HTTP request to your provider. No logins are shown.'),
         onTap: kIsWeb ? null : () => _test(context),
       ),
       const SettingsHeader('Movie & series details'),
       ListTile(
         leading: const Icon(Icons.movie_filter),
-        title: const Text('TMDB API key'),
+        title: Text(tr('TMDB API key')),
         subtitle: Text(st.tmdbKey.isEmpty
-            ? 'Optional. Adds posters, cast and trailers when your provider has none. Not included in backups.'
-            : 'Key saved on this device. Not included in backups.'),
+            ? tr('Optional. Adds posters, cast and trailers when your provider has none. Not included in backups.')
+            : tr('Key saved on this device. Not included in backups.')),
         trailing: st.tmdbKey.isEmpty ? null : IconButton(
-          tooltip: 'Remove key',
+          tooltip: tr('Remove key'),
           icon: const Icon(Icons.close),
           onPressed: () => st.set('tmdbKey', ''),
         ),
@@ -1166,13 +1177,13 @@ class NetworkPage extends StatelessWidget {
       ),
       ListTile(
         leading: const Icon(Icons.subtitles_outlined),
-        title: const Text('OpenSubtitles'),
+        title: Text(tr('OpenSubtitles')),
         subtitle: Text(st.osKey.isEmpty
-            ? 'Optional. Lets you search for subtitles from the player. Needs your own free API key; '
-                'downloading also needs your account. Not included in backups.'
-            : 'Saved on this device. Not included in backups.'),
+            ? tr('Optional. Lets you search for subtitles from the player. Needs your own free API key; '
+                'downloading also needs your account. Not included in backups.')
+            : tr('Saved on this device. Not included in backups.')),
         trailing: st.osKey.isEmpty ? null : IconButton(
-          tooltip: 'Remove',
+          tooltip: tr('Remove'),
           icon: const Icon(Icons.close),
           onPressed: () {
             st.set('osKey', '');
@@ -1184,17 +1195,17 @@ class NetworkPage extends StatelessWidget {
       ),
       SwitchRow(
         icon: Icons.image_outlined,
-        title: 'Fill in missing posters',
+        title: tr('Fill in missing posters'),
         subtitle: st.tmdbKey.isEmpty
-            ? 'Needs the TMDB key above. Looks up a poster for movies and series your provider has none for.'
-            : 'Looks up a poster for movies and series your provider has none for, and remembers it.',
+            ? tr('Needs the TMDB key above. Looks up a poster for movies and series your provider has none for.')
+            : tr('Looks up a poster for movies and series your provider has none for, and remembers it.'),
         value: st.realPosters,
         onChanged: (v) => st.set('realPosters', v),
       ),
       ActionRow(
         icon: Icons.open_in_new,
-        title: 'Get a free TMDB key',
-        subtitle: 'themoviedb.org > Settings > API',
+        title: tr('Get a free TMDB key'),
+        subtitle: tr('themoviedb.org > Settings > API'),
         onTap: () => launchUrl(Uri.parse('https://www.themoviedb.org/settings/api'), mode: LaunchMode.externalApplication),
       ),
     ]);
@@ -1222,8 +1233,8 @@ class DataPage extends StatelessWidget {
       const SettingsHeader('Backup'),
       ActionRow(
         icon: Icons.upload,
-        title: 'Copy backup to clipboard',
-        subtitle: 'Sources (without passwords), settings, My List and resume positions. API keys are never included.',
+        title: tr('Copy backup to clipboard'),
+        subtitle: tr('Sources (without passwords), settings, My List and resume positions. API keys are never included.'),
         onTap: () async {
           final data = jsonEncode({'app': s.exportData(), 'settings': st.toMap()});
           await Clipboard.setData(ClipboardData(text: data));
@@ -1232,8 +1243,8 @@ class DataPage extends StatelessWidget {
       ),
       ActionRow(
         icon: Icons.download,
-        title: 'Restore backup from clipboard',
-        subtitle: 'Merges into what you have now',
+        title: tr('Restore backup from clipboard'),
+        subtitle: tr('Merges into what you have now'),
         onTap: () async {
           try {
             final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text ?? '';
@@ -1243,40 +1254,40 @@ class DataPage extends StatelessWidget {
             st.applyShaderMap(m['settings'] as Map<String, dynamic>);
             if (context.mounted) toast(context, 'Backup restored');
           } catch (_) {
-            if (context.mounted) toast(context, 'The clipboard does not hold a valid backup');
+            if (context.mounted) toast(context, tr('The clipboard does not hold a valid backup'));
           }
         },
       ),
       const SettingsHeader('History'),
       ActionRow(
         icon: Icons.history_toggle_off,
-        title: 'Clear "continue watching"',
+        title: tr('Clear "continue watching"'),
         subtitle: '${s.recents.length} items',
         onTap: s.recents.isEmpty
             ? null
-            : () => clear('Clear continue watching?', 'The recently watched list is emptied. Resume positions stay.', s.clearRecents, 'Cleared'),
+            : () => clear('Clear continue watching?', tr('The recently watched list is emptied. Resume positions stay.'), s.clearRecents, 'Cleared'),
       ),
       ActionRow(
         icon: Icons.restart_alt,
-        title: 'Forget resume positions',
+        title: tr('Forget resume positions'),
         subtitle: '${s.positions.length} saved',
         onTap: s.positions.isEmpty
             ? null
-            : () => clear('Forget resume positions?', 'Movies and episodes will start from the beginning.', s.clearPositions, 'Cleared'),
+            : () => clear('Forget resume positions?', tr('Movies and episodes will start from the beginning.'), s.clearPositions, 'Cleared'),
       ),
       ActionRow(
         icon: Icons.favorite_border,
-        title: 'Clear My List',
+        title: tr('Clear My List'),
         subtitle: '${s.favorites.length} items',
         onTap: s.favorites.isEmpty
             ? null
-            : () => clear('Clear My List?', 'All favourites are removed.', s.clearFavorites, 'Cleared'),
+            : () => clear('Clear My List?', tr('All favourites are removed.'), s.clearFavorites, 'Cleared'),
       ),
       if (!kIsWeb)
         ActionRow(
           icon: Icons.image_not_supported_outlined,
-          title: 'Clear image cache',
-          subtitle: 'Posters and logos are downloaded again when needed',
+          title: tr('Clear image cache'),
+          subtitle: tr('Posters and logos are downloaded again when needed'),
           onTap: () async {
             await DefaultCacheManager().emptyCache();
             if (context.mounted) toast(context, 'Image cache cleared');
@@ -1285,13 +1296,13 @@ class DataPage extends StatelessWidget {
       const SettingsHeader('Reset'),
       ActionRow(
         icon: Icons.settings_backup_restore,
-        title: 'Reset all settings',
-        subtitle: 'Back to defaults. Sources, My List and history are kept.',
+        title: tr('Reset all settings'),
+        subtitle: tr('Back to defaults. Sources, My List and history are kept.'),
         destructive: true,
         onTap: () async {
           if (await confirmDialog(context,
-              title: 'Reset all settings?',
-              body: 'Every option on these pages returns to its default.',
+              title: tr('Reset all settings?'),
+              body: tr('Every option on these pages returns to its default.'),
               confirm: 'Reset')) {
             st.resetAll();
             if (context.mounted) toast(context, 'Settings reset');
@@ -1337,12 +1348,12 @@ class _AboutPageState extends State<AboutPage> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Playback log'),
+        title: Text(tr('Playback log')),
         content: SizedBox(
           width: 640,
           child: SingleChildScrollView(
             child: SelectableText(
-              log.trim().isEmpty ? 'Nothing has been played yet.' : log,
+              log.trim().isEmpty ? tr('Nothing has been played yet.') : log,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 11, height: 1.35),
             ),
           ),
@@ -1354,9 +1365,9 @@ class _AboutPageState extends State<AboutPage> {
                 await Clipboard.setData(ClipboardData(text: log));
                 if (ctx.mounted) toast(ctx, 'Copied');
               },
-              child: const Text('Copy'),
+              child: Text(tr('Copy')),
             ),
-          FilledButton(autofocus: true, onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          FilledButton(autofocus: true, onPressed: () => Navigator.pop(ctx), child: Text(tr('Close'))),
         ],
       ),
     );
@@ -1406,19 +1417,19 @@ class _AboutPageState extends State<AboutPage> {
           InfoRow('Version', i == null ? '…' : '$version (build ${i.buildNumber})'),
           ActionRow(
             icon: _checking ? Icons.hourglass_top : Icons.system_update_alt,
-            title: 'Check for updates',
-            subtitle: 'Looks for a newer release on GitHub',
+            title: tr('Check for updates'),
+            subtitle: tr('Looks for a newer release on GitHub'),
             onTap: (_checking || i == null) ? null : () => _check(version),
           ),
           ActionRow(
             icon: Icons.new_releases_outlined,
-            title: 'Release notes & downloads',
+            title: tr('Release notes & downloads'),
             onTap: () => launchUrl(Uri.parse(kReleasesUrl), mode: LaunchMode.externalApplication),
           ),
           ActionRow(
             icon: Icons.auto_awesome_outlined,
-            title: 'Run setup again',
-            subtitle: 'The first-run steps: screen, look and playback defaults',
+            title: tr('Run setup again'),
+            subtitle: tr('The first-run steps: screen, look and playback defaults'),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (ctx) => OnboardingScreen(rerun: true, onDone: () => Navigator.of(ctx).pop()),
             )),
@@ -1426,21 +1437,21 @@ class _AboutPageState extends State<AboutPage> {
           const SettingsHeader('Support'),
           ActionRow(
             icon: Icons.bug_report_outlined,
-            title: 'Report a problem',
-            subtitle: 'Opens GitHub issues. Tip: copy diagnostics first and paste them in.',
+            title: tr('Report a problem'),
+            subtitle: tr('Opens GitHub issues. Tip: copy diagnostics first and paste them in.'),
             onTap: () => launchUrl(Uri.parse(kIssuesUrl), mode: LaunchMode.externalApplication),
           ),
           if (!kIsWeb)
             ActionRow(
               icon: Icons.receipt_long_outlined,
-              title: 'Playback log',
-              subtitle: 'What the player did last time, to find out why a video would not play',
+              title: tr('Playback log'),
+              subtitle: tr('What the player did last time, to find out why a video would not play'),
               onTap: () => _showPlaybackLog(context),
             ),
           ActionRow(
             icon: Icons.content_copy,
-            title: 'Copy diagnostics',
-            subtitle: 'Version, platform and settings. No logins, addresses or keys.',
+            title: tr('Copy diagnostics'),
+            subtitle: tr('Version, platform and settings. No logins, addresses or keys.'),
             onTap: i == null
                 ? null
                 : () async {
@@ -1450,17 +1461,17 @@ class _AboutPageState extends State<AboutPage> {
           ),
           ActionRow(
             icon: Icons.description_outlined,
-            title: 'Open-source licenses',
+            title: tr('Open-source licenses'),
             onTap: () => showLicensePage(
               context: context,
               applicationName: 'StreamBoss',
               applicationVersion: version,
             ),
           ),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('StreamBoss is a player only'),
-            subtitle: Text('No content is included. Use services you are licensed to watch.'),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(tr('StreamBoss is a player only')),
+            subtitle: Text(tr('No content is included. Use services you are licensed to watch.')),
           ),
         ]);
       },
@@ -1497,7 +1508,7 @@ class _AppIconPickerState extends State<AppIconPicker> {
     messenger.showSnackBar(SnackBar(
         content: Text(ok
             ? '${icon.label} icon set. Your launcher can take a few seconds to show it.'
-            : 'The icon could not be changed on this device.')));
+            : tr('The icon could not be changed on this device.'))));
   }
 
   @override

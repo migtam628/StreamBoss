@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../layouts/common.dart';
 import '../layouts/ui_layout.dart';
 import '../state/profiles_state.dart';
+import '../l10n/l10n.dart';
 
 /// Asks for the PIN and checks it. True when it was right (or no PIN is set).
 Future<bool> askPin(BuildContext context, ProfilesState ps,
@@ -12,7 +13,7 @@ Future<bool> askPin(BuildContext context, ProfilesState ps,
       await _pinDialog(context, title: title, hint: hint, validate: (pin) {
     return switch (ps.checkPin(pin)) {
       PinResult.ok => null,
-      PinResult.wrong => 'Wrong PIN',
+      PinResult.wrong => tr('Wrong PIN'),
       PinResult.lockedOut =>
         'Too many tries. Wait ${ps.lockedSeconds} seconds.',
     };
@@ -25,12 +26,12 @@ Future<String?> askNewPin(BuildContext context,
     {String title = 'Choose a PIN'}) async {
   final first = await _pinDialog(context,
       title: title,
-      hint: 'Four digits. It guards Kids profiles and locked profiles.',
+      hint: tr('Four digits. It guards Kids profiles and locked profiles.'),
       validate: (_) => null);
   if (first == null || !context.mounted) return null;
   return _pinDialog(context,
-      title: 'Enter it again',
-      validate: (pin) => pin == first ? null : 'The two PINs do not match');
+      title: tr('Enter it again'),
+      validate: (pin) => pin == first ? null : tr('The two PINs do not match'));
 }
 
 Future<String?> _pinDialog(BuildContext context,
@@ -171,10 +172,10 @@ class _PinDialogState extends State<_PinDialog> {
               children: [
                 for (var d = 1; d <= 9; d++)
                   _key1(p, '$d', () => _type('$d'), autofocus: d == 1),
-                _key1(p, 'Cancel', () => Navigator.of(context).pop(),
+                _key1(p, tr('Cancel'), () => Navigator.of(context).pop(),
                     icon: Icons.close),
                 _key1(p, '0', () => _type('0')),
-                _key1(p, 'Delete', _back, icon: Icons.backspace_outlined),
+                _key1(p, tr('Delete'), _back, icon: Icons.backspace_outlined),
               ],
             ),
           ]),

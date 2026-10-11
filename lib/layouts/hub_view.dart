@@ -7,6 +7,7 @@ import 'common.dart';
 import 'home_views.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Hub's Home: a launcher of big colored tiles, with what you were watching underneath.
 class HubHome extends StatelessWidget {
@@ -15,10 +16,10 @@ class HubHome extends StatelessWidget {
   static String greeting() {
     final h = DateTime.now().hour;
     return h < 5
-        ? 'Good night'
+        ? tr('Good night')
         : (h < 12
-            ? 'Good morning'
-            : (h < 18 ? 'Good afternoon' : 'Good evening'));
+            ? tr('Good morning')
+            : (h < 18 ? tr('Good afternoon') : tr('Good evening')));
   }
 
   @override
@@ -51,37 +52,37 @@ class HubHome extends StatelessWidget {
             small: small,
             compact: !wide);
 
-    final live = tile('Live TV', '${c.live.length} channels', Icons.live_tv,
+    final live = tile(tr('Live TV'), '${c.live.length} channels', Icons.live_tv,
         const [Color(0xFF1FC4AF), Color(0xFF0B5F78)], () => go(1),
         autofocus: tv,
         extra: onNow == null ? null : 'On now: $onNow',
         big: true);
-    final movies = tile('Movies', '${c.movies.length} titles', Icons.movie,
+    final movies = tile(tr('Movies'), '${c.movies.length} titles', Icons.movie,
         const [Color(0xFFFF5D8F), Color(0xFFA3214F)], () => go(3));
-    final series = tile('Series', '${c.series.length} shows', Icons.layers,
+    final series = tile(tr('Series'), '${c.series.length} shows', Icons.layers,
         const [Color(0xFF8C6BFF), Color(0xFF43228F)], () => go(4));
-    final guide = tile('Guide', 'Now and next', Icons.view_list,
+    final guide = tile(tr('Guide'), tr('Now and next'), Icons.view_list,
         const [Color(0xFF4C8DFF), Color(0xFF1C3F96)], () => go(2));
     final favs = tile(
-        'Favorites',
+        tr('Favorites'),
         '${s.favoriteItems.length} saved',
         Icons.star_border,
         const [Color(0xFFFFB02E), Color(0xFFB25A0A)],
         favorites);
-    final search = tile('Search', '', Icons.search,
+    final search = tile(tr('Search'), '', Icons.search,
         const [Color(0xFF30334A), Color(0xFF262836)], () => go(5),
         small: true);
     final animeCount = s.animeCount;
-    final anime = tile('Anime', wide ? '' : '$animeCount titles', Icons.auto_awesome,
+    final anime = tile(tr('Anime'), wide ? '' : '$animeCount titles', Icons.auto_awesome,
         const [Color(0xFFFF7A59), Color(0xFF9C2F4A)], () => go(7),
         small: wide);
-    final settings = tile('Settings', '', Icons.settings_outlined,
+    final settings = tile(tr('Settings'), '', Icons.settings_outlined,
         const [Color(0xFF30334A), Color(0xFF262836)], () => go(6),
         small: true);
 
     final shelf = s.recents.isNotEmpty
-        ? Shelf(title: 'Continue watching', items: s.recents)
-        : Shelf(title: 'Live now', items: c.live.take(20).toList());
+        ? Shelf(title: tr('Continue watching'), items: s.recents)
+        : Shelf(title: tr('Live now'), items: c.live.take(20).toList());
 
     final header = Padding(
       padding: EdgeInsets.fromLTRB(20, wide ? 8 : 16, 20, 12),
@@ -94,7 +95,7 @@ class HubHome extends StatelessWidget {
                     fontSize: wide ? 34 : 26,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5)),
-            Text('Pick a place, or pick up where you left off.',
+            Text(tr('Pick a place, or pick up where you left off.'),
                 style: TextStyle(
                     color: LayoutPalette.of(context).muted,
                     fontSize: wide ? 17 : 14)),

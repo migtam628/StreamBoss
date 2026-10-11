@@ -12,6 +12,7 @@ import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Prime Time's Home: the guide, with the highlighted programme's details above it.
 class PrimeHome extends StatefulWidget {
@@ -81,7 +82,7 @@ class _PrimeHeader extends StatelessWidget {
       child: ch == null || prog == null
           ? Align(
               alignment: Alignment.centerLeft,
-              child: Text('Move over the grid to see what is on.',
+              child: Text(tr('Move over the grid to see what is on.'),
                   style: TextStyle(color: p.muted, fontSize: wide ? 18 : 14)),
             )
           : Row(children: [
@@ -126,8 +127,8 @@ class _PrimeHeader extends StatelessWidget {
                           decoration: BoxDecoration(
                               color: const Color(0xFFE5484D),
                               borderRadius: BorderRadius.circular(4)),
-                          child: const Text('LIVE',
-                              style: TextStyle(
+                          child: Text(tr('LIVE'),
+                              style: const TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 11,
                                   letterSpacing: 1)),
@@ -163,7 +164,7 @@ class _PrimeHeader extends StatelessWidget {
                           child: FilledButton(
                               onPressed: () =>
                                   openItem(context, ch, queue: live),
-                              child: const Text('Watch channel')),
+                              child: Text(tr('Watch channel'))),
                         ),
                       ],
                     ]),

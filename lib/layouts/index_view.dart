@@ -8,6 +8,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// One word of the Index: its name, a count, and what it does when chosen.
 class _Entry {
@@ -66,19 +67,19 @@ class _IndexHomeState extends State<IndexHome> {
     final header = Padding(
       padding: EdgeInsets.fromLTRB(wide ? 8 : 16, 6, wide ? 8 : 16, wide ? 12 : 8),
       child: Row(children: [
-        Text('STREAMBOSS',
+        Text(tr('STREAMBOSS'),
             style: TextStyle(color: p.text, fontWeight: FontWeight.w800, letterSpacing: 4, fontSize: wide ? 18 : 15)),
         const Spacer(),
         FocusSurface(
           radius: 0,
-          semanticLabel: 'Search',
+          semanticLabel: tr('Search'),
           onTap: () => ShellNav.maybeOf(context)?.select(5),
           builder: (_, __) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.search, color: p.text, size: 22),
               const SizedBox(width: 6),
-              Text('Search', style: TextStyle(color: p.text, fontWeight: FontWeight.w600, fontSize: 16)),
+              Text(tr('Search'), style: TextStyle(color: p.text, fontWeight: FontWeight.w600, fontSize: 16)),
             ]),
           ),
         ),
@@ -126,7 +127,7 @@ class _IndexHomeState extends State<IndexHome> {
       if (tv)
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Text('▲▼  Move      OK  Open      ◀  Back',
+          child: Text(tr('▲▼  Move      OK  Open      ◀  Back'),
               style: TextStyle(color: p.muted, fontWeight: FontWeight.w600, fontSize: 16)),
         ),
     ]);
@@ -227,8 +228,8 @@ class _Panel extends StatelessWidget {
       if (items.isEmpty)
         Text(
             entry.label == 'Settings'
-                ? 'Layout, TV size, playback, sources and more.'
-                : (entry.label == 'Continue' ? 'Nothing started yet. Titles you watch show up here.' : 'Nothing here yet.'),
+                ? tr('Layout, TV size, playback, sources and more.')
+                : (entry.label == 'Continue' ? tr('Nothing started yet. Titles you watch show up here.') : 'Nothing here yet.'),
             style: TextStyle(color: p.muted, fontSize: 18)),
       for (final it in items)
         Container(
@@ -313,7 +314,7 @@ class _ResumeBar extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w700, color: p.text)),
-                Text('Tap to resume', style: TextStyle(color: p.muted, fontSize: 13)),
+                Text(tr('Tap to resume'), style: TextStyle(color: p.muted, fontSize: 13)),
               ]),
             ),
           ]),

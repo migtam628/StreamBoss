@@ -6,6 +6,7 @@ import '../models/media.dart';
 import '../services/free_playlists.dart';
 import '../state/app_state.dart';
 import '../widgets/tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 /// Browse the public playlist directories and add one, several or a whole group as a single source.
 /// [loadCountries] is replaceable so tests need no network.
@@ -18,7 +19,7 @@ class FreePlaylistsScreen extends StatefulWidget {
 }
 
 class _FreePlaylistsScreenState extends State<FreePlaylistsScreen> {
-  static const _tabs = ['Categories', 'Countries', 'Languages', 'More'];
+  static List<String> get _tabs => [tr('Categories'), tr('Countries'), tr('Languages'), tr('More')];
   int _tab = 0;
   String _q = '';
   final _picked = <String, FreeList>{};
@@ -48,17 +49,17 @@ class _FreePlaylistsScreenState extends State<FreePlaylistsScreen> {
       final go = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('This may take a while'),
+          title: Text(tr('This may take a while')),
           content: Text(
               '${picked.length} lists will be downloaded and combined. On a phone or a TV stick that can take a minute or more, and the library will be big.'),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
+                child: Text(tr('Cancel'))),
             FilledButton(
                 autofocus: true,
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Add anyway')),
+                child: Text(tr('Add anyway'))),
           ],
         ),
       );
@@ -78,7 +79,7 @@ class _FreePlaylistsScreenState extends State<FreePlaylistsScreen> {
     final p = LayoutPalette.of(context);
     return Scaffold(
       appBar: AppBar(
-          title: const Text('Free public channels'), backgroundColor: p.bg),
+          title: Text(tr('Free public channels')), backgroundColor: p.bg),
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -87,9 +88,9 @@ class _FreePlaylistsScreenState extends State<FreePlaylistsScreen> {
             decoration: BoxDecoration(
                 color: p.surface, borderRadius: BorderRadius.circular(12)),
             child: Text(
-              'These are public lists of free and publicly available channels kept by third parties (iptv-org and Free-TV). '
+              tr('These are public lists of free and publicly available channels kept by third parties (iptv-org and Free-TV). '
               'StreamBoss does not host them or check them. Some channels are offline or only work in some countries, and what you '
-              'may watch depends on where you live. Tick the lists you want; they are combined into one library.',
+              'may watch depends on where you live. Tick the lists you want; they are combined into one library.'),
               style: TextStyle(color: p.muted, fontSize: 14, height: 1.35),
             ),
           ),
@@ -117,18 +118,18 @@ class _FreePlaylistsScreenState extends State<FreePlaylistsScreen> {
               Expanded(
                   child: Text(
                       _picked.isEmpty
-                          ? 'Nothing selected'
+                          ? tr('Nothing selected')
                           : '${_picked.length} selected',
                       style: TextStyle(color: p.muted))),
               if (_picked.isNotEmpty)
                 TextButton(
                     onPressed: () => setState(_picked.clear),
-                    child: const Text('Clear')),
+                    child: Text(tr('Clear'))),
               const SizedBox(width: 8),
               FilledButton(
                   onPressed: _picked.isEmpty ? null : _add,
                   child: Text(_picked.length <= 1
-                      ? 'Add'
+                      ? tr('Add')
                       : 'Add ${_picked.length} lists')),
             ]),
           ),
@@ -156,8 +157,8 @@ class _FreePlaylistsScreenState extends State<FreePlaylistsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
           child: TvTextField(
-              decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.search), hintText: 'Search countries'),
+              decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search), hintText: tr('Search countries')),
               onChanged: (v) => setState(() => _q = v)),
         ),
       CheckboxListTile(

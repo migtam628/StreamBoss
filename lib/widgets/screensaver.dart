@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'net_image.dart';
+import '../l10n/l10n.dart';
 
 /// Coordinates the screensaver with the rest of the app.
 class Screensaver {
@@ -212,8 +213,8 @@ class _ScreensaverViewState extends State<ScreensaverView>
                           fontWeight: FontWeight.w200,
                           color: Colors.white,
                           letterSpacing: 2)),
-                  const Text('StreamBoss',
-                      style: TextStyle(
+                  Text(tr('StreamBoss'),
+                      style: const TextStyle(
                           fontSize: 14,
                           letterSpacing: 6,
                           color: Colors.white54)),

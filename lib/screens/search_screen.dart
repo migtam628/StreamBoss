@@ -12,6 +12,7 @@ import '../widgets/voice_search.dart';
 import 'open_item.dart';
 import '../widgets/channel_sheet.dart';
 import '../widgets/tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -20,15 +21,15 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-const _kindLabels = ['All', 'Channels', 'Movies', 'Series'];
+List<String> get _kindLabels => [tr('All'), tr('Channels'), tr('Movies'), tr('Series')];
 const _kinds = <MediaKind?>[
   null,
   MediaKind.live,
   MediaKind.movie,
   MediaKind.series
 ];
-const _sortLabels = ['Best match', 'A to Z', 'Top rated'];
-const _ratingLabels = ['Any rating', '7 and up', '8 and up'];
+List<String> get _sortLabels => [tr('Best match'), tr('A to Z'), tr('Top rated')];
+List<String> get _ratingLabels => [tr('Any rating'), tr('7 and up'), tr('8 and up')];
 const _ratingMin = <double?>[null, 7, 8];
 
 class _SearchScreenState extends State<SearchScreen> {
@@ -176,7 +177,7 @@ class _SearchScreenState extends State<SearchScreen> {
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
-            hintText: 'Search channels, movies, series',
+            hintText: tr('Search channels, movies, series'),
             suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [
               VoiceButton(onWords: (w) {
                 _c.text = w;
@@ -186,7 +187,7 @@ class _SearchScreenState extends State<SearchScreen> {
               }),
               if (_q.isNotEmpty)
                 IconButton(
-                    tooltip: 'Clear',
+                    tooltip: tr('Clear'),
                     icon: const Icon(Icons.close),
                     onPressed: () {
                       _c.clear();
@@ -213,7 +214,7 @@ class _SearchScreenState extends State<SearchScreen> {
           child: TextButton.icon(
             onPressed: () => setState(() => _filters = !_filters),
             icon: Icon(_filters ? Icons.expand_less : Icons.tune, size: 18),
-            label: Text(active == 0 ? 'Filters' : 'Filters ($active)'),
+            label: Text(active == 0 ? tr('Filters') : 'Filters ($active)'),
           ),
         ),
       ),
@@ -248,7 +249,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         if (cats.isNotEmpty)
           ChipRow(
-            labels: ['Any category', ...cats.take(40)],
+            labels: [tr('Any category'), ...cats.take(40)],
             selected: _cat.clamp(0, cats.length > 40 ? 40 : cats.length),
             onSelect: (i) => setState(() => _cat = i),
           )
@@ -258,7 +259,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                  'Pick Channels, Movies or Series to narrow by category.',
+                  tr('Pick Channels, Movies or Series to narrow by category.'),
                   style: TextStyle(color: p.muted, fontSize: 13)),
             ),
           ),
@@ -303,7 +304,7 @@ class _Recent extends StatelessWidget {
     if (searches.isEmpty) {
       return Center(
         child: Text(
-            'Type at least two letters.\nSeveral words narrow it down, and small typos are forgiven.',
+            tr('Type at least two letters.\nSeveral words narrow it down, and small typos are forgiven.'),
             textAlign: TextAlign.center,
             style: TextStyle(color: p.muted, height: 1.4)),
       );
@@ -312,10 +313,10 @@ class _Recent extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         children: [
           Row(children: [
-            Text('Recent searches',
+            Text(tr('Recent searches'),
                 style: TextStyle(fontWeight: FontWeight.w800, color: p.muted)),
             const Spacer(),
-            TextButton(onPressed: onClear, child: const Text('Clear')),
+            TextButton(onPressed: onClear, child: Text(tr('Clear'))),
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final t in searches)

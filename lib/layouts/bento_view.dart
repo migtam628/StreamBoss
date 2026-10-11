@@ -11,6 +11,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 const _ink = Color(0xFF17141F);
 const _sky = Color(0xFF62B6FF);
@@ -37,37 +38,37 @@ class BentoHome extends StatelessWidget {
 
     final continueTile = _Tile(
       color: p.accent,
-      semantic: 'Continue',
+      semantic: tr('Continue'),
       autofocus: TvScope.of(context),
       onTap: cont == null ? () => go(3) : () => openItem(context, cont),
       child: _Continue(item: cont, resuming: resume != null, wide: wide),
     );
     final liveTile = _Tile(
       color: p.accent2,
-      semantic: 'Live now',
+      semantic: tr('Live now'),
       onTap: lastLive == null ? () => go(1) : () => openItem(context, lastLive, queue: c.live),
       child: _Live(channel: lastLive, number: liveIdx, wide: wide),
     );
     final searchTile = _Tile(
       color: _paper,
-      semantic: 'Search',
+      semantic: tr('Search'),
       onTap: () => go(5),
-      child: const Row(children: [
-        Icon(Icons.search, color: _ink, size: 28),
-        SizedBox(width: 12),
+      child: Row(children: [
+        const Icon(Icons.search, color: _ink, size: 28),
+        const SizedBox(width: 12),
         Expanded(
-            child: Text('Search channels, movies, series',
-                maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: _ink, fontSize: 18, fontWeight: FontWeight.w600))),
+            child: Text(tr('Search channels, movies, series'),
+                maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 18, fontWeight: FontWeight.w600))),
       ]),
     );
     final newTile = _Tile(
       color: _mint,
-      semantic: 'In your library',
+      semantic: tr('In your library'),
       onTap: () => go(3),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const _Label('Library'),
+        _Label(tr('Library')),
         const Spacer(),
-        for (final (n, t) in [(c.movies.length, 'Movies'), (c.series.length, 'Series'), (c.live.length, 'Channels')])
+        for (final (n, t) in [(c.movies.length, tr('Movies')), (c.series.length, tr('Series')), (c.live.length, tr('Channels'))])
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: FittedBox(
@@ -85,19 +86,19 @@ class BentoHome extends StatelessWidget {
     final favs = s.favoriteItems;
     final favTile = _Tile(
       color: _pink,
-      semantic: 'My list',
+      semantic: tr('My list'),
       onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MyListsScreen())),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const _Label('My list'),
+        _Label(tr('My list')),
         const Spacer(),
         Text('${favs.length}', style: const TextStyle(color: _ink, fontSize: 40, fontWeight: FontWeight.w800, height: 1.0)),
-        Text(favs.isEmpty ? 'Nothing saved yet' : favs.take(2).map((e) => e.name).join(', '),
+        Text(favs.isEmpty ? tr('Nothing saved yet') : favs.take(2).map((e) => e.name).join(', '),
             maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 15, fontWeight: FontWeight.w500)),
       ]),
     );
     final guideTile = _Tile(
       color: _sky,
-      semantic: 'On now, open the guide',
+      semantic: tr('On now, open the guide'),
       onTap: () => go(2),
       child: _GuideStrip(channels: c.live.take(wide ? 4 : 3).toList()),
     );
@@ -203,15 +204,15 @@ class _Continue extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     if (item == null) {
-      return const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _Label('Continue'),
-        Spacer(),
-        Text('Nothing to continue yet.', style: TextStyle(color: _ink, fontSize: 28, fontWeight: FontWeight.w800)),
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _Label(tr('Continue')),
+        const Spacer(),
+        Text(tr('Nothing to continue yet.'), style: const TextStyle(color: _ink, fontSize: 28, fontWeight: FontWeight.w800)),
       ]);
     }
     final r = s.resumeFor(item!);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _Label(resuming ? 'Continue' : 'Start with'),
+      _Label(resuming ? tr('Continue') : tr('Start with')),
       const Spacer(),
       Text(item!.name,
           maxLines: 3,
@@ -223,7 +224,7 @@ class _Continue extends StatelessWidget {
           child: Text(
               r != null
                   ? 'Resume at ${r.inMinutes} min'
-                  : (item!.kind == MediaKind.series ? 'Series' : (item!.kind == MediaKind.live ? 'Live' : 'Movie')),
+                  : (item!.kind == MediaKind.series ? tr('Series') : (item!.kind == MediaKind.live ? tr('Live') : tr('Movie'))),
               style: const TextStyle(color: _ink, fontSize: 18, fontWeight: FontWeight.w600)),
         ),
         Container(
@@ -281,15 +282,15 @@ class _Live extends StatelessWidget {
     final dot = Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFE0200F), shape: BoxShape.circle));
     if (channel == null) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _Label('Live now', lead: dot),
+        _Label(tr('Live now'), lead: dot),
         const Spacer(),
-        const Text('No live channels', style: TextStyle(color: _ink, fontSize: 24, fontWeight: FontWeight.w800)),
+        Text(tr('No live channels'), style: const TextStyle(color: _ink, fontSize: 24, fontWeight: FontWeight.w800)),
       ]);
     }
     return NowNext(
       channel: channel!,
       builder: (now, next) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _Label('Live now', lead: dot),
+        _Label(tr('Live now'), lead: dot),
         const Spacer(),
         Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
           Text('$number', style: TextStyle(color: _ink, fontSize: wide ? 58 : 46, fontWeight: FontWeight.w800, height: 0.9, letterSpacing: -2)),
@@ -297,13 +298,13 @@ class _Live extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(channel!.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 22, fontWeight: FontWeight.w800)),
-              Text(now?.title ?? 'Live', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 16, fontWeight: FontWeight.w500)),
+              Text(now?.title ?? tr('Live'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 16, fontWeight: FontWeight.w500)),
             ]),
           ),
         ]),
         if (next != null) ...[
           const SizedBox(height: 8),
-          Text('Next ${fmtTime(next.start, use24h: use24h)}  ${next.title}',
+          Text(trf('Next {time}  {title}', {'time': fmtTime(next.start, use24h: use24h), 'title': next.title}),
               maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 15, fontWeight: FontWeight.w600)),
         ],
       ]),
@@ -318,10 +319,10 @@ class _GuideStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const _Label('On now'),
+        _Label(tr('On now')),
         const Spacer(),
         if (channels.isEmpty)
-          const Text('No guide yet', style: TextStyle(color: _ink, fontSize: 20, fontWeight: FontWeight.w700))
+          Text(tr('No guide yet'), style: const TextStyle(color: _ink, fontSize: 20, fontWeight: FontWeight.w700))
         else
           Row(children: [
             for (final ch in channels)
@@ -332,7 +333,7 @@ class _GuideStrip extends StatelessWidget {
                     channel: ch,
                     builder: (now, _) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(ch.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 17, fontWeight: FontWeight.w800)),
-                      Text(now?.title ?? 'Live', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 15)),
+                      Text(now?.title ?? tr('Live'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ink, fontSize: 15)),
                     ]),
                   ),
                 ),

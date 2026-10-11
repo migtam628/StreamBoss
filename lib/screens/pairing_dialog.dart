@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../models/media.dart';
 import '../services/pairing.dart';
 import '../theme.dart';
+import '../l10n/l10n.dart';
 
 /// Shows the "set up from your phone" screen. Resolves with the login the phone sent, or null
 /// if the dialog was dismissed. [start] is overridable for tests.
@@ -72,11 +73,11 @@ class _PairingDialogState extends State<_PairingDialog> {
   Widget build(BuildContext context) {
     final s = _session;
     return AlertDialog(
-      title: const Text('Set up from your phone'),
+      title: Text(tr('Set up from your phone')),
       content: SizedBox(
         width: 640,
         child: _failed
-            ? const Text("This device has no home-network address to share. Connect it to your Wi-Fi or Ethernet and try again, or type the login here.")
+            ? Text(tr("This device has no home-network address to share. Connect it to your Wi-Fi or Ethernet and try again, or type the login here."))
             : s == null
                 ? const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()))
                 : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -89,21 +90,21 @@ class _PairingDialogState extends State<_PairingDialog> {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         _step('1', Text.rich(TextSpan(children: [
-                          const TextSpan(text: 'On your phone (same Wi-Fi) scan the code or open\n'),
+                          TextSpan(text: tr('On your phone (same Wi-Fi) scan the code or open\n')),
                           TextSpan(text: s.url, style: const TextStyle(fontWeight: FontWeight.w700, color: Boss.accent2)),
                         ]))),
                         _step('2', Text.rich(TextSpan(children: [
-                          const TextSpan(text: 'Enter the PIN  '),
+                          TextSpan(text: tr('Enter the PIN  ')),
                           TextSpan(text: s.pin, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 6)),
                         ]))),
-                        _step('3', const Text('Fill in your login and tap Send to TV.')),
-                        const Text('Your login travels over your home network only.', style: TextStyle(color: Boss.muted, fontSize: 12)),
+                        _step('3', Text(tr('Fill in your login and tap Send to TV.'))),
+                        Text(tr('Your login travels over your home network only.'), style: const TextStyle(color: Boss.muted, fontSize: 12)),
                       ]),
                     ),
                   ]),
       ),
       actions: [
-        TextButton(autofocus: true, onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        TextButton(autofocus: true, onPressed: () => Navigator.of(context).pop(), child: Text(tr('Cancel'))),
       ],
     );
   }

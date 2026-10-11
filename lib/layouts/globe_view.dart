@@ -11,6 +11,7 @@ import '../state/app_state.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Simplified outlines of the continents as (longitude, latitude) points. They are only dotted in, so
 /// they need to be recognisable, not exact.
@@ -376,7 +377,7 @@ class _GlobeHomeState extends State<GlobeHome> {
           color: p.surface,
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
           child: Text(
-            'These channels do not name their countries, so there is no map to show. Here is the channel list instead.',
+            tr('These channels do not name their countries, so there is no map to show. Here is the channel list instead.'),
             style: TextStyle(color: p.muted, fontSize: wide ? 16 : 13),
           ),
         ),
@@ -394,7 +395,7 @@ class _GlobeHomeState extends State<GlobeHome> {
     };
     final counts = <String, int>{};
     for (final ch in group.channels) {
-      final l = labelOf[ch.categoryId] ?? 'General';
+      final l = labelOf[ch.categoryId] ?? tr('General');
       counts[l] = (counts[l] ?? 0) + 1;
     }
     final chipNames = (counts.entries.toList()
@@ -406,7 +407,7 @@ class _GlobeHomeState extends State<GlobeHome> {
         ? group.channels
         : [
             for (final ch in group.channels)
-              if ((labelOf[ch.categoryId] ?? 'General') ==
+              if ((labelOf[ch.categoryId] ?? tr('General')) ==
                   chipNames[chip - 1].key)
                 ch
           ];
@@ -446,7 +447,7 @@ class _GlobeHomeState extends State<GlobeHome> {
     final chips = SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(children: [
-        chipW(0, 'All', group.channels.length),
+        chipW(0, tr('All'), group.channels.length),
         for (var i = 0; i < chipNames.length; i++)
           Padding(
               padding: const EdgeInsets.only(left: 8),
@@ -457,7 +458,7 @@ class _GlobeHomeState extends State<GlobeHome> {
     Widget row(int i, MediaItem ch) {
       final now = s.programmesFor(ch).where((x) => x.isNow);
       final sub = now.isEmpty
-          ? (labelOf[ch.categoryId] ?? 'Live')
+          ? (labelOf[ch.categoryId] ?? tr('Live'))
           : 'now: ${now.first.title}';
       return Padding(
         padding: const EdgeInsets.only(bottom: 6),
@@ -505,7 +506,7 @@ class _GlobeHomeState extends State<GlobeHome> {
                               fontSize: wide ? 13 : 12, color: p.muted)),
                     ]),
               ),
-              Text('LIVE',
+              Text(tr('LIVE'),
                   style: TextStyle(
                       color: p.accent,
                       fontWeight: FontWeight.w800,
@@ -631,7 +632,7 @@ class _GlobeHomeState extends State<GlobeHome> {
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: p.text)),
-                    Text('What is on now',
+                    Text(tr('What is on now'),
                         style: TextStyle(color: p.muted, fontSize: 13)),
                     const SizedBox(height: 10),
                     Expanded(child: SingleChildScrollView(child: list)),

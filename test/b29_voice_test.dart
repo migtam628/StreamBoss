@@ -18,7 +18,9 @@ class FakeVoice implements VoiceInput {
     String? localeId,
   }) async {
     this.onWords = onWords;
-    if (!available) onError?.call('Voice search is not available on this device.');
+    if (!available) {
+      onError?.call('Voice search is not available on this device.');
+    }
     return available;
   }
 
@@ -28,13 +30,16 @@ class FakeVoice implements VoiceInput {
   Future<void> cancel() async => cancelled = true;
 }
 
-Future<void> openDialog(WidgetTester t, FakeVoice v, List<String?> results) async {
+Future<void> openDialog(
+    WidgetTester t, FakeVoice v, List<String?> results) async {
   makeVoiceInput = () => v;
   await t.pumpWidget(MaterialApp(
     theme: Boss.theme(),
     home: Builder(
       builder: (c) => Scaffold(
-        body: TextButton(onPressed: () async => results.add(await askByVoice(c)), child: const Text('open')),
+        body: TextButton(
+            onPressed: () async => results.add(await askByVoice(c)),
+            child: const Text('open')),
       ),
     ),
   ));
@@ -46,7 +51,8 @@ Future<void> openDialog(WidgetTester t, FakeVoice v, List<String?> results) asyn
 void main() {
   tearDown(() => makeVoiceInput = SpeechVoiceInput.new);
 
-  testWidgets('words appear as they are heard and the final result is returned', (t) async {
+  testWidgets('words appear as they are heard and the final result is returned',
+      (t) async {
     final v = FakeVoice();
     final got = <String?>[];
     await openDialog(t, v, got);
@@ -87,20 +93,26 @@ void main() {
     final v = FakeVoice(available: false);
     final got = <String?>[];
     await openDialog(t, v, got);
-    expect(find.text('Voice search is not available on this device.'), findsOneWidget);
+    expect(find.text('Voice search is not available on this device.'),
+        findsOneWidget);
     expect(find.text('Done'), findsNothing);
     await t.tap(find.text('Close'));
     await t.pumpAndSettle();
     expect(got, [null]);
   });
 
-  testWidgets('the microphone button only shows where voice search can work', (t) async {
+  testWidgets('the microphone button only shows where voice search can work',
+      (t) async {
     try {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-      await t.pumpWidget(MaterialApp(theme: Boss.theme(), home: Scaffold(body: VoiceButton(onWords: (_) {}))));
+      await t.pumpWidget(MaterialApp(
+          theme: Boss.theme(),
+          home: Scaffold(body: VoiceButton(onWords: (_) {}))));
       expect(find.byIcon(Icons.mic_none), findsNothing);
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
-      await t.pumpWidget(MaterialApp(theme: Boss.theme(), home: Scaffold(body: VoiceButton(onWords: (_) {}))));
+      await t.pumpWidget(MaterialApp(
+          theme: Boss.theme(),
+          home: Scaffold(body: VoiceButton(onWords: (_) {}))));
       expect(find.byIcon(Icons.mic_none), findsOneWidget);
     } finally {
       debugDefaultTargetPlatformOverride = null;

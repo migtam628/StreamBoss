@@ -7,6 +7,7 @@ import '../services/tmdb.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import 'net_image.dart';
+import '../l10n/l10n.dart';
 
 /// Poster, backdrop, overview, cast and trailer for a movie or series.
 /// Details come from the provider itself (Xtream) and from TMDB when a key is set;
@@ -81,7 +82,7 @@ class _TmdbHeaderState extends State<TmdbHeader> {
                   if (t != null && t.cast.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
-                      child: Text('Cast: ${t.cast.join(', ')}',
+                      child: Text(trf('Cast: {names}', {'names': t.cast.join(', ')}),
                           style: TextStyle(color: LayoutPalette.of(context).muted)),
                     ),
                   if (t?.trailerKey != null)
@@ -89,7 +90,7 @@ class _TmdbHeaderState extends State<TmdbHeader> {
                       padding: const EdgeInsets.only(top: 12),
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.ondemand_video),
-                        label: const Text('Trailer'),
+                        label: Text(tr('Trailer')),
                         onPressed: () => launchUrl(
                             Uri.parse('https://www.youtube.com/watch?v=${t!.trailerKey}'),
                             mode: LaunchMode.externalApplication),

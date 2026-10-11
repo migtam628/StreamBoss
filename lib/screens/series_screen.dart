@@ -15,6 +15,7 @@ import '../widgets/details_kit.dart';
 import '../widgets/tv.dart';
 import 'open_item.dart';
 import 'player_screen.dart';
+import '../l10n/l10n.dart';
 
 /// The series page: the Showcase picture, a Continue button that knows which episode is next, and tabs
 /// for Episodes (by season, with progress and a mark for watched), Overview, Cast, More like this and
@@ -121,21 +122,21 @@ class _SeriesScreenState extends State<SeriesScreen> {
               if (all.isNotEmpty && next != null)
                 button(Icons.play_arrow, nextLabel(), () => _play(all, next), primary: true, autofocus: true)
               else if (all.isNotEmpty)
-                button(Icons.replay, 'Watch again from the start', () {
+                button(Icons.replay, tr('Watch again from the start'), () {
                   s.setWatched([for (final x in all) x.item], false);
                   _play(all, 0, at: Duration.zero);
                 }, primary: true, autofocus: true),
-              button(s.isFavorite(series) ? Icons.favorite : Icons.favorite_border, s.isFavorite(series) ? 'In My list' : 'My list',
+              button(s.isFavorite(series) ? Icons.favorite : Icons.favorite_border, s.isFavorite(series) ? tr('In My list') : tr('My list'),
                   () => s.toggleFavorite(series)),
               button(Icons.collections_bookmark_outlined,
-                  s.collections.values.any((l) => l.contains(series.key)) ? 'In a collection' : 'Collection',
+                  s.collections.values.any((l) => l.contains(series.key)) ? tr('In a collection') : tr('Collection'),
                   () => showCollectionsSheet(context, series)),
               if (t?.trailerKey != null)
-                button(Icons.ondemand_video, 'Trailer',
+                button(Icons.ondemand_video, tr('Trailer'),
                     () => launchUrl(Uri.parse('https://www.youtube.com/watch?v=${t!.trailerKey}'), mode: LaunchMode.externalApplication)),
             ]);
 
-            const tabs = ['Episodes', 'Overview', 'Cast', 'More like this', 'Details'];
+            final tabs = [tr('Episodes'), tr('Overview'), tr('Cast'), tr('More like this'), tr('Details')];
             final overview = (t?.overview?.isNotEmpty ?? false) ? t!.overview : series.plot;
             return ListView(children: [
               DetailsHero(
@@ -194,7 +195,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
     if (all.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 16),
-        child: Text(done ? 'No episodes listed by your provider.' : 'Loading episodes…', style: TextStyle(color: p.muted)),
+        child: Text(done ? tr('No episodes listed by your provider.') : tr('Loading episodes…'), style: TextStyle(color: p.muted)),
       );
     }
     final current = _season ?? (next == null ? seasons.first : all[next].e.season);
@@ -204,7 +205,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (seasons.length > 1)
         ChipRow(
-          labels: [for (final n in seasons) n == 0 ? 'Specials' : 'Season $n'],
+          labels: [for (final n in seasons) n == 0 ? tr('Specials') : 'Season $n'],
           selected: seasons.indexOf(current),
           onSelect: (i) => setState(() => _season = seasons[i]),
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -212,10 +213,10 @@ class _SeriesScreenState extends State<SeriesScreen> {
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(children: [
-          Expanded(child: Text('${inSeason.length} episodes · $seen watched', style: TextStyle(color: p.muted))),
+          Expanded(child: Text(trf('{n} episodes · {seen} watched', {'n': inSeason.length, 'seen': seen}), style: TextStyle(color: p.muted))),
           TextButton.icon(
             icon: Icon(everyWatched ? Icons.visibility_off_outlined : Icons.check_circle_outline, size: 18),
-            label: Text(everyWatched ? 'Mark season not watched' : 'Mark season watched'),
+            label: Text(everyWatched ? tr('Mark season not watched') : tr('Mark season watched')),
             onPressed: () {
               // Stay on this season even though the next episode may now be in another one.
               setState(() => _season = current);
@@ -265,7 +266,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                       margin: const EdgeInsets.only(left: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(color: p.accent, borderRadius: BorderRadius.circular(4)),
-                      child: Text('NEW', style: TextStyle(color: p.onAccent, fontSize: 10, fontWeight: FontWeight.w800)),
+                      child: Text(tr('NEW'), style: TextStyle(color: p.onAccent, fontSize: 10, fontWeight: FontWeight.w800)),
                     ),
                 ]),
                 if (x.e.minutes != null || x.e.plot != null)
@@ -291,10 +292,10 @@ class _SeriesScreenState extends State<SeriesScreen> {
   Widget _overview(LayoutPalette p, String? overview, TmdbInfo? t) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: 8),
-        Text(overview ?? 'No description from your provider yet.', style: TextStyle(color: p.text, fontSize: 16, height: 1.45)),
-        if (t != null && t.genres.isNotEmpty) ...[const DetailsHeading('Genres'), MetaChips(t.genres)],
+        Text(overview ?? tr('No description from your provider yet.'), style: TextStyle(color: p.text, fontSize: 16, height: 1.45)),
+        if (t != null && t.genres.isNotEmpty) ...[DetailsHeading(tr('Genres')), MetaChips(t.genres)],
         if (t != null && t.directors.isNotEmpty) ...[
-          const DetailsHeading('Created by'),
+          DetailsHeading(tr('Created by')),
           Text(t.directors.join(', '), style: TextStyle(color: p.text)),
         ],
       ]);
@@ -304,7 +305,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
     if (people.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 12),
-        child: Text('No cast listed. Add a TMDB key in Settings for photos and roles.', style: TextStyle(color: p.muted)),
+        child: Text(tr('No cast listed. Add a TMDB key in Settings for photos and roles.'), style: TextStyle(color: p.muted)),
       );
     }
     return Padding(padding: const EdgeInsets.only(top: 12), child: PeopleWrap(people));
@@ -315,7 +316,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
     if (more.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 12),
-        child: Text('Nothing else in this category.', style: TextStyle(color: LayoutPalette.of(context).muted)),
+        child: Text(tr('Nothing else in this category.'), style: TextStyle(color: LayoutPalette.of(context).muted)),
       );
     }
     return Padding(padding: const EdgeInsets.only(top: 12), child: TitleShelf(items: more, onOpen: (m) => openItem(context, m)));
@@ -325,20 +326,20 @@ class _SeriesScreenState extends State<SeriesScreen> {
     final total = all.fold<int>(0, (a, x) => a + (x.e.minutes ?? 0));
     final last = all.map((x) => x.e.airDate).whereType<String>().fold<String?>(null, (a, d) => a == null || d.compareTo(a) > 0 ? d : a);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const DetailsHeading('Facts'),
+      DetailsHeading(tr('Facts')),
       FactsTable([
-        ('Year', t?.year),
-        ('Seasons', seasons.isEmpty ? null : '${seasons.length}'),
-        ('Episodes', all.isEmpty ? null : '${all.length}'),
-        ('Total running time', total > 0 ? formatRuntime(total) : null),
-        ('Latest episode aired', last),
-        ('Genre', (t?.genres.isEmpty ?? true) ? null : t!.genres.join(' · ')),
-        ('Network', t?.network),
-        ('Status', t?.status),
-        ('Country', (t?.countries.isEmpty ?? true) ? null : t!.countries.join(' · ')),
-        ('Age rating', t?.certification),
-        ('Language', lang == null ? null : languageName(lang)),
-        ('Category', s.vodCategoryName(series)),
+        (tr('Year'), t?.year),
+        (tr('Seasons'), seasons.isEmpty ? null : '${seasons.length}'),
+        (tr('Episodes'), all.isEmpty ? null : '${all.length}'),
+        (tr('Total running time'), total > 0 ? formatRuntime(total) : null),
+        (tr('Latest episode aired'), last),
+        (tr('Genre'), (t?.genres.isEmpty ?? true) ? null : t!.genres.join(' · ')),
+        (tr('Network'), t?.network),
+        (tr('Status'), t?.status),
+        (tr('Country'), (t?.countries.isEmpty ?? true) ? null : t!.countries.join(' · ')),
+        (tr('Age rating'), t?.certification),
+        (tr('Language'), lang == null ? null : languageName(lang)),
+        (tr('Category'), s.vodCategoryName(series)),
       ]),
     ]);
   }

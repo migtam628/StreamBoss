@@ -32,6 +32,7 @@ import '../widgets/channel_sheet.dart';
 import '../widgets/screensaver.dart';
 import '../widgets/tv_slider.dart';
 import '../widgets/tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 /// Full-screen player. Remote / keyboard behaviour (mpvNova-style):
 ///  * controls hidden: OK = pause + show controls, Left/Right = seek 10s (VOD),
@@ -472,7 +473,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
     if (_player.state.position >= before - const Duration(seconds: 1)) {
-      _flash('Nothing earlier is saved for this channel');
+      _flash(tr('Nothing earlier is saved for this channel'));
     } else {
       _flash('${_fmt(_behind)} behind live');
     }
@@ -480,7 +481,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   void _forwardLive(int secs) {
     if (_behind < const Duration(seconds: 2)) {
-      _flash('Already live');
+      _flash(tr('Already live'));
       return;
     }
     _seekBy(secs);
@@ -497,7 +498,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       await _player.open(Media(_source(0).streamUrl!, httpHeaders: _source(0).headers));
     }
     if (!_player.state.playing) await _player.play();
-    _flash('Back to live');
+    _flash(tr('Back to live'));
   }
 
   /// Reads the chapters once the file has told libmpv about them (that takes a moment).
@@ -534,7 +535,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (w == null || _app.introSkips[k] == w) return;
     final first = !_app.introSkips.containsKey(k);
     _app.rememberIntro(k, w);
-    if (first) _flash('Skip remembered for the next episodes');
+    if (first) _flash(tr('Skip remembered for the next episodes'));
   }
 
   /// The credits chapter began: offer the next episode now instead of when the file ends.
@@ -567,7 +568,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     for (var i = 0; i < _chapters.length; i++) {
       if (_chapters[i].start <= pos) now = i;
     }
-    _sheet('Chapters', [
+    _sheet(tr('Chapters'), [
       for (var i = 0; i < _chapters.length; i++)
         ListTile(
           selected: i == now,
@@ -607,7 +608,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: TvTextField(
                 controller: ctl,
-                decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Channel name or number'),
+                decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: tr('Channel name or number')),
                 onChanged: (_) => setS(() {}),
               ),
             ),
@@ -626,7 +627,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                         width: 40,
                         child: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
                     title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    subtitle: _app.isDead(c) ? const Text('Offline at the last check') : null,
+                    subtitle: _app.isDead(c) ? Text(tr('Offline at the last check')) : null,
                     onTap: () {
                       Navigator.pop(sheet);
                       if (i != _index) _zapTo(i);
@@ -658,10 +659,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     ].reversed.take(40).toList();
     _sheet('Catch-up: ${_cur.name}', [
       if (past.isEmpty)
-        const ListTile(
-          leading: Icon(Icons.info_outline),
-          title: Text('No past programmes in the guide yet'),
-          subtitle: Text('The TV guide has to be loaded, and the provider has to keep an archive for this channel.'),
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: Text(tr('No past programmes in the guide yet')),
+          subtitle: Text(tr('The TV guide has to be loaded, and the provider has to keep an archive for this channel.')),
         ),
       for (final p in past)
         ListTile(
@@ -717,7 +718,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void _goLast() {
     final at = _lastIndex;
     if (_queue == null || at == null || at >= _queue!.length) {
-      _flash('No previous channel yet');
+      _flash(tr('No previous channel yet'));
       return;
     }
     _zapTo(at);
@@ -772,12 +773,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   // Picture shape: the player button cycles through these and remembers the last one.
-  static const _shapes = <(String, String, BoxFit, double?)>[
-    ('auto', 'Auto', BoxFit.contain, null),
+  static List<(String, String, BoxFit, double?)> get _shapes => [
+    ('auto', tr('Auto'), BoxFit.contain, null),
     ('16:9', '16:9', BoxFit.fill, 16 / 9),
     ('4:3', '4:3', BoxFit.fill, 4 / 3),
-    ('fill', 'Fill the screen', BoxFit.cover, null),
-    ('stretch', 'Stretch', BoxFit.fill, null),
+    ('fill', tr('Fill the screen'), BoxFit.cover, null),
+    ('stretch', tr('Stretch'), BoxFit.fill, null),
   ];
 
   (String, String, BoxFit, double?) get _shape =>
@@ -919,7 +920,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void _toggleFav() {
     final item = _cur;
     _app.toggleFavorite(item);
-    _flash(_app.isFavorite(item) ? 'Added to My list' : 'Removed from My list');
+    _flash(_app.isFavorite(item) ? tr('Added to My list') : tr('Removed from My list'));
     if (mounted) setState(() {});
   }
 
@@ -963,8 +964,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   String _trackLabel(dynamic t) {
-    if (t.id == 'auto') return 'Auto';
-    if (t.id == 'no') return 'Off';
+    if (t.id == 'auto') return tr('Auto');
+    if (t.id == 'no') return tr('Off');
     final parts = <String>[
       if ((t.title as String?)?.isNotEmpty ?? false) t.title as String,
       if ((t.language as String?)?.isNotEmpty ?? false) (t.language as String).toUpperCase(),
@@ -975,7 +976,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void _pickAudio() {
     final tracks = _player.state.tracks.audio;
     final cur = _player.state.track.audio;
-    _sheet('Audio', [
+    _sheet(tr('Audio'), [
       for (final t in tracks)
         ListTile(
           title: Text(_trackLabel(t)),
@@ -994,7 +995,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     final messenger = ScaffoldMessenger.of(context);
     void say(String m) => messenger.showSnackBar(SnackBar(content: Text(m)));
     if (st.osKey.isEmpty) {
-      say('Add your OpenSubtitles API key under Settings > Playback first.');
+      say(tr('Add your OpenSubtitles API key under Settings > Playback first.'));
       return;
     }
     final item = _cur;
@@ -1028,7 +1029,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               final text = await svc.download(h);
               if (!mounted) return;
               await _player.setSubtitleTrack(SubtitleTrack.data(text, title: h.name, language: h.language));
-              say('Subtitles loaded.');
+              say(tr('Subtitles loaded.'));
             } catch (e) {
               say('$e');
             }
@@ -1040,12 +1041,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void _pickSubtitle() {
     final tracks = _player.state.tracks.subtitle;
     final cur = _player.state.track.subtitle;
-    _sheet('Subtitles', [
+    _sheet(tr('Subtitles'), [
       if (_cur.kind != MediaKind.live)
         ListTile(
           leading: const Icon(Icons.search),
-          title: const Text('Search online'),
-          subtitle: const Text('OpenSubtitles'),
+          title: Text(tr('Search online')),
+          subtitle: Text(tr('OpenSubtitles')),
           onTap: () {
             Navigator.pop(context);
             _findSubtitles();
@@ -1064,7 +1065,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   void _pickSpeed() {
-    _sheet('Speed', [
+    _sheet(tr('Speed'), [
       for (final r in const [0.5, 0.75, 1.0, 1.25, 1.5, 2.0])
         ListTile(
           title: Text('${r}x'),
@@ -1078,9 +1079,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   void _pickSleep() {
-    _sheet('Sleep timer', [
+    _sheet(tr('Sleep timer'), [
       ListTile(
-        title: const Text('Off'),
+        title: Text(tr('Off')),
         trailing: _sleepAt == null ? const Icon(Icons.check, color: Boss.accent) : null,
         onTap: () {
           _sleepTimer?.cancel();
@@ -1116,12 +1117,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         listenable: _settings,
         builder: (ctx, _) => SafeArea(
           child: ListView(shrinkWrap: true, children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Shaders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(tr('Shaders'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             ),
             if (!shadersSupported)
-              const ListTile(title: Text('Not available on web')),
+              ListTile(title: Text(tr('Not available on web'))),
             for (final sh in _settings.shaders)
               SwitchListTile(
                 title: Text(sh.name),
@@ -1174,7 +1175,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     final src = _queue != null ? _source(_index) : _vod;
     final url = src.streamUrl;
     if (url == null) {
-      _flash('Nothing to cast yet');
+      _flash(tr('Nothing to cast yet'));
       return;
     }
     showCastSheet(
@@ -1185,7 +1186,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       poster: src.poster,
       onStarted: () {
         _player.pause();
-        _flash('Casting. Playing here is paused.');
+        _flash(tr('Casting. Playing here is paused.'));
         if (mounted) Navigator.of(context).maybePop();
       },
     );
@@ -1267,14 +1268,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.error_outline, color: Boss.accent, size: 36),
             const SizedBox(height: 10),
-            const Text("This can't be played", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Text(tr("This can't be played"), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(f.message, textAlign: TextAlign.center, style: const TextStyle(color: Boss.muted)),
             const SizedBox(height: 8),
             Text(
                 f.decoderAdvice
-                    ? 'Press Back to leave. If this keeps happening, try Settings > Playback > Decoder > Software.'
-                    : 'Press Back to leave.',
+                    ? tr('Press Back to leave. If this keeps happening, try Settings > Playback > Decoder > Software.')
+                    : tr('Press Back to leave.'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Boss.muted, fontSize: 12)),
           ]),
@@ -1293,9 +1294,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(14)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
           Text(_typed, style: const TextStyle(fontSize: 56, fontWeight: FontWeight.w800, height: 1, color: Boss.accent2)),
-          Text(at == null ? 'No such channel' : _queue![at].name,
+          Text(at == null ? tr('No such channel') : _queue![at].name,
               maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, color: Colors.white70)),
-          const Text('OK to go now', style: TextStyle(fontSize: 12, color: Colors.white54)),
+          Text(tr('OK to go now'), style: const TextStyle(fontSize: 12, color: Colors.white54)),
         ]),
       ),
     );
@@ -1315,10 +1316,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.skip_next, size: 20),
                 const SizedBox(width: 8),
-                Text(_skip!.kind == SkipKind.credits && _nextEp != null ? 'Next episode' : _skip!.label,
+                Text(_skip!.kind == SkipKind.credits && _nextEp != null ? tr('Next episode') : _skip!.label,
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(width: 10),
-                const Text('OK', style: TextStyle(color: Boss.muted, fontSize: 12)),
+                Text(tr('OK'), style: const TextStyle(color: Boss.muted, fontSize: 12)),
               ]),
             ),
           ),
@@ -1348,14 +1349,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.88), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white24)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text('UP NEXT  ·  $_nextIn', style: const TextStyle(color: Boss.accent2, fontWeight: FontWeight.w800, letterSpacing: 1.4, fontSize: 13)),
+          Text(trf('UP NEXT  ·  {n}', {'n': _nextIn}), style: const TextStyle(color: Boss.accent2, fontWeight: FontWeight.w800, letterSpacing: 1.4, fontSize: 13)),
           const SizedBox(height: 6),
           Text(n.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
           Row(children: [
-            FilledButton(autofocus: true, onPressed: _playNext, child: const Text('Play now')),
+            FilledButton(autofocus: true, onPressed: _playNext, child: Text(tr('Play now'))),
             const SizedBox(width: 10),
-            TextButton(onPressed: _cancelNext, child: const Text('Cancel')),
+            TextButton(onPressed: _cancelNext, child: Text(tr('Cancel'))),
           ]),
         ]),
       ),
@@ -1417,7 +1418,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             padding: const EdgeInsets.all(8),
             child: Row(children: [
               // pop(), not maybePop(): maybePop is intercepted by PopScope to hide the controls first.
-              _btn(Icons.arrow_back, 'Back', () => Navigator.of(context).pop()),
+              _btn(Icons.arrow_back, tr('Back'), () => Navigator.of(context).pop()),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1426,8 +1427,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                   if (now != null)
-                    Text('Now: ${now.title}'
-                        '${next != null ? '   ·   Next: ${next.title}' : ''}',
+                    Text(next != null ? trf('Now: {now}   ·   Next: {next}', {'now': now.title, 'next': next.title}) : trf('Now: {now}', {'now': now.title}),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: Boss.muted, fontSize: 13)),
@@ -1436,13 +1436,13 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               if (_live && _behind >= const Duration(seconds: 2))
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: Text('-${_fmt(_behind)} behind live',
+                  child: Text(trf('-{t} behind live', {'t': _fmt(_behind)}),
                       style: const TextStyle(color: Boss.accent2, fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
               if (_sleepAt != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: Text('Sleep ${_fmt(_sleepAt!.difference(DateTime.now()))}',
+                  child: Text(trf('Sleep {t}', {'t': _fmt(_sleepAt!.difference(DateTime.now()))}),
                       style: const TextStyle(color: Boss.accent2, fontSize: 12)),
                 ),
             ]),
@@ -1479,40 +1479,40 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               alignment: WrapAlignment.center,
               spacing: 4,
               children: [
-                if (_queue != null) _btn(Icons.skip_previous, 'Previous channel', () => _zapBy(-1)),
+                if (_queue != null) _btn(Icons.skip_previous, tr('Previous channel'), () => _zapBy(-1)),
                 _btn(_seekIcon(false), 'Back ${_settings.seekSecs}s',
                     () => _live ? _rewindLive(_settings.seekSecs) : _seekBy(-_settings.seekSecs)),
-                _btn(_playing ? Icons.pause : Icons.play_arrow, 'Play / pause', _player.playOrPause,
+                _btn(_playing ? Icons.pause : Icons.play_arrow, tr('Play / pause'), _player.playOrPause,
                     node: _playBtn),
                 _btn(_seekIcon(true), 'Forward ${_settings.seekSecs}s',
                     () => _live ? _forwardLive(_settings.seekSecs) : _seekBy(_settings.seekSecs)),
                 if (_live && _behind >= const Duration(seconds: 2))
                   _btn(Icons.sensors, 'Back to live (${_fmt(_behind)} behind)', _goLive, on: true),
-                if (_live && _app.canCatchUp(_cur)) _btn(Icons.history, 'Catch-up', _pickCatchUp),
-                if (_queue != null) _btn(Icons.skip_next, 'Next channel', () => _zapBy(1)),
-                if (_queue != null) _btn(Icons.swap_horiz, 'Last channel', _goLast),
-                if (_queue != null && _queue!.length > 1) _btn(Icons.format_list_numbered, 'Channels', _pickChannel),
+                if (_live && _app.canCatchUp(_cur)) _btn(Icons.history, tr('Catch-up'), _pickCatchUp),
+                if (_queue != null) _btn(Icons.skip_next, tr('Next channel'), () => _zapBy(1)),
+                if (_queue != null) _btn(Icons.swap_horiz, tr('Last channel'), _goLast),
+                if (_queue != null && _queue!.length > 1) _btn(Icons.format_list_numbered, tr('Channels'), _pickChannel),
                 _btn(_app.isFavorite(_cur) ? Icons.star : Icons.star_border,
                     _app.isFavorite(_cur) ? 'Remove from My list (F)' : 'Add to My list (F)', _toggleFav,
                     on: _app.isFavorite(_cur)),
                 if (_live) _btn(Icons.tune, 'Channel options (Menu)', _channelMenu),
                 if (_skip != null)
-                  _btn(Icons.skip_next, _skip!.kind == SkipKind.credits && _nextEp != null ? 'Next episode' : _skip!.label, _doSkip, on: true),
-                if (_chapters.length > 1) _btn(Icons.bookmarks_outlined, 'Chapters', _pickChapter),
+                  _btn(Icons.skip_next, _skip!.kind == SkipKind.credits && _nextEp != null ? tr('Next episode') : _skip!.label, _doSkip, on: true),
+                if (_chapters.length > 1) _btn(Icons.bookmarks_outlined, tr('Chapters'), _pickChapter),
                 if (!_live)
                   _btn(Icons.fast_forward, 'Skip ahead (+${_settings.skipSecs}s)', () => _seekBy(_settings.skipSecs)),
                 _btn(Icons.aspect_ratio, 'Picture shape (${_shape.$2})', _cycleShape, on: _shape.$1 != 'auto'),
-                _btn(Icons.audiotrack, 'Audio', _pickAudio),
-                _btn(Icons.subtitles, 'Subtitles', _pickSubtitle),
-                if (!_live) _btn(Icons.speed, 'Speed', _pickSpeed, on: _rate != 1),
+                _btn(Icons.audiotrack, tr('Audio'), _pickAudio),
+                _btn(Icons.subtitles, tr('Subtitles'), _pickSubtitle),
+                if (!_live) _btn(Icons.speed, tr('Speed'), _pickSpeed, on: _rate != 1),
                 if (shadersSupported)
-                  _btn(Icons.auto_fix_high, 'Shaders', _pickShaders, on: _settings.shaderEnabled.isNotEmpty),
-                _btn(Icons.bedtime, 'Sleep timer', _pickSleep, on: _sleepAt != null),
+                  _btn(Icons.auto_fix_high, tr('Shaders'), _pickShaders, on: _settings.shaderEnabled.isNotEmpty),
+                _btn(Icons.bedtime, tr('Sleep timer'), _pickSleep, on: _sleepAt != null),
                 _btn(Icons.picture_in_picture, 'Mini player (P)', _minimize),
                 if (castSupported) _btn(Icons.cast, 'Cast to TV (experimental)', _cast),
                 if (airPlaySupported) const AirPlayButton(),
                 if (_canPip) _btn(Icons.picture_in_picture_alt, 'Picture-in-picture (system)', _enterPip),
-                _btn(Icons.analytics_outlined, 'Stats', _toggleStats, on: _stats),
+                _btn(Icons.analytics_outlined, tr('Stats'), _toggleStats, on: _stats),
               ],
             ),
           ),

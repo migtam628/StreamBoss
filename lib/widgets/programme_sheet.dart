@@ -7,19 +7,20 @@ import '../services/time_format.dart';
 import '../services/xmltv.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
+import '../l10n/l10n.dart';
 
 String _day(DateTime d) {
   final l = d.toLocal(), n = DateTime.now();
-  if (l.year == n.year && l.month == n.month && l.day == n.day) return 'Today';
+  if (l.year == n.year && l.month == n.month && l.day == n.day) return tr('Today');
   final t = n.add(const Duration(days: 1));
   if (l.year == t.year && l.month == t.month && l.day == t.day) {
-    return 'Tomorrow';
+    return tr('Tomorrow');
   }
   final y = n.subtract(const Duration(days: 1));
   if (l.year == y.year && l.month == y.month && l.day == y.day) {
-    return 'Yesterday';
+    return tr('Yesterday');
   }
-  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  final names = [tr('Mon'), tr('Tue'), tr('Wed'), tr('Thu'), tr('Fri'), tr('Sat'), tr('Sun')];
   return '${names[l.weekday - 1]} ${l.day}/${l.month}';
 }
 
@@ -66,7 +67,7 @@ Future<void> showProgrammeSheet(BuildContext context, MediaItem ch, Programme p,
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
               child: Text(
-                  p.desc ?? 'The guide has no description for this programme.',
+                  p.desc ?? tr('The guide has no description for this programme.'),
                   style: TextStyle(
                       color: p.desc == null ? pal.muted : pal.text,
                       height: 1.4,
@@ -78,7 +79,7 @@ Future<void> showProgrammeSheet(BuildContext context, MediaItem ch, Programme p,
                 autofocus: true,
                 leading: const Icon(Icons.history),
                 title: Text(
-                    live ? 'Watch from the start' : 'Watch from the archive'),
+                    live ? tr('Watch from the start') : tr('Watch from the archive')),
                 subtitle: Text(
                     'The provider keeps ${ch.archiveDays} day${ch.archiveDays == 1 ? '' : 's'} of ${ch.name}'),
                 onTap: () {
@@ -90,7 +91,7 @@ Future<void> showProgrammeSheet(BuildContext context, MediaItem ch, Programme p,
               ListTile(
                 autofocus: !catchUp,
                 leading: const Icon(Icons.live_tv),
-                title: Text(live ? 'Watch live' : 'Watch ${ch.name} now'),
+                title: Text(live ? tr('Watch live') : 'Watch ${ch.name} now'),
                 onTap: () {
                   Navigator.pop(sheet);
                   openItem(context, ch, queue: queue);
@@ -100,10 +101,10 @@ Future<void> showProgrammeSheet(BuildContext context, MediaItem ch, Programme p,
               ListTile(
                 autofocus: true,
                 leading: const Icon(Icons.live_tv),
-                title: Text('Watch ${ch.name} now'),
+                title: Text(trf('Watch {name} now', {'name': ch.name})),
                 subtitle: Text(app.canCatchUp(ch)
                     ? 'This programme is older than the ${ch.archiveDays} days the provider keeps'
-                    : 'This channel has no catch-up'),
+                    : tr('This channel has no catch-up')),
                 onTap: () {
                   Navigator.pop(sheet);
                   openItem(context, ch, queue: queue);
@@ -130,7 +131,7 @@ class _ReminderTile extends StatelessWidget {
     return ListTile(
       autofocus: true,
       leading: Icon(set ? Icons.notifications_active : Icons.notifications_none),
-      title: Text(set ? 'Remove the reminder' : 'Remind me'),
+      title: Text(set ? tr('Remove the reminder') : tr('Remind me')),
       subtitle: Text(set
           ? 'You will be told ${app.reminderLead} min before it starts'
           : 'A notification ${app.reminderLead} min before ${fmtTime(programme.start, use24h: use24h)}'),
@@ -140,15 +141,15 @@ class _ReminderTile extends StatelessWidget {
         if (set) {
           final r = app.reminders.firstWhere((e) => e.channelKey == channel.key && e.startMs == programme.start.millisecondsSinceEpoch);
           await app.removeReminder(r);
-          messenger?.showSnackBar(const SnackBar(content: Text('Reminder removed')));
+          messenger?.showSnackBar(SnackBar(content: Text(tr('Reminder removed'))));
         } else {
           final res = await app.addReminder(channel, programme);
           messenger?.showSnackBar(SnackBar(
               content: Text(!res.added
-                  ? 'That programme has already started'
+                  ? tr('That programme has already started')
                   : res.system
                       ? 'Reminder set for ${fmtTime(programme.start, use24h: use24h)}'
-                      : 'Reminder set. It shows in the app while it is open (allow notifications to get it when it is closed)')));
+                      : tr('Reminder set. It shows in the app while it is open (allow notifications to get it when it is closed)'))));
         }
       },
     );

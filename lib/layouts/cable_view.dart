@@ -12,6 +12,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 const _mono = 'monospace';
 
@@ -52,7 +53,7 @@ class _CableHomeState extends State<CableHome> {
     final wide = tv || MediaQuery.sizeOf(context).width >= 800;
     final list = _channels(s);
     if (s.shown.live.isEmpty) {
-      return Center(child: Text('No live channels in this source.', style: TextStyle(color: p.muted)));
+      return Center(child: Text(tr('No live channels in this source.'), style: TextStyle(color: p.muted)));
     }
     // Start on the channel watched last, if it is in the list.
     _idx ??= () {
@@ -68,7 +69,7 @@ class _CableHomeState extends State<CableHome> {
     final picture = _Picture(
       channel: cur,
       number: idx + 1,
-      categoryName: cats.where((c) => c.id == cur?.categoryId).firstOrNull?.name ?? 'Live',
+      categoryName: cats.where((c) => c.id == cur?.categoryId).firstOrNull?.name ?? tr('Live'),
       wide: wide,
       onStep: (by) => _step(by, list.length),
       onOpen: () {
@@ -104,7 +105,7 @@ class _CableHomeState extends State<CableHome> {
       return Column(children: [
         Expanded(child: picture),
         ChipRow(
-          labels: ['ALL', for (final c in cats) c.name.toUpperCase()],
+          labels: [tr('ALL'), for (final c in cats) c.name.toUpperCase()],
           selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
           onSelect: (i) => pickCat(i == 0 ? null : cats[i - 1].id),
         ),
@@ -120,7 +121,7 @@ class _CableHomeState extends State<CableHome> {
           SizedBox(
             width: 210,
             child: ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: [
-              _CatChip(label: 'ALL', selected: _cat == null, onTap: () => pickCat(null)),
+              _CatChip(label: tr('ALL'), selected: _cat == null, onTap: () => pickCat(null)),
               for (final c in cats)
                 _CatChip(label: c.name.toUpperCase(), selected: _cat == c.id, onTap: () => pickCat(c.id)),
             ]),
@@ -176,7 +177,7 @@ class _Picture extends StatelessWidget {
               fontWeight: FontWeight.w700,
               letterSpacing: 1.4)),
       const SizedBox(height: 4),
-      Text('$categoryName  ·  ${wide ? 'press OK' : 'tap'} to watch',
+      Text(trf(wide ? '{name}  ·  press OK to watch' : '{name}  ·  tap to watch', {'name': categoryName}),
           maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: _mono, color: p.muted, fontSize: 15)),
     ]);
     final body = Stack(fit: StackFit.expand, children: [
@@ -229,7 +230,7 @@ class _Picture extends StatelessWidget {
           const Spacer(),
           Align(
             alignment: Alignment.bottomRight,
-            child: Text('▲ ▼  CHANNEL',
+            child: Text(tr('▲ ▼  CHANNEL'),
                 style: TextStyle(fontFamily: _mono, color: p.muted, fontSize: 14, letterSpacing: 1.6)),
           ),
         ]),
@@ -362,7 +363,7 @@ class _Banner extends StatelessWidget {
                   Expanded(
                       child: Text(
                           e == null
-                              ? (tag == 'NOW' ? 'No guide data for this channel' : '')
+                              ? (tag == 'NOW' ? tr('No guide data for this channel') : '')
                               : '${e.title}  ·  ${fmtTime(e.start, use24h: use24h)} to ${fmtTime(e.end, use24h: use24h)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -370,7 +371,7 @@ class _Banner extends StatelessWidget {
                   if (tail != null) Text(tail, style: mono.copyWith(color: p.muted, fontSize: 14)),
                 ]);
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              line('NOW', now,
+              line(tr('NOW'), now,
                   tail: now == null ? null : '${now.end.difference(DateTime.now()).inMinutes.clamp(0, 9999)} min left'),
               const SizedBox(height: 6),
               ClipRect(
@@ -382,7 +383,7 @@ class _Banner extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              line('NEXT', next),
+              line(tr('NEXT'), next),
             ]);
           },
         ),
@@ -435,7 +436,7 @@ class SoftKeys extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = LayoutPalette.of(context);
-    const keys = [(2, 'GUIDE'), (1, 'CHANNELS'), (3, 'MOVIES'), (4, 'SERIES'), (5, 'SEARCH'), (6, 'SETTINGS')];
+    final keys = [(2, tr('GUIDE')), (1, tr('CHANNELS')), (3, tr('MOVIES')), (4, tr('SERIES')), (5, tr('SEARCH')), (6, tr('SETTINGS'))];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(children: [

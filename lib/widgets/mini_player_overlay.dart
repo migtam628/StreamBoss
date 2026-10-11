@@ -9,6 +9,7 @@ import '../screens/player_screen.dart';
 import '../services/mini_player.dart';
 import '../state/app_state.dart';
 import 'tv.dart';
+import '../l10n/l10n.dart';
 
 /// The mini player window, drawn above every screen. Nothing is built while no mini player is active.
 class MiniPlayerOverlay extends StatelessWidget {
@@ -216,24 +217,24 @@ class _MiniWindowState extends State<_MiniWindow> {
                 bottom: 6,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   if (s.queue != null) ...[
-                    btn(Icons.skip_previous, 'Previous channel',
+                    btn(Icons.skip_previous, tr('Previous channel'),
                         s.player.previous),
                     const SizedBox(width: 4),
-                    btn(Icons.skip_next, 'Next channel', s.player.next),
+                    btn(Icons.skip_next, tr('Next channel'), s.player.next),
                     const SizedBox(width: 4),
                   ],
                   btn(_playing ? Icons.pause : Icons.play_arrow,
-                      _playing ? 'Pause' : 'Play', s.player.playOrPause),
+                      _playing ? tr('Pause') : tr('Play'), s.player.playOrPause),
                   const SizedBox(width: 4),
                   btn(_muted ? Icons.volume_off : Icons.volume_up,
-                      _muted ? 'Unmute' : 'Mute', () {
+                      _muted ? tr('Unmute') : tr('Mute'), () {
                     setState(() => _muted = !_muted);
                     s.player.setVolume(_muted ? 0 : 100);
                   }),
                   const SizedBox(width: 4),
-                  btn(Icons.open_in_full, 'Full screen', expandMiniPlayer),
+                  btn(Icons.open_in_full, tr('Full screen'), expandMiniPlayer),
                   const SizedBox(width: 4),
-                  btn(Icons.close, 'Close mini player',
+                  btn(Icons.close, tr('Close mini player'),
                       MiniPlayer.instance.close),
                 ]),
               ),

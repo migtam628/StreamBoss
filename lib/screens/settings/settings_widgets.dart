@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../layouts/ui_layout.dart';
 import '../../widgets/tv_slider.dart';
+import '../../l10n/l10n.dart';
 
 /// Small building blocks shared by every settings page. All rows are plain ListTiles, so they
 /// take focus from a D-pad / keyboard and show the theme's focus highlight.
@@ -12,7 +13,7 @@ class SettingsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 22, 16, 4),
-        child: Text(text.toUpperCase(),
+        child: Text(tr(text).toUpperCase(),
             style: TextStyle(
                 color: LayoutPalette.of(context).accent, fontWeight: FontWeight.w700, letterSpacing: 1.5, fontSize: 12)),
       );
@@ -66,9 +67,9 @@ class ChoiceRow<T> extends StatelessWidget {
 
   String get _label {
     for (final o in options) {
-      if (o.$1 == value) return o.$2;
+      if (o.$1 == value) return tr(o.$2);
     }
-    return 'Custom';
+    return tr('Custom');
   }
 
   Future<void> _pick(BuildContext context) async {
@@ -80,7 +81,7 @@ class ChoiceRow<T> extends StatelessWidget {
           for (final o in options)
             ListTile(
               autofocus: o.$1 == value,
-              title: Text(o.$2),
+              title: Text(tr(o.$2)),
               trailing: o.$1 == value ? Icon(Icons.check, color: LayoutPalette.of(context).accent) : null,
               onTap: () => Navigator.pop(ctx, o.$1),
             ),
@@ -128,7 +129,7 @@ class SliderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
         leading: icon == null ? null : Icon(icon),
-        title: Text('$title: ${label(value)}'),
+        title: Text('${tr(title)}: ${label(value)}'),
         subtitle: TvSlider(
           value: value.clamp(min, max),
           min: min,
@@ -175,7 +176,7 @@ class InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-        title: Text(title),
+        title: Text(tr(title)),
         trailing: Text(value, style: TextStyle(color: LayoutPalette.of(context).muted)),
       );
 }
@@ -192,7 +193,7 @@ Future<bool> confirmDialog(
       title: Text(title),
       content: Text(body),
       actions: [
-        TextButton(autofocus: true, onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        TextButton(autofocus: true, onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(confirm)),
       ],
     ),

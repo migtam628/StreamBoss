@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/l10n.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'models/media.dart';
@@ -99,7 +101,12 @@ class StreamBossApp extends StatelessWidget {
     final profiles = context.watch<ProfilesState>();
     final scale = st.textScale;
     final tv = st.isTv;
+    // Text already on screen is rebuilt when the language changes.
+    if (L10n.use(st.language)) WidgetsBinding.instance.addPostFrameCallback((_) => rebuildEverything());
     return MaterialApp(
+      locale: L10n.locale,
+      supportedLocales: [for (final l in AppLanguage.all) Locale(l.code)],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       navigatorKey: MiniPlayer.navigatorKey,
       title: 'StreamBoss',
       debugShowCheckedModeBanner: false,

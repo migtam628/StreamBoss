@@ -6,6 +6,7 @@ import '../models/media.dart';
 import '../services/details_logic.dart';
 import '../services/play_choices.dart';
 import '../state/settings_state.dart';
+import '../l10n/l10n.dart';
 
 /// What the Play options sheet decided: which copy, where to start and how to play it.
 class PlayRequest {
@@ -100,35 +101,35 @@ class _PlayOptionsState extends State<_PlayOptions> {
       child: ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 12), children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-          child: Text('Play options', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: p.text)),
+          child: Text(tr('Play options'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: p.text)),
         ),
         if (widget.resume != null) ...[
-          head('START'),
+          head(tr('START')),
           chips([
             ('Resume ${clock(widget.resume!)}', _fromResume, () => setState(() => _fromResume = true)),
-            ('From the beginning', !_fromResume, () => setState(() => _fromResume = false)),
+            (tr('From the beginning'), !_fromResume, () => setState(() => _fromResume = false)),
           ]),
         ],
         if (all.length > 1) ...[
-          head('COPY'),
+          head(tr('COPY')),
           chips([
             for (final v in all)
-              (qualityTagOf(v.name) ?? (identical(v, widget.item) ? 'This one' : 'Other copy'), identical(v, _item),
+              (qualityTagOf(v.name) ?? (identical(v, widget.item) ? tr('This one') : tr('Other copy')), identical(v, _item),
                   () => setState(() => _item = v)),
           ]),
         ],
-        head('AUDIO'),
+        head(tr('AUDIO')),
         chips([
-          ('As in Settings', _audio == null, () => setState(() => _audio = null)),
+          (tr('As in Settings'), _audio == null, () => setState(() => _audio = null)),
           for (final (code, name) in playLanguages.skip(1)) (name, _audio == code, () => setState(() => _audio = code)),
         ]),
-        head('SUBTITLES'),
+        head(tr('SUBTITLES')),
         chips([
-          ('As in Settings', _subs == null, () => setState(() => _subs = null)),
-          ('Off', _subs == 'off', () => setState(() => _subs = 'off')),
+          (tr('As in Settings'), _subs == null, () => setState(() => _subs = null)),
+          (tr('Off'), _subs == 'off', () => setState(() => _subs = 'off')),
           for (final (code, name) in playLanguages.skip(1)) (name, _subs == code, () => setState(() => _subs = code)),
         ]),
-        head('SPEED'),
+        head(tr('SPEED')),
         chips([
           ('As in Settings (${st.speed}×)', _speed == null, () => setState(() => _speed = null)),
           for (final s in playSpeeds) ('$s×', _speed == s, () => setState(() => _speed = s)),
@@ -138,7 +139,7 @@ class _PlayOptionsState extends State<_PlayOptions> {
           child: FilledButton.icon(
             autofocus: true,
             icon: const Icon(Icons.play_arrow),
-            label: Text(resuming ? 'Resume' : 'Play'),
+            label: Text(resuming ? tr('Resume') : tr('Play')),
             onPressed: () => Navigator.pop(context, PlayRequest(_item, resuming ? widget.resume : null, choices)),
           ),
         ),

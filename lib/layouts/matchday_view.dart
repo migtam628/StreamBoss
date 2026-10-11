@@ -9,6 +9,7 @@ import '../state/settings_state.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Matchday's Home: today's sport by kick-off. The guide's programmes on sports channels (and "A v B"
 /// titles anywhere) become one line each, with the channels that carry the event. The match in
@@ -92,24 +93,24 @@ class _MatchdayHomeState extends State<MatchdayHome> {
         );
 
     if (s.shown.live.isEmpty) {
-      return Center(child: Text('No live channels in this source.', style: TextStyle(color: p.muted)));
+      return Center(child: Text(tr('No live channels in this source.'), style: TextStyle(color: p.muted)));
     }
 
     // No guide, or no sport in it: the sports channels themselves.
     if (all.isEmpty) {
       final sportChannels = [for (final c in s.shown.live) if (isSportCategory(s.liveCategoryName(c))) c];
       return ListView(padding: const EdgeInsets.all(16), children: [
-        Text('MATCHDAY', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 3, color: p.accent)),
+        Text(tr('MATCHDAY'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 3, color: p.accent)),
         const SizedBox(height: 8),
         Text(
             s.guideLoading
-                ? 'Loading the TV guide...'
+                ? tr('Loading the TV guide...')
                 : s.hasGuideSource
-                ? 'No sport found in today\'s guide.'
-                : 'Matchday reads the TV guide, and this source has none. Add a guide in Settings to see the day\'s events.',
+                ? tr('No sport found in today\'s guide.')
+                : tr('Matchday reads the TV guide, and this source has none. Add a guide in Settings to see the day\'s events.'),
             style: TextStyle(color: p.muted, fontSize: wide ? 18 : 15)),
         const SizedBox(height: 14),
-        if (sportChannels.isNotEmpty) Text('Sports channels', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: p.text)),
+        if (sportChannels.isNotEmpty) Text(tr('Sports channels'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: p.text)),
         for (final ch in sportChannels.take(40))
           ListTile(
             leading: Icon(Icons.sports_soccer, color: p.accent),
@@ -194,7 +195,7 @@ class _MatchdayHomeState extends State<MatchdayHome> {
               const SizedBox(height: 4),
               Text(selected.sport.label, style: TextStyle(color: p.muted)),
               const SizedBox(height: 14),
-              Text('WATCH ON', style: TextStyle(fontSize: 13, letterSpacing: 1.5, fontWeight: FontWeight.w800, color: p.muted)),
+              Text(tr('WATCH ON'), style: TextStyle(fontSize: 13, letterSpacing: 1.5, fontWeight: FontWeight.w800, color: p.muted)),
               const SizedBox(height: 8),
               for (var i = 0; i < selected.channels.length; i++)
                 Padding(
@@ -223,10 +224,10 @@ class _MatchdayHomeState extends State<MatchdayHome> {
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(children: [
-            Text('MATCH', style: TextStyle(fontSize: wide ? 26 : 20, fontWeight: FontWeight.w800, letterSpacing: 3, color: p.text)),
-            Text('DAY', style: TextStyle(fontSize: wide ? 26 : 20, fontWeight: FontWeight.w800, letterSpacing: 3, color: p.accent)),
+            Text(tr('MATCH'), style: TextStyle(fontSize: wide ? 26 : 20, fontWeight: FontWeight.w800, letterSpacing: 3, color: p.text)),
+            Text(tr('DAY'), style: TextStyle(fontSize: wide ? 26 : 20, fontWeight: FontWeight.w800, letterSpacing: 3, color: p.accent)),
             const SizedBox(width: 18),
-            tab('All sport', sport == null, () => setState(() {
+            tab(tr('All sport'), sport == null, () => setState(() {
                   _sport = null;
                   _sel = 0;
                 })),

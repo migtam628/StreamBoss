@@ -10,6 +10,7 @@ import '../widgets/collections_sheet.dart';
 import '../widgets/media_tile.dart';
 import 'open_item.dart';
 import 'settings/settings_widgets.dart' show confirmDialog;
+import '../l10n/l10n.dart';
 
 /// My list and every collection in one place. Chips pick the list; a title can be moved to the top or
 /// earlier and later in the order you keep it, or taken out. A to Z shows the same list sorted without
@@ -63,7 +64,7 @@ class _MyListsScreenState extends State<MyListsScreen> {
               if (i > 0)
                 ListTile(
                     leading: const Icon(Icons.vertical_align_top),
-                    title: const Text('Move to the top'),
+                    title: Text(tr('Move to the top')),
                     onTap: () {
                       Navigator.pop(ctx);
                       move(top: true);
@@ -71,7 +72,7 @@ class _MyListsScreenState extends State<MyListsScreen> {
               if (i > 0)
                 ListTile(
                     leading: const Icon(Icons.arrow_back),
-                    title: const Text('Move earlier'),
+                    title: Text(tr('Move earlier')),
                     onTap: () {
                       Navigator.pop(ctx);
                       move(by: -1);
@@ -79,7 +80,7 @@ class _MyListsScreenState extends State<MyListsScreen> {
               if (i < items.length - 1)
                 ListTile(
                     leading: const Icon(Icons.arrow_forward),
-                    title: const Text('Move later'),
+                    title: Text(tr('Move later')),
                     onTap: () {
                       Navigator.pop(ctx);
                       move(by: 1);
@@ -87,7 +88,7 @@ class _MyListsScreenState extends State<MyListsScreen> {
             ],
             ListTile(
                 leading: const Icon(Icons.close),
-                title: Text(list == null ? 'Remove from My list' : 'Remove from $list'),
+                title: Text(list == null ? tr('Remove from My list') : 'Remove from $list'),
                 onTap: () {
                   Navigator.pop(ctx);
                   if (list == null) {
@@ -103,17 +104,17 @@ class _MyListsScreenState extends State<MyListsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(list ?? 'My lists'),
+        title: Text(list ?? tr('My lists')),
         backgroundColor: p.bg,
         actions: [
           IconButton(
-            tooltip: 'New list',
+            tooltip: tr('New list'),
             icon: const Icon(Icons.add),
             onPressed: () async {
               final n = await askCollectionName(context);
               if (n == null || n.isEmpty) return;
               if (!s.createCollection(n)) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('That name is taken.')));
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('That name is taken.'))));
               } else {
                 setState(() => _list = n);
               }
@@ -123,22 +124,22 @@ class _MyListsScreenState extends State<MyListsScreen> {
             PopupMenuButton<String>(
               onSelected: (v) async {
                 if (v == 'rename') {
-                  final to = await askCollectionName(context, title: 'Rename list', initial: list);
+                  final to = await askCollectionName(context, title: tr('Rename list'), initial: list);
                   if (to != null && to.isNotEmpty && to != list) {
                     if (s.renameCollection(list, to)) {
                       setState(() => _list = to);
                     } else if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('That name is taken.')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('That name is taken.'))));
                     }
                   }
                 } else if (v == 'delete') {
-                  if (await confirmDialog(context, title: 'Delete "$list"?', body: 'The titles stay in your library.', confirm: 'Delete')) {
+                  if (await confirmDialog(context, title: 'Delete "$list"?', body: tr('The titles stay in your library.'), confirm: tr('Delete'))) {
                     s.deleteCollection(list);
                     setState(() => _list = null);
                   }
                 }
               },
-              itemBuilder: (_) => const [PopupMenuItem(value: 'rename', child: Text('Rename')), PopupMenuItem(value: 'delete', child: Text('Delete'))],
+              itemBuilder: (_) => [PopupMenuItem(value: 'rename', child: Text(tr('Rename'))), PopupMenuItem(value: 'delete', child: Text(tr('Delete')))],
             ),
         ],
       ),
@@ -151,9 +152,9 @@ class _MyListsScreenState extends State<MyListsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
           child: Row(children: [
-            Text('Order:', style: TextStyle(color: p.muted)),
+            Text(tr('Order:'), style: TextStyle(color: p.muted)),
             const SizedBox(width: 8),
-            for (final (label, az) in const [('Mine', false), ('A to Z', true)])
+            for (final (label, az) in [('Mine', false), (tr('A to Z'), true)])
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FocusSurface(
@@ -168,7 +169,7 @@ class _MyListsScreenState extends State<MyListsScreen> {
                 ),
               ),
             Expanded(
-              child: Text('Press and hold a title to move it',
+              child: Text(tr('Press and hold a title to move it'),
                   textAlign: TextAlign.end, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 12)),
             ),
           ]),
@@ -180,8 +181,8 @@ class _MyListsScreenState extends State<MyListsScreen> {
                     padding: const EdgeInsets.all(24),
                     child: Text(
                         list == null
-                            ? 'Nothing here yet. Press and hold a title, or choose My list on its page, to save it here.'
-                            : 'Nothing here yet. Open a movie or series and choose Add to collection.',
+                            ? tr('Nothing here yet. Press and hold a title, or choose My list on its page, to save it here.')
+                            : tr('Nothing here yet. Open a movie or series and choose Add to collection.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(color: p.muted)),
                   ),

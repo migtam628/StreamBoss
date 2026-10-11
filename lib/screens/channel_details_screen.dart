@@ -15,6 +15,7 @@ import '../widgets/details_kit.dart';
 import '../widgets/programme_sheet.dart';
 import '../widgets/tv.dart';
 import 'open_item.dart';
+import '../l10n/l10n.dart';
 
 /// The page behind a live channel: what is on now and next, Watch live, From the start when the
 /// provider keeps an archive, today's schedule (with replay marks), the facts about the channel, its
@@ -30,7 +31,7 @@ class ChannelDetailsScreen extends StatefulWidget {
 
 String? qualityLabel(String name) => switch (channelQuality(name)) {
       4 => '4K',
-      3 => 'Full HD',
+      3 => tr('Full HD'),
       2 => 'HD',
       0 => 'SD',
       _ => null,
@@ -82,7 +83,7 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
       if (s.isDead(ch)) 'Offline at the last check',
     ];
 
-    const tabs = ['Today', 'Details', 'Other copies', 'Similar channels'];
+    final tabs = [tr('Today'), tr('Details'), tr('Other copies'), tr('Similar channels')];
     return Scaffold(
       backgroundColor: p.bg,
       body: TvSafe(
@@ -96,7 +97,7 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(color: Colors.red.shade600, borderRadius: BorderRadius.circular(4)),
-                    child: const Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                    child: Text(tr('LIVE'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -106,7 +107,7 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
                 ]),
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text('until ${clockTime(onNow.end)}${next == null ? '' : '  ·  Next: ${next.title} ${clockTime(next.start)}'}',
+                  child: Text(next == null ? trf('until {end}', {'end': clockTime(onNow.end)}) : trf('until {end}  ·  Next: {title} {start}', {'end': clockTime(onNow.end), 'title': next.title, 'start': clockTime(next.start)}),
                       style: TextStyle(color: p.muted)),
                 ),
                 if (onNow.desc != null)
@@ -117,12 +118,12 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
                 const SizedBox(height: 14),
               ],
               Wrap(spacing: 10, runSpacing: 10, children: [
-                button(Icons.live_tv, 'Watch live', () => openItem(context, ch, queue: s.shown.live), primary: true, autofocus: true),
+                button(Icons.live_tv, tr('Watch live'), () => openItem(context, ch, queue: s.shown.live), primary: true, autofocus: true),
                 if (onNow != null && s.catchUpFor(ch, onNow))
-                  button(Icons.history, 'From the start', () => openCatchUp(context, ch, onNow)),
-                button(s.isFavorite(ch) ? Icons.star : Icons.star_border, s.isFavorite(ch) ? 'In My list' : 'My list', () => s.toggleFavorite(ch)),
-                button(Icons.collections_bookmark_outlined, 'Collection', () => showCollectionsSheet(context, ch)),
-                button(Icons.tune, 'Channel options', () => showChannelSheet(context, ch, details: false)),
+                  button(Icons.history, tr('From the start'), () => openCatchUp(context, ch, onNow)),
+                button(s.isFavorite(ch) ? Icons.star : Icons.star_border, s.isFavorite(ch) ? tr('In My list') : tr('My list'), () => s.toggleFavorite(ch)),
+                button(Icons.collections_bookmark_outlined, tr('Collection'), () => showCollectionsSheet(context, ch)),
+                button(Icons.tune, tr('Channel options'), () => showChannelSheet(context, ch, details: false)),
               ]),
             ]),
           ),
@@ -132,8 +133,8 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
             child: switch (_tab) {
               0 => _today(p, s, today),
               1 => _details(s, cat, country, langCode, quality, rename),
-              2 => _list(p, copies, 'No other copies of this channel in your library.', showQuality: true),
-              _ => _list(p, similar, 'No other channels in this category.'),
+              2 => _list(p, copies, tr('No other copies of this channel in your library.'), showQuality: true),
+              _ => _list(p, similar, tr('No other channels in this category.')),
             },
           ),
         ]),
@@ -145,7 +146,7 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
     if (today.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 14),
-        child: Text('No guide for this channel. Load a TV guide in Settings > Source & library.', style: TextStyle(color: p.muted)),
+        child: Text(tr('No guide for this channel. Load a TV guide in Settings > Source & library.'), style: TextStyle(color: p.muted)),
       );
     }
     return Column(children: [
@@ -178,7 +179,7 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
                   ]),
                 ),
                 if (x.isNow)
-                  Text('NOW', style: TextStyle(color: p.accent, fontWeight: FontWeight.w800, fontSize: 12))
+                  Text(tr('NOW'), style: TextStyle(color: p.accent, fontWeight: FontWeight.w800, fontSize: 12))
                 else if (s.catchUpFor(ch, x))
                   Icon(Icons.history, color: p.accent, size: 20)
                 else if (s.hasReminder(ch, x))
@@ -194,19 +195,19 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
 
   Widget _details(AppState s, String cat, Country? country, String? lang, String? quality, ChannelEdit? rename) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const DetailsHeading('Channel'),
+      DetailsHeading(tr('Channel')),
       FactsTable([
-        ('Name', ch.name),
-        ('Provider name', rename?.name == null ? null : rename!.original),
-        ('Category', cat),
-        ('Country', country?.name),
-        ('Language', lang == null ? null : languageName(lang)),
-        ('Picture', quality),
-        ('Guide id', ch.epgId),
-        ('Catch-up', ch.archiveDays > 0 ? '${ch.archiveDays} days' : 'Not kept by the provider'),
-        ('Last check', s.isDead(ch) ? 'Offline' : (s.deadKeys.isEmpty ? null : 'Online')),
-        ('In My list', s.isFavorite(ch) ? 'Yes' : 'No'),
-        ('Pinned', s.isPinned(ch.key) ? 'Yes' : null),
+        (tr('Name'), ch.name),
+        (tr('Provider name'), rename?.name == null ? null : rename!.original),
+        (tr('Category'), cat),
+        (tr('Country'), country?.name),
+        (tr('Language'), lang == null ? null : languageName(lang)),
+        (tr('Picture'), quality),
+        (tr('Guide id'), ch.epgId),
+        (tr('Catch-up'), ch.archiveDays > 0 ? '${ch.archiveDays} days' : tr('Not kept by the provider')),
+        (tr('Last check'), s.isDead(ch) ? tr('Offline') : (s.deadKeys.isEmpty ? null : tr('Online'))),
+        (tr('In My list'), s.isFavorite(ch) ? tr('Yes') : 'No'),
+        (tr('Pinned'), s.isPinned(ch.key) ? tr('Yes') : null),
       ]),
     ]);
   }

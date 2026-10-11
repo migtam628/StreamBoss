@@ -15,6 +15,7 @@ import '../widgets/vod_filter_bar.dart';
 import 'common.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// Control Room: categories on the left, the list in the middle, details of the highlighted
 /// item on the right (wide screens). Live shows a numbered channel list with what is on now;
@@ -52,7 +53,7 @@ class _ControlViewState extends State<ControlView> {
         _cat == null ? all : all.where((i) => i.categoryId == _cat).toList();
     if (base.isEmpty) {
       return Center(
-          child: Text('Nothing here yet.', style: TextStyle(color: p.muted)));
+          child: Text(tr('Nothing here yet.'), style: TextStyle(color: p.muted)));
     }
     final shown = _focused != null && items.contains(_focused)
         ? _focused
@@ -67,7 +68,7 @@ class _ControlViewState extends State<ControlView> {
         ? Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text(live ? 'No channels match the filters.' : 'No titles match the filters.',
+              child: Text(live ? tr('No channels match the filters.') : tr('No titles match the filters.'),
                   style: TextStyle(color: p.muted, fontSize: 16)),
             ),
           )
@@ -120,7 +121,7 @@ class _ControlViewState extends State<ControlView> {
       return Column(children: [
         filterBar(items.length),
         ChipRow(
-          labels: ['All', for (final c in cats) c.name],
+          labels: [tr('All'), for (final c in cats) c.name],
           selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
           onSelect: (i) => pick(i == 0 ? null : cats[i - 1].id),
         ),
@@ -136,7 +137,7 @@ class _ControlViewState extends State<ControlView> {
               BoxDecoration(border: Border(right: BorderSide(color: p.line))),
           child: ListView(padding: const EdgeInsets.all(8), children: [
             _CatRow(
-                label: 'All',
+                label: tr('All'),
                 count: all.length,
                 selected: _cat == null,
                 onTap: () => pick(null)),
@@ -301,7 +302,7 @@ class _ChannelRow extends StatelessWidget {
                         Text(
                             now?.title ??
                                 (snap.connectionState == ConnectionState.done
-                                    ? 'No guide data'
+                                    ? tr('No guide data')
                                     : ' '),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -412,8 +413,8 @@ class _PreviewPane extends StatelessWidget {
                     decoration: BoxDecoration(
                         color: const Color(0xFFE5484D),
                         borderRadius: BorderRadius.circular(5)),
-                    child: const Text('LIVE',
-                        style: TextStyle(
+                    child: Text(tr('LIVE'),
+                        style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 12,
                             letterSpacing: 1)),
@@ -456,7 +457,7 @@ class _PreviewPane extends StatelessWidget {
                 if (now == null && next.isEmpty) {
                   return Text(
                       snap.connectionState == ConnectionState.done
-                          ? 'No guide data for this channel.'
+                          ? tr('No guide data for this channel.')
                           : '',
                       style: TextStyle(color: p.muted));
                 }
@@ -514,8 +515,8 @@ class _PreviewPane extends StatelessWidget {
           FilledButton(
               onPressed: () => openItem(context, item),
               child: Text(live
-                  ? 'Watch'
-                  : (item.kind == MediaKind.series ? 'Episodes' : 'Play'))),
+                  ? tr('Watch')
+                  : (item.kind == MediaKind.series ? tr('Episodes') : tr('Play')))),
           const SizedBox(width: 8),
           FilledButton.tonal(
               onPressed: () => s.toggleFavorite(item),

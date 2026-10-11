@@ -9,6 +9,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import 'net_image.dart';
 import 'tv.dart';
+import '../l10n/l10n.dart';
 
 /// What is known about a movie or series: TMDB when a key is set, the provider for the gaps.
 Future<TmdbInfo?> loadDetails(BuildContext context, MediaItem item) async {
@@ -79,7 +80,7 @@ class DetailsHero extends StatelessWidget {
             top: 8,
             left: 8,
             child: IconButton(
-              tooltip: 'Back',
+              tooltip: tr('Back'),
               icon: Icon(Icons.arrow_back, color: p.text),
               style: IconButton.styleFrom(backgroundColor: p.bg.withValues(alpha: 0.45)),
               onPressed: onBack,
@@ -156,7 +157,7 @@ class FactsTable extends StatelessWidget {
       for (final r in rows)
         if (r.$2 != null && r.$2!.trim().isNotEmpty) r,
     ];
-    if (shown.isEmpty) return Text('Nothing more is known about this one.', style: TextStyle(color: p.muted));
+    if (shown.isEmpty) return Text(tr('Nothing more is known about this one.'), style: TextStyle(color: p.muted));
     return Column(children: [
       for (final r in shown)
         Container(

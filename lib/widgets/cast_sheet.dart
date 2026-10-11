@@ -2,6 +2,7 @@ import 'package:cast/cast.dart';
 import 'package:flutter/material.dart';
 import '../services/cast_service.dart';
 import '../theme.dart';
+import '../l10n/l10n.dart';
 
 /// "Cast to TV (experimental)": lists Chromecast devices on the network and plays [url] on the one
 /// picked. [onStarted] runs after a cast starts (the player pauses its own picture).
@@ -63,9 +64,9 @@ class CastSheet extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(children: [
-                      const Expanded(
-                          child: Text('Cast to TV',
-                              style: TextStyle(
+                      Expanded(
+                          child: Text(tr('Cast to TV'),
+                              style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.w800))),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -73,8 +74,8 @@ class CastSheet extends StatelessWidget {
                         decoration: BoxDecoration(
                             border: Border.all(color: Boss.accent),
                             borderRadius: BorderRadius.circular(6)),
-                        child: const Text('EXPERIMENTAL',
-                            style: TextStyle(
+                        child: Text(tr('EXPERIMENTAL'),
+                            style: const TextStyle(
                                 fontSize: 11, fontWeight: FontWeight.w800)),
                       ),
                     ]),
@@ -82,16 +83,16 @@ class CastSheet extends StatelessWidget {
                   if (c.casting)
                     ListTile(
                       leading: const Icon(Icons.cast_connected),
-                      title: Text('Casting to ${c.device!.name}'),
+                      title: Text(trf('Casting to {name}', {'name': c.device!.name})),
                       subtitle: Text(c.title ?? ''),
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                         IconButton(
-                            tooltip: c.paused ? 'Resume' : 'Pause',
+                            tooltip: c.paused ? tr('Resume') : tr('Pause'),
                             icon:
                                 Icon(c.paused ? Icons.play_arrow : Icons.pause),
                             onPressed: c.togglePause),
                         IconButton(
-                            tooltip: 'Stop casting',
+                            tooltip: tr('Stop casting'),
                             icon: const Icon(Icons.stop_circle_outlined),
                             onPressed: c.stop),
                       ]),
@@ -110,7 +111,7 @@ class CastSheet extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2.5)),
                       title: Text(c.connecting
                           ? 'Connecting...'
-                          : 'Looking for devices...'),
+                          : tr('Looking for devices...')),
                     ),
                   for (final CastDevice d in c.devices)
                     ListTile(
@@ -130,24 +131,24 @@ class CastSheet extends StatelessWidget {
                             },
                     ),
                   if (!c.scanning && c.devices.isEmpty && c.error == null)
-                    const ListTile(
-                      leading: Icon(Icons.info_outline),
-                      title: Text('No devices found'),
+                    ListTile(
+                      leading: const Icon(Icons.info_outline),
+                      title: Text(tr('No devices found')),
                       subtitle: Text(
-                          'Put this device and the TV on the same Wi-Fi, then search again.'),
+                          tr('Put this device and the TV on the same Wi-Fi, then search again.')),
                     ),
                   ListTile(
                       leading: const Icon(Icons.refresh),
-                      title: const Text('Search again'),
+                      title: Text(tr('Search again')),
                       onTap: c.scanning ? null : c.scan),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                     child: Text(
-                        'Works with Chromecast and TVs with Chromecast built in. The TV opens the stream itself, so a '
+                        tr('Works with Chromecast and TVs with Chromecast built in. The TV opens the stream itself, so a '
                         'provider that allows one connection at a time will count two. Streams a Chromecast cannot play '
                         '(some codecs, or a provider that checks the device) will fail. For AirPlay, use Screen Mirroring '
-                        'from the system menu.',
-                        style: TextStyle(fontSize: 13, color: Colors.white60)),
+                        'from the system menu.'),
+                        style: const TextStyle(fontSize: 13, color: Colors.white60)),
                   ),
                 ]),
           );

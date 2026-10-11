@@ -9,6 +9,7 @@ import '../services/nav_guard.dart';
 import '../services/mini_player.dart';
 import '../services/reminders.dart';
 import '../state/app_state.dart';
+import '../l10n/l10n.dart';
 
 /// Opens the live channel [key] on the app's navigator. False when the channel is no longer in the library.
 bool openReminderChannel(AppState app, String key) {
@@ -108,11 +109,11 @@ class _ReminderHostState extends State<ReminderHost> {
                     a.dismissBanner();
                     openReminderChannel(a, r.channelKey);
                   },
-                  child: const Text('Watch'),
+                  child: Text(tr('Watch')),
                 ),
                 const SizedBox(width: 6),
                 IconButton(
-                  tooltip: 'Dismiss',
+                  tooltip: tr('Dismiss'),
                   icon: Icon(Icons.close, color: p.muted),
                   onPressed: () => context.read<AppState>().dismissBanner(),
                 ),

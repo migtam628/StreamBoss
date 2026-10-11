@@ -5,6 +5,7 @@ import '../layouts/layout_picker.dart';
 import '../layouts/ui_layout.dart';
 import '../state/settings_state.dart';
 import '../widgets/tv.dart';
+import '../l10n/l10n.dart';
 
 /// First-run setup: a few short steps (what this app is, the screen, the look, playback, connecting
 /// a provider), every choice applied as soon as it is made. Skippable at any point. [onDone] runs on
@@ -54,19 +55,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
               child: Column(children: [
                 Row(children: [
-                  Text('STREAMBOSS',
+                  Text(tr('STREAMBOSS'),
                       style: TextStyle(
                           color: p.accent,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 3,
                           fontSize: 18)),
                   const Spacer(),
-                  Text('Step ${_step + 1} of ${_titles.length}',
+                  Text(trf('Step {n} of {total}', {'n': _step + 1, 'total': _titles.length}),
                       style: TextStyle(color: p.muted)),
                   const SizedBox(width: 12),
                   TextButton(
                       onPressed: widget.onDone,
-                      child: const Text('Skip setup')),
+                      child: Text(tr('Skip setup'))),
                 ]),
                 const SizedBox(height: 4),
                 LinearProgressIndicator(
@@ -85,7 +86,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_titles[_step],
+                            Text(tr(_titles[_step]),
                                 style: TextStyle(
                                     fontSize: tv ? 40 : 30,
                                     fontWeight: FontWeight.w800,
@@ -99,15 +100,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 const SizedBox(height: 12),
                 Row(children: [
                   if (_step > 0)
-                    TextButton(onPressed: _back, child: const Text('Back')),
+                    TextButton(onPressed: _back, child: Text(tr('Back'))),
                   const Spacer(),
                   FilledButton(
                     key: ValueKey('onb-next-$_step'),
                     autofocus: true,
                     onPressed: _next,
-                    child: Text(last
+                    child: Text(tr(last
                         ? (widget.rerun ? 'Done' : 'Connect my provider')
-                        : 'Next'),
+                        : 'Next')),
                   ),
                 ]),
               ]),
@@ -126,22 +127,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 0:
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
-              'StreamBoss plays video from a provider you already have. It does not supply any channels, movies or subscriptions itself.',
+              tr('StreamBoss plays video from a provider you already have. It does not supply any channels, movies or subscriptions itself.'),
               style: muted.copyWith(color: p.text, fontSize: 18)),
           const SizedBox(height: 16),
           _point(p, Icons.dns_outlined, 'Bring your own provider',
-              'An Xtream login (server, username, password) or an M3U playlist link.'),
+              tr('An Xtream login (server, username, password) or an M3U playlist link.')),
           _point(p, Icons.tune, 'Set it up your way',
-              'A couple of quick choices about your screen and how the app looks.'),
+              tr('A couple of quick choices about your screen and how the app looks.')),
           _point(p, Icons.settings_backup_restore, 'Change anything later',
-              'Everything here lives in Settings. Skip setup if you like.'),
+              tr('Everything here lives in Settings. Skip setup if you like.')),
         ]);
       case 1:
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
             SettingsState.detectedTv
-                ? 'This device looks like a TV.'
-                : 'This device looks like a phone, tablet or computer.',
+                ? tr('This device looks like a TV.')
+                : tr('This device looks like a phone, tablet or computer.'),
             style: muted.copyWith(color: p.text, fontSize: 18),
           ),
           const SizedBox(height: 14),
@@ -158,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Padding(
               padding: const EdgeInsets.only(top: 6, bottom: 16),
               child: Text(
-                  'TV mode lays the screen out for a remote: a bold focus outline and safe margins.',
+                  tr('TV mode lays the screen out for a remote: a bold focus outline and safe margins.'),
                   style: muted)),
           const _Label('Text size'),
           _Choices<double>(
@@ -173,7 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           if (st.isTv) ...[
             const SizedBox(height: 16),
-            const _Label('How much fits on the TV'),
+            _Label(tr('How much fits on the TV')),
             _Choices<int>(
               value: st.tvWidth,
               options: const [
@@ -187,23 +188,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                    'Pick the size where everything is easy to read from your seat.',
+                    tr('Pick the size where everything is easy to read from your seat.'),
                     style: muted)),
           ],
         ]);
       case 2:
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
-              'Choose how StreamBoss is laid out. The colors change right away.',
+              tr('Choose how StreamBoss is laid out. The colors change right away.'),
               style: muted.copyWith(color: p.text, fontSize: 18)),
           const SizedBox(height: 10),
           const LayoutPicker(),
-          Text('You can switch any time in Settings > Appearance > Layout.',
+          Text(tr('You can switch any time in Settings > Appearance > Layout.'),
               style: muted),
         ]);
       case 3:
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('A few playback defaults.',
+          Text(tr('A few playback defaults.'),
               style: muted.copyWith(color: p.text, fontSize: 18)),
           const SizedBox(height: 14),
           const _Label('Preferred audio language'),
@@ -222,33 +223,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 16),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Show subtitles automatically'),
-            subtitle: Text('When a video has them', style: muted),
+            title: Text(tr('Show subtitles automatically')),
+            subtitle: Text(tr('When a video has them'), style: muted),
             value: st.subsOn,
             activeThumbColor: p.accent,
             onChanged: (v) => st.set('subsOn', v),
           ),
-          Text('More playback options are in Settings > Playback.',
+          Text(tr('More playback options are in Settings > Playback.'),
               style: muted),
         ]);
       default:
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
             widget.rerun
-                ? 'You are all set. Your provider and everything else stay as they are.'
-                : 'Last step: add your provider. Have one of these ready:',
+                ? tr('You are all set. Your provider and everything else stay as they are.')
+                : tr('Last step: add your provider. Have one of these ready:'),
             style: muted.copyWith(color: p.text, fontSize: 18),
           ),
           if (!widget.rerun) ...[
             const SizedBox(height: 14),
             _point(p, Icons.badge_outlined, 'Xtream login',
-                'Server address, username and password, as your provider gave them.'),
+                tr('Server address, username and password, as your provider gave them.')),
             _point(p, Icons.link, 'M3U link',
-                'A playlist address. Links that contain a username and password work too.'),
+                tr('A playlist address. Links that contain a username and password work too.')),
             _point(p, Icons.phone_android, 'No typing on a TV',
-                'The next screen can show a QR code so you can enter the details from your phone.'),
+                tr('The next screen can show a QR code so you can enter the details from your phone.')),
             _point(p, Icons.public, 'No provider yet?',
-                'The next screen also lets you browse free public channels, or try the demo.'),
+                tr('The next screen also lets you browse free public channels, or try the demo.')),
           ],
         ]);
     }
@@ -263,7 +264,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title,
+              Text(tr(title),
                   style: const TextStyle(
                       fontWeight: FontWeight.w700, fontSize: 17)),
               Text(body,
@@ -298,7 +299,7 @@ class _Choices<T> extends StatelessWidget {
       for (final o in options)
         FocusSurface(
           radius: 22,
-          semanticLabel: o.$2,
+          semanticLabel: tr(o.$2),
           onTap: () => onPick(o.$1),
           builder: (_, __) {
             final on = o.$1 == value;
@@ -310,7 +311,7 @@ class _Choices<T> extends StatelessWidget {
                   Icon(Icons.check, size: 18, color: p.onAccent),
                   const SizedBox(width: 6)
                 ],
-                Text(o.$2,
+                Text(tr(o.$2),
                     style: TextStyle(
                         fontWeight: on ? FontWeight.w700 : FontWeight.w500,
                         color: on ? p.onAccent : p.text)),

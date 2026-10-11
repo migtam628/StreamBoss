@@ -10,6 +10,7 @@ import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// Spotlight: chips along the top pick a section; below, a poster grid. On wide screens the
 /// title you are on gets a details panel on the left; on a phone a search pill sits on top and
@@ -38,7 +39,7 @@ class _SpotlightViewState extends State<SpotlightView> {
     final secs = widget.sections;
     if (secs.isEmpty || secs.every((e) => e.$2.isEmpty)) {
       return Center(
-          child: Text('Nothing here yet.',
+          child: Text(tr('Nothing here yet.'),
               style: TextStyle(color: LayoutPalette.of(context).muted)));
     }
     final sec = _sec.clamp(0, secs.length - 1).toInt();
@@ -107,7 +108,7 @@ class _SpotlightViewState extends State<SpotlightView> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: FocusSurface(
             radius: 28,
-            semanticLabel: 'Search',
+            semanticLabel: tr('Search'),
             onTap: () => ShellNav.maybeOf(context)?.select(5),
             builder: (ctx, _) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -116,7 +117,7 @@ class _SpotlightViewState extends State<SpotlightView> {
                 Icon(Icons.search, color: LayoutPalette.of(ctx).muted),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: Text('Search movies, series, channels',
+                    child: Text(tr('Search movies, series, channels'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: LayoutPalette.of(ctx).muted))),
@@ -153,8 +154,8 @@ class _Details extends StatelessWidget {
     final s = context.watch<AppState>();
     final fav = s.isFavorite(item);
     final kind = switch (item.kind) {
-      MediaKind.live => 'Live',
-      MediaKind.movie => 'Movie',
+      MediaKind.live => tr('Live'),
+      MediaKind.movie => tr('Movie'),
       MediaKind.series => 'Series'
     };
     final resume = s.resumeFor(item);
@@ -183,7 +184,7 @@ class _Details extends StatelessWidget {
         Text(
           item.plot != null && item.plot!.isNotEmpty
               ? item.plot!
-              : 'Press OK to open details.',
+              : tr('Press OK to open details.'),
           maxLines: 5,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -195,11 +196,11 @@ class _Details extends StatelessWidget {
         Row(children: [
           FilledButton(
               onPressed: () => openItem(context, item),
-              child: Text(item.kind == MediaKind.series ? 'Episodes' : 'Play')),
+              child: Text(item.kind == MediaKind.series ? tr('Episodes') : tr('Play'))),
           const SizedBox(width: 10),
           FilledButton.tonal(
               onPressed: () => s.toggleFavorite(item),
-              child: Text(fav ? 'In My list' : 'My list')),
+              child: Text(fav ? tr('In My list') : tr('My list'))),
         ]),
       ]),
     );
@@ -244,7 +245,7 @@ class _ResumeBar extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                   Text(
                       left == null
-                          ? 'Continue watching'
+                          ? tr('Continue watching')
                           : 'Resume from ${left.inMinutes} min',
                       style: TextStyle(color: p.muted, fontSize: 13)),
                 ]),

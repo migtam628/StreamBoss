@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/self_update.dart';
 import '../services/update_check.dart';
 import '../state/settings_state.dart';
+import '../l10n/l10n.dart';
 
 /// "Version X is available": shows what changed, then downloads the update and installs it without
 /// leaving the app. Android hands the file to the system installer (it asks once to allow installs from
@@ -87,7 +88,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
     try {
       final abis = widget.abis ?? (t == UpdateTarget.android ? await SelfUpdate.abis() : const <String>[]);
       final asset = pickAsset(widget.update.assets, t, abis: abis);
-      if (asset == null) throw Exception('This release has no download for this device yet.');
+      if (asset == null) throw Exception(tr('This release has no download for this device yet.'));
       if (t == UpdateTarget.android && widget.install == null && !await SelfUpdate.canInstall()) {
         if (mounted) setState(() => _phase = _Phase.permission);
         return;
@@ -134,7 +135,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       case InstallStatus.failed:
         context.read<SettingsState>().set('updating', false, notify: false);
         setState(() {
-          _error = e.message ?? 'The install failed.';
+          _error = e.message ?? tr('The install failed.');
           _phase = _Phase.failed;
         });
     }
@@ -149,10 +150,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
     switch (_phase) {
       case _Phase.ready:
         body = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('You have ${widget.current}. The update is downloaded and installed here, without opening a browser.'),
+          Text(trf(tr('You have {version}. The update is downloaded and installed here, without opening a browser.'), {'version': widget.current})),
           if (notes.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Text("What's new", style: TextStyle(fontWeight: FontWeight.w800)),
+            Text(tr("What's new"), style: const TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 220),
@@ -161,26 +162,26 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ],
         ]);
         actions = [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Later')),
-          FilledButton(autofocus: true, onPressed: _go, child: const Text('Update now')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Later'))),
+          FilledButton(autofocus: true, onPressed: _go, child: Text(tr('Update now'))),
         ];
       case _Phase.permission:
-        body = const Text('Android asks you to allow StreamBoss to install apps, once. Turn on "Allow from this source" '
-            'on the next screen, press Back to return here, then tap Continue.');
+        body = Text(tr('Android asks you to allow StreamBoss to install apps, once. Turn on "Allow from this source" '
+            'on the next screen, press Back to return here, then tap Continue.'));
         actions = [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          const TextButton(onPressed: SelfUpdate.openInstallSettings, child: Text('Open settings')),
-          FilledButton(autofocus: true, onPressed: _go, child: const Text('Continue')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Cancel'))),
+          TextButton(onPressed: SelfUpdate.openInstallSettings, child: Text(tr('Open settings'))),
+          FilledButton(autofocus: true, onPressed: _go, child: Text(tr('Continue'))),
         ];
       case _Phase.downloading:
         body = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Downloading ${u.latest}'),
+          Text(trf('Downloading {version}', {'version': u.latest})),
           const SizedBox(height: 12),
           LinearProgressIndicator(value: _total > 0 ? _got / _total : null),
           const SizedBox(height: 6),
           Text(_total > 0 ? '${_mb(_got)} of ${_mb(_total)} MB' : '${_mb(_got)} MB', style: const TextStyle(fontSize: 12)),
         ]);
-        actions = [TextButton(autofocus: true, onPressed: _cancel.cancel, child: const Text('Cancel'))];
+        actions = [TextButton(autofocus: true, onPressed: _cancel.cancel, child: Text(tr('Cancel')))];
       case _Phase.installing:
         body = Row(children: [
           const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 3)),
@@ -188,27 +189,27 @@ class _UpdateDialogState extends State<UpdateDialog> {
           Expanded(
             child: Text(_target == UpdateTarget.android
                 ? (_waitingOnAndroid
-                    ? 'Confirm the install on the screen Android shows. StreamBoss reopens when it is done.'
-                    : 'Handing the update to Android…')
-                : 'Installing. StreamBoss closes and opens again by itself.'),
+                    ? tr('Confirm the install on the screen Android shows. StreamBoss reopens when it is done.')
+                    : tr('Handing the update to Android…'))
+                : tr('Installing. StreamBoss closes and opens again by itself.')),
           ),
         ]);
         actions = _target == UpdateTarget.android
-            ? [TextButton(autofocus: true, onPressed: () => Navigator.pop(context), child: const Text('Close'))]
+            ? [TextButton(autofocus: true, onPressed: () => Navigator.pop(context), child: Text(tr('Close')))]
             : const [];
       case _Phase.failed:
-        body = Text('The update did not install.\n$_error');
+        body = Text('${tr('The update did not install.')}\n$_error');
         actions = [
-          TextButton(autofocus: true, onPressed: () => Navigator.pop(context), child: const Text('Close')),
-          FilledButton(onPressed: _go, child: const Text('Try again')),
+          TextButton(autofocus: true, onPressed: () => Navigator.pop(context), child: Text(tr('Close'))),
+          FilledButton(onPressed: _go, child: Text(tr('Try again'))),
         ];
       case _Phase.unsupported:
-        body = const Text('This version of StreamBoss is updated by whatever installed it (the web page itself, or the '
-            'App Store / TestFlight on Apple devices), not from inside the app.');
-        actions = [FilledButton(autofocus: true, onPressed: () => Navigator.pop(context), child: const Text('Close'))];
+        body = Text(tr('This version of StreamBoss is updated by whatever installed it (the web page itself, or the '
+            'App Store / TestFlight on Apple devices), not from inside the app.'));
+        actions = [FilledButton(autofocus: true, onPressed: () => Navigator.pop(context), child: Text(tr('Close')))];
     }
     return AlertDialog(
-      title: Text('Version ${u.latest} is available'),
+      title: Text(trf('Version {version} is available', {'version': u.latest})),
       content: SizedBox(width: 520, child: body),
       actions: actions,
     );

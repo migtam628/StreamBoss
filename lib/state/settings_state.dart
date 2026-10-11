@@ -43,6 +43,7 @@ class SettingsState extends ChangeNotifier {
     'lastTab': 0, // the screen last open (this device)
     'lastLive': '', // key of the live channel last watched
     'lastLiveOpen': false, // it was still on screen when the app closed
+    'language': 'system', // system | en | es | it | pt: the language of the app itself
     'watchNextRow': true, // Android TV: a Continue watching row on the home screen
     'startOnBoot': false, // Android: open the app when the device starts (Fire TV, Android TV)
     'updating': false, // an in-app update was started; the Android receiver reopens the app once it is installed
@@ -177,6 +178,7 @@ class SettingsState extends ChangeNotifier {
   bool get lastLiveOpen => _g('lastLiveOpen');
   bool get startOnBoot => _g('startOnBoot');
   bool get watchNextRow => _g('watchNextRow');
+  String get language => _g('language');
   bool get updating => _g('updating');
   String get tvMode => _g('tvMode');
 

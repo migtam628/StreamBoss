@@ -7,6 +7,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Easy's Home: three huge buttons and nothing else. Watch TV opens the channel you were last on,
 /// Movies and shows and Find open those screens, and a bar offers what you were watching. Black,
@@ -17,7 +18,7 @@ class EasyHome extends StatelessWidget {
 
   String get _greeting {
     final h = DateTime.now().hour;
-    return h < 5 ? 'Still up?' : (h < 12 ? 'Good morning' : (h < 18 ? 'Good afternoon' : 'Good evening'));
+    return h < 5 ? tr('Still up?') : (h < 12 ? tr('Good morning') : (h < 18 ? tr('Good afternoon') : tr('Good evening')));
   }
 
   @override
@@ -67,17 +68,17 @@ class EasyHome extends StatelessWidget {
     }
 
     final buttons = [
-      big('Watch TV', 'Opens your last channel', Icons.live_tv_outlined, p.accent, Colors.black, watchTv, autofocus: true),
-      big('Movies and shows', 'Pick something to watch', Icons.movie_outlined, p.text, Colors.black,
+      big(tr('Watch TV'), tr('Opens your last channel'), Icons.live_tv_outlined, p.accent, Colors.black, watchTv, autofocus: true),
+      big(tr('Movies and shows'), tr('Pick something to watch'), Icons.movie_outlined, p.text, Colors.black,
           () => ShellNav.maybeOf(context)?.select(3)),
-      big('Find', 'Type a name', Icons.search, p.bg, p.text, () => ShellNav.maybeOf(context)?.select(5)),
+      big(tr('Find'), tr('Type a name'), Icons.search, p.bg, p.text, () => ShellNav.maybeOf(context)?.select(5)),
     ];
 
     return ListView(
       padding: EdgeInsets.fromLTRB(wide ? 40 : 16, wide ? 24 : 16, wide ? 40 : 16, 24),
       children: [
         Text(_greeting, style: TextStyle(fontSize: wide ? 48 : 36, fontWeight: FontWeight.w800, color: p.text)),
-        Text('Pick one. Press OK.', style: TextStyle(fontSize: wide ? 26 : 20, color: p.accent)),
+        Text(tr('Pick one. Press OK.'), style: TextStyle(fontSize: wide ? 26 : 20, color: p.accent)),
         SizedBox(height: wide ? 24 : 16),
         if (wide)
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -101,7 +102,7 @@ class EasyHome extends StatelessWidget {
                 Icon(Icons.play_circle_outline, size: wide ? 44 : 34, color: p.accent),
                 const SizedBox(width: 14),
                 Expanded(
-                    child: Text('Keep watching: ${resume.name}',
+                    child: Text(trf('Keep watching: {name}', {'name': resume.name}),
                         maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: wide ? 28 : 20, fontWeight: FontWeight.w700, color: p.text))),
               ]),
             ),
@@ -112,14 +113,14 @@ class EasyHome extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: FocusSurface(
             radius: 16,
-            semanticLabel: 'Settings',
+            semanticLabel: tr('Settings'),
             onTap: () => ShellNav.maybeOf(context)?.select(6),
             builder: (_, __) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(Icons.settings_outlined, color: p.muted, size: 26),
                 const SizedBox(width: 8),
-                Text('Settings', style: TextStyle(fontSize: 20, color: p.muted)),
+                Text(tr('Settings'), style: TextStyle(fontSize: 20, color: p.muted)),
               ]),
             ),
           ),

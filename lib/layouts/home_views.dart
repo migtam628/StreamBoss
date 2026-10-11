@@ -29,6 +29,7 @@ import 'prime_view.dart';
 import 'spotlight_view.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// One row of tiles under a title. [dense] is Control Room's tighter, label-style version.
 class Shelf extends StatelessWidget {
@@ -154,7 +155,7 @@ class FeatureHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const Eyebrow('Featured'),
+              Eyebrow(tr('Featured')),
               const SizedBox(height: 6),
               ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: tv ? 620 : 420),
@@ -171,8 +172,8 @@ class FeatureHero extends StatelessWidget {
               Text(
                 [
                   item.kind == MediaKind.live
-                      ? 'Live'
-                      : (item.kind == MediaKind.series ? 'Series' : 'Movie'),
+                      ? tr('Live')
+                      : (item.kind == MediaKind.series ? tr('Series') : tr('Movie')),
                   if (item.rating != null &&
                       item.rating!.isNotEmpty &&
                       item.rating != '0')
@@ -200,13 +201,13 @@ class FeatureHero extends StatelessWidget {
                   autofocus: tv,
                   onPressed: () => openItem(context, item),
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('Play'),
+                  label: Text(tr('Play')),
                 ),
                 const SizedBox(width: 10),
                 FilledButton.tonalIcon(
                   onPressed: () => s.toggleFavorite(item),
                   icon: Icon(fav ? Icons.check : Icons.add),
-                  label: Text(fav ? 'In My list' : 'My list'),
+                  label: Text(fav ? tr('In My list') : tr('My list')),
                 ),
               ]),
             ],
@@ -235,12 +236,12 @@ class LayoutHome extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 12),
             children: [
               if (feature != null) FeatureHero(item: feature),
-              Shelf(title: 'Continue watching', items: s.recents),
-              Shelf(title: 'My list', items: s.favoriteItems),
+              Shelf(title: tr('Continue watching'), items: s.recents),
+              Shelf(title: tr('My list'), items: s.favoriteItems),
               ...personalShelves(s),
-              Shelf(title: 'Live now', items: c.live.take(20).toList()),
-              Shelf(title: 'Movies', items: c.movies.take(30).toList()),
-              Shelf(title: 'Series', items: c.series.take(30).toList()),
+              Shelf(title: tr('Live now'), items: c.live.take(20).toList()),
+              Shelf(title: tr('Movies'), items: c.movies.take(30).toList()),
+              Shelf(title: tr('Series'), items: c.series.take(30).toList()),
             ]);
       case UiLayout.control:
         return ListView(
@@ -248,18 +249,18 @@ class LayoutHome extends StatelessWidget {
             children: [
               Shelf(
                   dense: true,
-                  title: 'Live now',
+                  title: tr('Live now'),
                   items: c.live.take(20).toList()),
-              Shelf(dense: true, title: 'Continue watching', items: s.recents),
-              Shelf(dense: true, title: 'My list', items: s.favoriteItems),
+              Shelf(dense: true, title: tr('Continue watching'), items: s.recents),
+              Shelf(dense: true, title: tr('My list'), items: s.favoriteItems),
               ...personalShelves(s, dense: true),
               Shelf(
                   dense: true,
-                  title: 'Movies',
+                  title: tr('Movies'),
                   items: c.movies.take(30).toList()),
               Shelf(
                   dense: true,
-                  title: 'Series',
+                  title: tr('Series'),
                   items: c.series.take(30).toList()),
             ]);
       case UiLayout.spotlight:
@@ -277,13 +278,13 @@ class LayoutHome extends StatelessWidget {
         ]);
         return SpotlightView(
           sections: [
-            ('All', mix),
-            if (s.recents.isNotEmpty) ('Continue', s.recents),
-            if (s.favoriteItems.isNotEmpty) ('My list', s.favoriteItems),
+            (tr('All'), mix),
+            if (s.recents.isNotEmpty) (tr('Continue'), s.recents),
+            if (s.favoriteItems.isNotEmpty) (tr('My list'), s.favoriteItems),
             ..._personalSections(s),
-            if (c.movies.isNotEmpty) ('Movies', c.movies.take(60).toList()),
-            if (c.series.isNotEmpty) ('Series', c.series.take(60).toList()),
-            if (c.live.isNotEmpty) ('Live', c.live.take(60).toList()),
+            if (c.movies.isNotEmpty) (tr('Movies'), c.movies.take(60).toList()),
+            if (c.series.isNotEmpty) (tr('Series'), c.series.take(60).toList()),
+            if (c.live.isNotEmpty) (tr('Live'), c.live.take(60).toList()),
           ],
           showResume: true,
         );

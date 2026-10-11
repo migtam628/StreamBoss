@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../state/settings_state.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Settings > Appearance > Layout: pick one of the looks. Each card draws a small
 /// wireframe of the layout in its own colors.
@@ -57,7 +58,7 @@ class _LayoutPickerState extends State<LayoutPicker> {
               padding: const EdgeInsets.only(bottom: 12),
               child: FocusSurface(
                 radius: 12,
-                semanticLabel: 'Go back to ${_before!.label}',
+                semanticLabel: trf('Go back to {name}', {'name': tr(_before!.label)}),
                 onTap: () {
                   st.set('layout', _before!.name);
                   setState(() => _before = null);
@@ -68,7 +69,7 @@ class _LayoutPickerState extends State<LayoutPicker> {
                   child: Row(children: [
                     Icon(Icons.undo, color: cur.accent, size: 20),
                     const SizedBox(width: 10),
-                    Expanded(child: Text('Not for you? Go back to ${_before!.label}', style: const TextStyle(fontWeight: FontWeight.w700))),
+                    Expanded(child: Text(trf(tr('Not for you? Go back to {name}'), {'name': tr(_before!.label)}), style: const TextStyle(fontWeight: FontWeight.w700))),
                   ]),
                 ),
               ),
@@ -77,8 +78,8 @@ class _LayoutPickerState extends State<LayoutPicker> {
             Padding(
               padding: const EdgeInsets.fromLTRB(2, 6, 2, 8),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(g.label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: cur.accent)),
-                Text(g.blurb, style: TextStyle(fontSize: 13, color: cur.muted)),
+                Text(tr(g.label), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: cur.accent)),
+                Text(tr(g.blurb), style: TextStyle(fontSize: 13, color: cur.muted)),
               ]),
             ),
             cardsFor([for (final l in UiLayout.values) if (l.group == g) l], c.maxWidth),
@@ -118,13 +119,13 @@ class _LayoutCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(children: [
             Expanded(
-                child: Text(layout.label,
+                child: Text(tr(layout.label),
                     style: const TextStyle(
                         fontSize: 17, fontWeight: FontWeight.w800))),
             if (selected) Icon(Icons.check_circle, color: cur.accent, size: 20),
           ]),
           const SizedBox(height: 4),
-          Text(layout.blurb,
+          Text(tr(layout.blurb),
               style: TextStyle(color: cur.muted, fontSize: 13, height: 1.3)),
         ]),
       ),

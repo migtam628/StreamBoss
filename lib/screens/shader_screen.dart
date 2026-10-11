@@ -6,6 +6,7 @@ import '../services/shaders.dart';
 import '../state/settings_state.dart';
 import '../theme.dart';
 import '../widgets/tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 /// Shader library: toggle, drag to reorder (pipeline order), add custom GLSL.
 class ShaderScreen extends StatelessWidget {
@@ -17,28 +18,28 @@ class ShaderScreen extends StatelessWidget {
     final list = st.shaders;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Shaders'), backgroundColor: LayoutPalette.of(context).bg),
+      appBar: AppBar(title: Text(tr('Shaders')), backgroundColor: LayoutPalette.of(context).bg),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Boss.accent,
         icon: const Icon(Icons.add),
-        label: const Text('Add custom'),
+        label: Text(tr('Add custom')),
         onPressed: () => _addCustom(context, st),
       ),
       body: !shadersSupported
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('Shaders need the native player (desktop, Android, iOS). They are not available on web.',
+                padding: const EdgeInsets.all(24),
+                child: Text(tr('Shaders need the native player (desktop, Android, iOS). They are not available on web.'),
                     textAlign: TextAlign.center),
               ),
             )
           : Column(children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Enabled shaders run top to bottom. Drag to change the order. '
-                  'Changes apply to the next video and live in the player\'s Shaders menu.',
-                  style: TextStyle(color: Boss.muted),
+                  tr('Enabled shaders run top to bottom. Drag to change the order. '
+                  'Changes apply to the next video and live in the player\'s Shaders menu.'),
+                  style: const TextStyle(color: Boss.muted),
                 ),
               ),
               Expanded(
@@ -58,7 +59,7 @@ class ShaderScreen extends StatelessWidget {
                         child: const Icon(Icons.drag_handle),
                       ),
                       title: Text(s.name),
-                      subtitle: Text(s.builtin ? s.description : 'Custom'),
+                      subtitle: Text(s.builtin ? s.description : tr('Custom')),
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                         if (!s.builtin)
                           IconButton(
@@ -92,26 +93,26 @@ class ShaderScreen extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add custom shader'),
+        title: Text(tr('Add custom shader')),
         content: SizedBox(
           width: 520,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TvTextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
+            TvTextField(controller: name, decoration: InputDecoration(labelText: tr('Name'))),
             const SizedBox(height: 12),
             TvTextField(
               controller: src,
               minLines: 6,
               maxLines: 12,
-              decoration: const InputDecoration(
-                labelText: 'mpv GLSL hook source',
-                hintText: '//!HOOK LUMA\n//!BIND HOOKED\nvec4 hook() { ... }',
+              decoration: InputDecoration(
+                labelText: tr('mpv GLSL hook source'),
+                hintText: tr('//!HOOK LUMA\n//!BIND HOOKED\nvec4 hook() { ... }'),
               ),
             ),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Add'))),
         ],
       ),
     );
@@ -119,8 +120,8 @@ class ShaderScreen extends StatelessWidget {
     final text = src.text.trim();
     if (!text.contains('//!HOOK') || !text.contains('hook()')) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('That does not look like an mpv hook shader (needs //!HOOK and hook()).')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(tr('That does not look like an mpv hook shader (needs //!HOOK and hook()).'))));
       }
       return;
     }
@@ -128,7 +129,7 @@ class ShaderScreen extends StatelessWidget {
     st.setShaders(
       custom: [
         ...st.customShaders,
-        ShaderDef(id: id, name: name.text.trim().isEmpty ? 'Custom shader' : name.text.trim(), source: text),
+        ShaderDef(id: id, name: name.text.trim().isEmpty ? tr('Custom shader') : name.text.trim(), source: text),
       ],
     );
   }

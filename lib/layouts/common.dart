@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/tv.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// A tappable, focusable surface whose look is up to [builder]. Gives the focus ring every
 /// control needs on a TV: white and bold there, accent-colored elsewhere.
@@ -98,7 +99,7 @@ class Eyebrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        text.toUpperCase(),
+        tr(text).toUpperCase(),
         style: TextStyle(
             color: color ?? LayoutPalette.of(context).accent2,
             fontSize: 13,

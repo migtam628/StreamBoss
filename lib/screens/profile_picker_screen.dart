@@ -6,6 +6,7 @@ import '../models/profile.dart';
 import '../state/profiles_state.dart';
 import '../widgets/pin_dialog.dart';
 import '../widgets/tv.dart';
+import '../l10n/l10n.dart';
 
 const _avatarColors = [
   Color(0xFFFF3D71),
@@ -53,10 +54,10 @@ Future<bool> switchProfile(
   }
   if (ps.needsPinToEnter(target)) {
     final ok = await askPin(context, ps,
-        title: 'Enter PIN',
+        title: tr('Enter PIN'),
         hint: target.locked
             ? '${target.name} is locked.'
-            : 'Leaving a Kids profile needs the PIN.');
+            : tr('Leaving a Kids profile needs the PIN.'));
     if (!ok) return false;
   }
   ps.select(target.id);
@@ -78,7 +79,7 @@ class ProfilePickerScreen extends StatelessWidget {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text("Who's watching?",
+              Text(tr("Who's watching?"),
                   style: TextStyle(
                       fontSize: tv ? 44 : 30,
                       fontWeight: FontWeight.w800,
@@ -128,7 +129,7 @@ class ProfilePickerScreen extends StatelessWidget {
                                           fontWeight: FontWeight.w700,
                                           color: p.text)),
                                   if (pr.kids)
-                                    Text('Kids',
+                                    Text(tr('Kids'),
                                         style: TextStyle(
                                             color: p.accent2,
                                             fontWeight: FontWeight.w600)),

@@ -13,6 +13,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 const _ink = Color(0xFF2B2350);
 
@@ -23,7 +24,7 @@ class PlaygroundHome extends StatelessWidget {
 
   Future<void> _grownUps(BuildContext context) async {
     final ps = Provider.of<ProfilesState?>(context, listen: false);
-    if (ps != null && !await askPin(context, ps, title: 'Grown-ups only')) {
+    if (ps != null && !await askPin(context, ps, title: tr('Grown-ups only'))) {
       return;
     }
     if (context.mounted) ShellNav.maybeOf(context)?.select(6);
@@ -111,7 +112,7 @@ class PlaygroundHome extends StatelessWidget {
         pill(Icons.schedule,
             wide ? bedtimeLabel(left) : '${left.inMinutes} min'),
       const SizedBox(width: 8),
-      pill(Icons.mood, 'Grown-ups', onTap: () => _grownUps(context)),
+      pill(Icons.mood, tr('Grown-ups'), onTap: () => _grownUps(context)),
     ]);
 
     Widget hero() {
@@ -147,8 +148,8 @@ class PlaygroundHome extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: const Color(0xFFFFD23F),
                     borderRadius: BorderRadius.circular(20)),
-                child: const Text('Keep watching',
-                    style: TextStyle(
+                child: Text(tr('Keep watching'),
+                    style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: _ink,
                         fontSize: 14)),
@@ -238,13 +239,13 @@ class PlaygroundHome extends StatelessWidget {
       child: Column(children: [
         const Icon(Icons.bedtime, color: Color(0xFFFFD23F), size: 56),
         const SizedBox(height: 10),
-        const Text('All done for today',
-            style: TextStyle(
+        Text(tr('All done for today'),
+            style: const TextStyle(
                 color: Colors.white,
                 fontSize: 28,
                 fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
-        Text('It is bedtime. See you tomorrow!',
+        Text(tr('It is bedtime. See you tomorrow!'),
             style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.8), fontSize: 18)),
       ]),
@@ -253,7 +254,7 @@ class PlaygroundHome extends StatelessWidget {
     final empty = Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Text(
-        'No children\'s categories were found in this source. A grown-up can pick another source or layout in Settings.',
+        tr('No children\'s categories were found in this source. A grown-up can pick another source or layout in Settings.'),
         style: TextStyle(fontSize: wide ? 20 : 16, color: p.muted),
       ),
     );
@@ -275,8 +276,8 @@ class PlaygroundHome extends StatelessWidget {
         ]),
         if (picks.isNotEmpty) ...[
           const SizedBox(height: 14),
-          const Text('Today\'s picks',
-              style: TextStyle(
+          Text(tr('Today\'s picks'),
+              style: const TextStyle(
                   fontSize: 24, fontWeight: FontWeight.w700, color: _ink)),
           const SizedBox(height: 10),
           SizedBox(
@@ -340,7 +341,7 @@ class PlaygroundShelf extends StatelessWidget {
               FocusSurface(
                 radius: 28,
                 autofocus: false,
-                semanticLabel: 'Back',
+                semanticLabel: tr('Back'),
                 onTap: () => Navigator.of(context).maybePop(),
                 builder: (_, __) => Container(
                   width: 52,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/l10n.dart';
 import 'package:provider/provider.dart';
 import '../models/media.dart';
 import '../services/crash_guard.dart';
@@ -147,7 +148,7 @@ class _ShellState extends State<Shell> {
             destinations: [
               for (final i in _railOrder(s.animeVisible))
                 NavigationRailDestination(
-                    icon: Icon(kDests[i].icon), selectedIcon: Icon(kDests[i].selectedIcon), label: Text(kDests[i].label)),
+                    icon: Icon(kDests[i].icon), selectedIcon: Icon(kDests[i].selectedIcon), label: Text(tr(kDests[i].label))),
             ],
           ),
           Expanded(child: body),

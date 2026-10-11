@@ -8,7 +8,8 @@ class ContinueEntry {
   final int positionMs, durationMs;
   const ContinueEntry(this.item, this.positionMs, this.durationMs);
 
-  double get progress => durationMs <= 0 ? 0 : (positionMs / durationMs).clamp(0.0, 1.0);
+  double get progress =>
+      durationMs <= 0 ? 0 : (positionMs / durationMs).clamp(0.0, 1.0);
 
   Map<String, Object?> toMap() => {
         'key': item.key,
@@ -21,11 +22,16 @@ class ContinueEntry {
 
 /// The most recent films and episodes that have a resume position and are not finished, newest first.
 /// [recents] is newest first; live channels and titles with an unknown length are left out.
-List<ContinueEntry> continueEntries(List<MediaItem> recents, Map<String, int> positions, Map<String, int> durations,
+List<ContinueEntry> continueEntries(List<MediaItem> recents,
+    Map<String, int> positions, Map<String, int> durations,
     {Set<String> watched = const {}, int max = 10}) {
   final out = <ContinueEntry>[];
   for (final i in recents) {
-    if (i.kind == MediaKind.live || i.streamUrl == null || watched.contains(i.key)) continue;
+    if (i.kind == MediaKind.live ||
+        i.streamUrl == null ||
+        watched.contains(i.key)) {
+      continue;
+    }
     final p = positions[i.key], d = durations[i.key];
     if (p == null || d == null || d <= 0 || p <= 0 || p >= d) continue;
     out.add(ContinueEntry(i, p, d));
@@ -58,11 +64,14 @@ class AndroidWatchNext implements WatchNextSink {
   /// [onLaunch] gets the key of the title whose card was chosen on the home screen.
   AndroidWatchNext({required void Function(String key) onLaunch}) {
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'launch' && call.arguments is String) onLaunch(call.arguments as String);
+      if (call.method == 'launch' && call.arguments is String) {
+        onLaunch(call.arguments as String);
+      }
     });
   }
 
-  static bool get platformSupported => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  static bool get platformSupported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   bool get supported => platformSupported;
@@ -81,7 +90,8 @@ class AndroidWatchNext implements WatchNextSink {
   Future<void> publish(List<ContinueEntry> entries) async {
     if (!supported) return;
     try {
-      await _channel.invokeMethod<bool>('publish', [for (final e in entries) e.toMap()]);
+      await _channel
+          .invokeMethod<bool>('publish', [for (final e in entries) e.toMap()]);
     } catch (_) {
       // No Watch Next on this device (a phone, Fire TV): nothing to show.
     }

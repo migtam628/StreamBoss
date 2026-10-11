@@ -13,6 +13,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// Lounge's Home: the channel you were on, playing live and muted in the top half, and a strip of
 /// channels under it. Moving along the strip changes the picture (after a short pause, so flicking
@@ -43,7 +44,7 @@ class _LoungeHomeState extends State<LoungeHome> {
     final all = s.shown.live;
     if (all.isEmpty) {
       return Center(
-          child: Text('No live channels in this source.',
+          child: Text(tr('No live channels in this source.'),
               style: TextStyle(color: p.muted)));
     }
     final base =
@@ -66,7 +67,7 @@ class _LoungeHomeState extends State<LoungeHome> {
       borderRadius: BorderRadius.circular(wide ? 18 : 14),
       child: FocusSurface(
         radius: wide ? 18 : 14,
-        semanticLabel: cur == null ? 'No channel' : 'Watch ${cur.name}',
+        semanticLabel: cur == null ? tr('No channel') : 'Watch ${cur.name}',
         onTap: open,
         builder: (_, __) => Stack(fit: StackFit.expand, children: [
           if (cur != null)
@@ -169,7 +170,7 @@ class _LoungeHomeState extends State<LoungeHome> {
       height: wide ? 96 : 84,
       child: list.isEmpty
           ? Center(
-              child: Text('No channels match the filter.',
+              child: Text(tr('No channels match the filter.'),
                   style: TextStyle(color: p.muted)))
           : ListView.separated(
               scrollDirection: Axis.horizontal,
@@ -191,7 +192,7 @@ class _LoungeHomeState extends State<LoungeHome> {
       ),
       ChannelFilterBar(shown: list.length),
       ChipRow(
-        labels: ['All', for (final c in cats) c.name],
+        labels: [tr('All'), for (final c in cats) c.name],
         selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
         onSelect: (i) => setState(() {
           _cat = i == 0 ? null : cats[i - 1].id;
@@ -248,7 +249,7 @@ class _Info extends StatelessWidget {
                       .firstOrNull;
                   return Text(
                       now == null
-                          ? 'Press OK to watch'
+                          ? tr('Press OK to watch')
                           : 'Now: ${now.title}  ·  until ${fmtTime(now.end, use24h: use24h)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

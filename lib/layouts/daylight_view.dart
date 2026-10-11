@@ -11,6 +11,7 @@ import 'home_views.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// Daylight's Home: a white feature card, what is live now as cards with progress, then the usual
 /// shelves. Light surfaces on a soft grey ground; one green accent.
@@ -30,7 +31,7 @@ class DaylightHome extends StatelessWidget {
       if (!wide) ...[
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-          child: Text('StreamBoss',
+          child: Text(tr('StreamBoss'),
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: p.text)),
         ),
         _SearchField(onTap: () => ShellNav.maybeOf(context)?.select(5)),
@@ -38,11 +39,11 @@ class DaylightHome extends StatelessWidget {
       ],
       if (feature != null) _FeatureCard(item: feature, resuming: resume != null, wide: wide),
       _LiveNow(items: c.live.take(20).toList()),
-      Shelf(title: 'Continue watching', items: s.recents),
-      Shelf(title: 'My list', items: s.favoriteItems),
+      Shelf(title: tr('Continue watching'), items: s.recents),
+      Shelf(title: tr('My list'), items: s.favoriteItems),
       ...personalShelves(s),
-      Shelf(title: 'Movies', items: c.movies.take(30).toList()),
-      Shelf(title: 'Series', items: c.series.take(30).toList()),
+      Shelf(title: tr('Movies'), items: c.movies.take(30).toList()),
+      Shelf(title: tr('Series'), items: c.series.take(30).toList()),
     ]);
   }
 }
@@ -58,7 +59,7 @@ class _SearchField extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: FocusSurface(
         radius: 28,
-        semanticLabel: 'Search',
+        semanticLabel: tr('Search'),
         onTap: onTap,
         builder: (_, __) => Container(
           color: p.surface,
@@ -67,7 +68,7 @@ class _SearchField extends StatelessWidget {
             Icon(Icons.search, color: p.muted),
             const SizedBox(width: 10),
             Expanded(
-                child: Text('Search channels, movies, series',
+                child: Text(tr('Search channels, movies, series'),
                     maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted))),
           ]),
         ),
@@ -88,8 +89,8 @@ class _FeatureCard extends StatelessWidget {
     final tv = TvScope.of(context);
     final fav = s.isFavorite(item);
     final kind = item.kind == MediaKind.live
-        ? 'Live'
-        : (item.kind == MediaKind.series ? 'Series' : 'Movie');
+        ? tr('Live')
+        : (item.kind == MediaKind.series ? tr('Series') : tr('Movie'));
     final hasRating = item.rating != null && item.rating!.isNotEmpty && item.rating != '0';
     final art = Container(
       decoration: BoxDecoration(
@@ -108,7 +109,7 @@ class _FeatureCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Eyebrow(resuming ? 'Pick up where you left off' : 'Featured'),
+          Eyebrow(resuming ? tr('Pick up where you left off') : tr('Featured')),
           const SizedBox(height: 6),
           Text(item.name,
               maxLines: 2,
@@ -138,12 +139,12 @@ class _FeatureCard extends StatelessWidget {
               autofocus: tv,
               onPressed: () => openItem(context, item),
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Play'),
+              label: Text(tr('Play')),
             ),
             FilledButton.tonalIcon(
               onPressed: () => s.toggleFavorite(item),
               icon: Icon(fav ? Icons.check : Icons.add),
-              label: Text(fav ? 'In My list' : 'My list'),
+              label: Text(fav ? tr('In My list') : tr('My list')),
             ),
           ]),
         ],
@@ -186,7 +187,7 @@ class _LiveNow extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('Live now', style: TextStyle(fontSize: tv ? 22 : 18, fontWeight: FontWeight.w800)),
+          child: Text(tr('Live now'), style: TextStyle(fontSize: tv ? 22 : 18, fontWeight: FontWeight.w800)),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -266,7 +267,7 @@ class _LiveCardState extends State<_LiveCard> {
               final total = now == null ? 0 : now.end.difference(now.start).inSeconds;
               final done = now == null ? 0.0 : DateTime.now().difference(now.start).inSeconds / (total == 0 ? 1 : total);
               return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(now?.title ?? 'Live',
+                Text(now?.title ?? tr('Live'),
                     maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 14)),
                 const SizedBox(height: 6),
                 ClipRRect(

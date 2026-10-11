@@ -41,9 +41,11 @@ class SpeechVoiceInput implements VoiceInput {
   }) async {
     _onError = onError;
     try {
-      final ok = await _speech.initialize(onError: (e) => _onError?.call(_explain(e.errorMsg)));
+      final ok = await _speech.initialize(
+          onError: (e) => _onError?.call(_explain(e.errorMsg)));
       if (!ok) {
-        onError?.call('Voice search is not available on this device, or the microphone is not allowed.');
+        onError?.call(
+            'Voice search is not available on this device, or the microphone is not allowed.');
         return false;
       }
       await _speech.listen(
@@ -77,9 +79,14 @@ class SpeechVoiceInput implements VoiceInput {
   }
 
   static String _explain(String code) => switch (code) {
-        'error_no_match' || 'error_speech_timeout' => 'Nothing was heard. Try again.',
-        'error_permission' => 'Allow the microphone for StreamBoss to use voice search.',
-        'error_network' || 'error_network_timeout' => 'Voice search needs an internet connection.',
+        'error_no_match' ||
+        'error_speech_timeout' =>
+          'Nothing was heard. Try again.',
+        'error_permission' =>
+          'Allow the microphone for StreamBoss to use voice search.',
+        'error_network' ||
+        'error_network_timeout' =>
+          'Voice search needs an internet connection.',
         _ => 'Voice search stopped ($code).',
       };
 }

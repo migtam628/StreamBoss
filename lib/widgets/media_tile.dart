@@ -6,6 +6,7 @@ import '../layouts/ui_layout.dart';
 import 'focus_card.dart';
 import 'net_image.dart';
 import 'tv.dart';
+import '../l10n/l10n.dart';
 
 class MediaTile extends StatelessWidget {
   final MediaItem item;
@@ -69,12 +70,12 @@ class MediaTile extends StatelessWidget {
             Positioned.fill(
               child: ColoredBox(
                 color: Colors.black.withValues(alpha: 0.55),
-                child: const Align(
+                child: Align(
                   alignment: Alignment.topLeft,
                   child: Padding(
-                    padding: EdgeInsets.all(6),
-                    child: Text('OFFLINE',
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                    padding: const EdgeInsets.all(6),
+                    child: Text(tr('OFFLINE'),
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
                   ),
                 ),
               ),

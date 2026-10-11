@@ -10,6 +10,7 @@ import 'cable_view.dart' show SoftKeys;
 import 'common.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Mosaic sits on mowed pitch stripes.
 class MosaicBackdrop extends StatelessWidget {
@@ -71,7 +72,7 @@ class _MosaicHomeState extends State<MosaicHome> {
     final wide = tv || MediaQuery.sizeOf(context).width >= 800;
     final live = s.shown.live;
     if (live.isEmpty) {
-      return Center(child: Text('No live channels in this source.', style: TextStyle(color: p.text)));
+      return Center(child: Text(tr('No live channels in this source.'), style: TextStyle(color: p.text)));
     }
     final tiles = _tiles ??= _initial(live, s);
 
@@ -206,7 +207,7 @@ class _Tile extends StatelessWidget {
             Padding(
               padding: EdgeInsets.all(small ? 8 : 14),
               child: channel == null
-                  ? Center(child: Text('Empty', style: TextStyle(color: p.muted, fontSize: small ? 13 : 18)))
+                  ? Center(child: Text(tr('Empty'), style: TextStyle(color: p.muted, fontSize: small ? 13 : 18)))
                   : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         Text('$number',
@@ -226,7 +227,7 @@ class _Tile extends StatelessWidget {
                       if (!small)
                         NowNext(
                           channel: channel!,
-                          builder: (now, _) => Text(now?.title ?? 'Live',
+                          builder: (now, _) => Text(now?.title ?? tr('Live'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: p.text, fontSize: big ? 20 : 16, fontWeight: FontWeight.w600)),

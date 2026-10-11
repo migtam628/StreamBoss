@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import 'tv.dart';
 import 'voice_search.dart';
 import 'tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 /// A search field and a Filters button for the Movies, Series and Anime lists. It edits the
 /// [AppState.vodFilter] of [list] ('movie', 'series', 'anime'), and each list keeps its own.
@@ -67,7 +68,7 @@ class _VodFilterBarState extends State<VodFilterBar> {
                 isDense: true,
                 filled: true,
                 fillColor: p.wash(0.08),
-                hintText: 'Filter ${widget.noun}',
+                hintText: trf('Filter {noun}', {'noun': tr(widget.noun)}),
                 hintStyle: TextStyle(color: p.muted),
                 prefixIcon: Icon(Icons.filter_alt_outlined, color: p.muted, size: 20),
                 suffixText: widget.shown == null || !f.active ? null : '${widget.shown}',
@@ -81,7 +82,7 @@ class _VodFilterBarState extends State<VodFilterBar> {
         const SizedBox(width: 8),
         FocusSurface(
           radius: 24,
-          semanticLabel: f.count == 0 ? 'Filters' : 'Filters, ${f.count} on',
+          semanticLabel: f.count == 0 ? tr('Filters') : 'Filters, ${f.count} on',
           onTap: () => showVodFilterSheet(context, widget.list, widget.noun),
           builder: (_, __) => Container(
             padding: EdgeInsets.symmetric(horizontal: tv ? 18 : 14, vertical: tv ? 12 : 10),
@@ -89,7 +90,7 @@ class _VodFilterBarState extends State<VodFilterBar> {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.tune, size: 18, color: f.active ? p.onAccent : p.text),
               const SizedBox(width: 6),
-              Text(f.count == 0 ? 'Filters' : 'Filters · ${f.count}',
+              Text(f.count == 0 ? tr('Filters') : 'Filters · ${f.count}',
                   style: TextStyle(fontWeight: FontWeight.w700, color: f.active ? p.onAccent : p.text)),
             ]),
           ),
@@ -97,7 +98,7 @@ class _VodFilterBarState extends State<VodFilterBar> {
         if (f.active) ...[
           const SizedBox(width: 6),
           IconButton(
-            tooltip: 'Clear filters',
+            tooltip: tr('Clear filters'),
             icon: Icon(Icons.close, color: p.muted),
             onPressed: () => s.setVodFilter(widget.list, VodFilter.none),
           ),
@@ -158,34 +159,34 @@ class _VodFilterSheet extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
           child: Row(children: [
-            Expanded(child: Text('Filter $noun', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: p.text))),
-            TextButton(onPressed: f.active ? () => set(VodFilter.none) : null, child: const Text('Clear all')),
+            Expanded(child: Text(trf('Filter {noun}', {'noun': tr(noun)}), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: p.text))),
+            TextButton(onPressed: f.active ? () => set(VodFilter.none) : null, child: Text(tr('Clear all'))),
           ]),
         ),
-        header('RATING'),
+        header(tr('RATING')),
         chips([
           for (final r in VodFilter.ratingSteps)
-            chip(r == 0 ? 'Any rating' : '${r.toInt()}+', f.minRating == r, () => set(f.copyWith(minRating: r))),
+            chip(r == 0 ? tr('Any rating') : '${r.toInt()}+', f.minRating == r, () => set(f.copyWith(minRating: r))),
         ]),
         header('YEAR (READ FROM THE TITLE)'),
         chips([for (final e in Era.values) chip(e.label, f.era == e, () => set(f.copyWith(era: e)))]),
         if (langs.isNotEmpty) ...[
-          header('LANGUAGE (PICK AS MANY AS YOU LIKE)'),
+          header(tr('LANGUAGE (PICK AS MANY AS YOU LIKE)')),
           chips([
-            chip('All', f.languages.isEmpty, () => set(f.copyWith(languages: {}))),
+            chip(tr('All'), f.languages.isEmpty, () => set(f.copyWith(languages: {}))),
             for (final (l, n) in langs) chip('${l.name}  $n', f.languages.contains(l.code), () => set(f.copyWith(languages: f.languages.contains(l.code) ? ({...f.languages}..remove(l.code)) : {...f.languages, l.code}))),
           ]),
         ],
-        header('SHOW ONLY'),
+        header(tr('SHOW ONLY')),
         chips([
-          chip('Favorites', f.favoritesOnly, () => set(f.copyWith(favoritesOnly: !f.favoritesOnly))),
-          chip('Not watched yet', f.unwatchedOnly, () => set(f.copyWith(unwatchedOnly: !f.unwatchedOnly))),
+          chip(tr('Favorites'), f.favoritesOnly, () => set(f.copyWith(favoritesOnly: !f.favoritesOnly))),
+          chip(tr('Not watched yet'), f.unwatchedOnly, () => set(f.copyWith(unwatchedOnly: !f.unwatchedOnly))),
         ]),
-        header('ORDER'),
+        header(tr('ORDER')),
         chips([for (final o in VodSort.values) chip(o.label, f.sort == o, () => set(f.copyWith(sort: o)))]),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
-          child: FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Done')),
+          child: FilledButton(onPressed: () => Navigator.of(context).pop(), child: Text(tr('Done'))),
         ),
       ]),
     );

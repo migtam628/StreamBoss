@@ -4,6 +4,7 @@ import '../state/settings_state.dart';
 import 'common.dart';
 import 'ui_layout.dart';
 import '../widgets/tv_slider.dart';
+import '../l10n/l10n.dart';
 
 /// Accent colors to pick from. A hue slider covers the rest.
 const accentChoices = <Color>[
@@ -114,11 +115,11 @@ class ThemePicker extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Accent color',
+        Text(tr('Accent color'),
             style: TextStyle(color: p.muted, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Wrap(spacing: 10, runSpacing: 10, children: [
-          swatch(null, label: 'The layout\'s own accent'),
+          swatch(null, label: tr('The layout\'s own accent')),
           for (final c in accentChoices)
             swatch(c, label: 'Accent color ${c.toARGB32().toRadixString(16)}'),
         ]),
@@ -129,7 +130,7 @@ class ThemePicker extends StatelessWidget {
               value: hue.clamp(0, 360).toDouble(),
               max: 360,
               divisions: 72,
-              label: 'Hue',
+              label: tr('Hue'),
               activeColor: cur ?? p.accent,
               onChanged: (v) =>
                   st.set('accentColor', accentFromHue(v).toARGB32()),
@@ -137,24 +138,24 @@ class ThemePicker extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 4),
-        Text('Background',
+        Text(tr('Background'),
             style: TextStyle(color: p.muted, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Wrap(spacing: 10, runSpacing: 10, children: [
           bgChip(
               'layout',
-              'Layout',
+              tr('Layout'),
               LayoutPalette.forLayout(st.layout).bg,
               LayoutPalette.forLayout(st.layout).surface,
               LayoutPalette.forLayout(st.layout).text),
           for (final e in LayoutPalette.backgrounds.entries)
-            bgChip(e.key, e.value.$1, e.value.$2, e.value.$3, e.value.$5),
+            bgChip(e.key, tr(e.value.$1), e.value.$2, e.value.$3, e.value.$5),
         ]),
         if (painted)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-                '${st.layout.label} paints its own backdrop, so only the accent changes there.',
+                trf('{layout} paints its own backdrop, so only the accent changes there.', {'layout': tr(st.layout.label)}),
                 style: TextStyle(color: p.muted, fontSize: 13)),
           ),
       ]),

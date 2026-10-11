@@ -14,6 +14,7 @@ import '../layouts/ui_layout.dart';
 import '../widgets/focus_card.dart';
 import '../widgets/programme_sheet.dart';
 import 'open_item.dart';
+import '../l10n/l10n.dart';
 
 enum _Mode { grid, list }
 
@@ -70,7 +71,7 @@ class _GuideScreenState extends State<GuideScreen> {
     }
     final all = s.shown.live;
     if (all.isEmpty) {
-      return Center(child: Text('No live channels.', style: TextStyle(color: LayoutPalette.of(context).muted)));
+      return Center(child: Text(tr('No live channels.'), style: TextStyle(color: LayoutPalette.of(context).muted)));
     }
     final filtered = s.filterChannels(all);
     final items = _cat == null ? filtered : filtered.where((i) => i.categoryId == _cat).toList();
@@ -92,7 +93,7 @@ class _GuideScreenState extends State<GuideScreen> {
           child: SizedBox(
             height: 56,
             child: Builder(builder: (context) {
-              final cats = [const Category('', 'All'), ...s.shown.liveCategories];
+              final cats = [Category('', tr('All')), ...s.shown.liveCategories];
               return ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -127,20 +128,20 @@ class _GuideScreenState extends State<GuideScreen> {
       Expanded(
         child: showGrid
             ? (s.guideLoading
-                ? const Center(
+                ? Center(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
-                    Text('Loading guide…'),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
+                    Text(tr('Loading guide…')),
                   ]))
                 : s.guideError != null
                     ? Center(
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Text('Guide failed: ${s.guideError}',
+                        Text(trf('Guide failed: {error}', {'error': s.guideError}),
                             style: TextStyle(color: LayoutPalette.of(context).accent)),
                         TextButton(
                             onPressed: () => s.loadGuide(force: true),
-                            child: const Text('Retry')),
+                            child: Text(tr('Retry'))),
                       ]))
                     : GuideGrid(channels: items, onFocusProgramme: _focused, onPick: _pick))
             : _NowNextList(items: items, onPick: _pick),
@@ -272,7 +273,7 @@ class _GuideGridState extends State<GuideGrid> {
                             alignment: Alignment.centerLeft,
                             child: Padding(
                               padding: const EdgeInsets.only(left: 8),
-                              child: Text('No guide data', style: TextStyle(color: LayoutPalette.of(context).muted)),
+                              child: Text(tr('No guide data'), style: TextStyle(color: LayoutPalette.of(context).muted)),
                             ),
                           );
                         }
@@ -372,7 +373,7 @@ class _NowNextListState extends State<_NowNextList> {
               final now = list.where((e) => e.isNow).firstOrNull;
               final next = list.where((e) => e.start.isAfter(DateTime.now())).firstOrNull;
               if (now == null) {
-                return Text(snap.connectionState == ConnectionState.done ? 'No guide data' : '…',
+                return Text(snap.connectionState == ConnectionState.done ? tr('No guide data') : '…',
                     style: TextStyle(color: LayoutPalette.of(context).muted));
               }
               return Text(
@@ -459,7 +460,7 @@ class _GuidePreview extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                     decoration: BoxDecoration(color: const Color(0xFFE5484D), borderRadius: BorderRadius.circular(4)),
-                    child: const Text('LIVE', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1)),
+                    child: Text(tr('LIVE'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1)),
                   ),
                 ),
               ]),
@@ -470,18 +471,18 @@ class _GuidePreview extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
             Text(channel.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700)),
-            Text(shown?.title ?? 'No guide data',
+            Text(shown?.title ?? tr('No guide data'),
                 maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: wide ? 22 : 17, fontWeight: FontWeight.w800)),
             if (shown != null)
-              Text('${hm(shown.start)} – ${hm(shown.end)}${next != null && shown == now ? '   Next ${hm(next.start)} ${next.title}' : ''}',
+              Text('${hm(shown.start)} – ${hm(shown.end)}${next != null && shown == now ? trf('   Next {time} {title}', {'time': hm(next.start), 'title': next.title}) : ''}',
                   maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 13)),
             const SizedBox(height: 6),
             Wrap(spacing: 8, runSpacing: 6, children: [
-              action(Icons.play_arrow, 'Watch', () => openItem(context, channel, queue: queue), primary: true),
-              action(Icons.picture_in_picture, 'Mini player', () async {
+              action(Icons.play_arrow, tr('Watch'), () => openItem(context, channel, queue: queue), primary: true),
+              action(Icons.picture_in_picture, tr('Mini player'), () async {
                 final ok = await MiniPlayer.instance.playChannel(context.read<SettingsState>(), channel, queue: queue);
                 if (!ok && context.mounted) {
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text('Could not start the mini player.')));
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(tr('Could not start the mini player.'))));
                 }
               }),
             ]),

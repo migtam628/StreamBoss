@@ -16,6 +16,7 @@ import 'shell_nav.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
 import '../widgets/tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 const _mono = TextStyle(
     fontFamily: 'monospace',
@@ -52,16 +53,16 @@ class _ConsoleHomeState extends State<ConsoleHome> {
     final raw = _q.trim();
     if (raw.startsWith('/')) {
       final c = exactCommand(raw);
-      if (c?.name == '/list') return [('MY LIST', s.favoriteItems)];
-      if (c?.name == '/recent') return [('WATCHED LATELY', s.recents)];
+      if (c?.name == '/list') return [(tr('MY LIST'), s.favoriteItems)];
+      if (c?.name == '/recent') return [(tr('WATCHED LATELY'), s.recents)];
       return const [];
     }
     if (raw.length < 2) {
       return [
         if (s.recents.isNotEmpty)
-          ('CONTINUE WATCHING', s.recents.take(8).toList()),
+          (tr('CONTINUE WATCHING'), s.recents.take(8).toList()),
         if (s.favoriteItems.isNotEmpty)
-          ('MY LIST', s.favoriteItems.take(8).toList()),
+          (tr('MY LIST'), s.favoriteItems.take(8).toList()),
       ];
     }
     final hits = s.searchIndex.search(raw,
@@ -79,10 +80,10 @@ class _ConsoleHomeState extends State<ConsoleHome> {
             if (h.kind == k) h
         ];
     return [
-      for (final (label, k) in const [
-        ('CHANNELS', MediaKind.live),
-        ('MOVIES', MediaKind.movie),
-        ('SERIES', MediaKind.series)
+      for (final (label, k) in [
+        (tr('CHANNELS'), MediaKind.live),
+        (tr('MOVIES'), MediaKind.movie),
+        (tr('SERIES'), MediaKind.series)
       ])
         if (of(k).isNotEmpty) (label, of(k)),
     ];
@@ -267,7 +268,7 @@ class _ConsoleHomeState extends State<ConsoleHome> {
         child: Text(
           searching
               ? 'No match for "${_q.trim()}".'
-              : 'Type to find a channel, movie or series.\nStart with / for commands, such as /live or /guide.',
+              : tr('Type to find a channel, movie or series.\nStart with / for commands, such as /live or /guide.'),
           style: t(15, p.muted).copyWith(height: 1.6),
         ),
       ));
@@ -326,7 +327,7 @@ class _ConsoleHomeState extends State<ConsoleHome> {
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
-              hintText: 'find something, or type /',
+              hintText: tr('find something, or type /'),
               hintStyle: t(wide ? 22 : 18, p.muted),
             ),
             onChanged: (v) => setState(() {
@@ -337,7 +338,7 @@ class _ConsoleHomeState extends State<ConsoleHome> {
           ),
         ),
         if (searching)
-          Text('$total result${total == 1 ? '' : 's'}', style: t(13, p.muted)),
+          Text(trf(total == 1 ? '{n} result' : '{n} results', {'n': total}), style: t(13, p.muted)),
       ]),
     );
 
@@ -375,7 +376,7 @@ class _ConsoleHomeState extends State<ConsoleHome> {
           ),
         ),
         if (wide)
-          Text('↑↓ move   OK open   hold OK save', style: t(12, p.muted)),
+          Text(tr('↑↓ move   OK open   hold OK save'), style: t(12, p.muted)),
       ]),
     );
 

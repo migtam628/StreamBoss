@@ -7,6 +7,7 @@ import '../state/app_state.dart';
 import 'detail_screen.dart';
 import 'player_screen.dart';
 import 'series_screen.dart';
+import '../l10n/l10n.dart';
 
 /// Opens the right screen for [item]. For live channels pass [queue] (the
 /// visible list) so Up/Down can zap through it.
@@ -36,7 +37,7 @@ void openCatchUp(BuildContext context, MediaItem ch, Programme p, {bool replace 
   if (!NavGuard.allow()) return;
   final url = context.read<AppState>().catchUpUrl(ch, p);
   if (url == null) {
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text('This channel has no catch-up.')));
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(tr('This channel has no catch-up.'))));
     return;
   }
   final item = MediaItem(

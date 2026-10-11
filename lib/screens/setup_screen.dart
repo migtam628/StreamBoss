@@ -10,6 +10,7 @@ import '../widgets/tv.dart';
 import 'free_playlists_screen.dart';
 import 'pairing_dialog.dart';
 import '../widgets/tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -20,7 +21,7 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   SourceType _type = SourceType.xtream;
-  final _name = TextEditingController(text: 'My Provider');
+  final _name = TextEditingController(text: tr('My Provider'));
   final _url = TextEditingController();
   final _user = TextEditingController();
   final _pass = TextEditingController();
@@ -37,27 +38,27 @@ class _SetupScreenState extends State<SetupScreen> {
     }
     final uri = url.isEmpty ? null : Uri.tryParse(url.contains('://') ? url : 'http://$url');
     if (uri == null || uri.host.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a server address first.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Enter a server address first.'))));
       return;
     }
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Connection to ${uri.host}'),
+        title: Text(trf('Connection to {host}', {'host': uri.host})),
         content: FutureBuilder<String>(
           future: diagnoseConnection(uri, appHttp),
           builder: (_, snap) => snap.connectionState != ConnectionState.done
-              ? const Row(children: [
-                  SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
-                  SizedBox(width: 14),
-                  Text('Checking...'),
+              ? Row(children: [
+                  const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: 14),
+                  Text(tr('Checking...')),
                 ])
               : SingleChildScrollView(
                   child: SelectableText(
                       snap.hasError ? 'The check failed: ${snap.error}' : snap.data ?? '',
                       style: const TextStyle(fontFamily: 'monospace', fontSize: 13, height: 1.4))),
         ),
-        actions: [TextButton(autofocus: true, onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+        actions: [TextButton(autofocus: true, onPressed: () => Navigator.pop(ctx), child: Text(tr('Close')))],
       ),
     );
   }
@@ -72,15 +73,15 @@ class _SetupScreenState extends State<SetupScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
             child: s.loading
-                ? const Column(mainAxisSize: MainAxisSize.min, children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Loading your library…'),
+                ? Column(mainAxisSize: MainAxisSize.min, children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(tr('Loading your library…')),
                   ])
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('STREAMBOSS',
+                      Text(tr('STREAMBOSS'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 34,
@@ -88,7 +89,7 @@ class _SetupScreenState extends State<SetupScreen> {
                               letterSpacing: 4,
                               color: LayoutPalette.of(context).accent)),
                       const SizedBox(height: 4),
-                      Text('Bring your own provider. We just play it.',
+                      Text(tr('Bring your own provider. We just play it.'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: LayoutPalette.of(context).muted)),
                       const SizedBox(height: 28),
@@ -97,7 +98,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         FilledButton.tonalIcon(
                           autofocus: TvScope.of(context),
                           icon: const Icon(Icons.phone_android),
-                          label: const Padding(padding: EdgeInsets.all(10), child: Text('Set up from your phone')),
+                          label: Padding(padding: const EdgeInsets.all(10), child: Text(tr('Set up from your phone'))),
                           onPressed: () async {
                             final src = await showPairingDialog(context);
                             if (src != null) s.addSource(src);
@@ -105,7 +106,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text('or enter it here', textAlign: TextAlign.center, style: TextStyle(color: LayoutPalette.of(context).muted)),
+                          child: Text(tr('or enter it here'), textAlign: TextAlign.center, style: TextStyle(color: LayoutPalette.of(context).muted)),
                         ),
                       ],
                       if (s.error != null)
@@ -129,9 +130,9 @@ class _SetupScreenState extends State<SetupScreen> {
                         const Divider(height: 32),
                       ],
                       SegmentedButton<SourceType>(
-                        segments: const [
-                          ButtonSegment(value: SourceType.xtream, label: Text('Xtream')),
-                          ButtonSegment(value: SourceType.m3u, label: Text('M3U')),
+                        segments: [
+                          ButtonSegment(value: SourceType.xtream, label: Text(tr('Xtream'))),
+                          ButtonSegment(value: SourceType.m3u, label: Text(tr('M3U'))),
                         ],
                         selected: {_type},
                         onSelectionChanged: (v) => setState(() => _type = v.first),
@@ -139,7 +140,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       const SizedBox(height: 16),
                       TvTextField(
                           controller: _name,
-                          decoration: const InputDecoration(labelText: 'Name')),
+                          decoration: InputDecoration(labelText: tr('Name'))),
                       const SizedBox(height: 12),
                       TvTextField(
                         controller: _url,
@@ -153,12 +154,12 @@ class _SetupScreenState extends State<SetupScreen> {
                         const SizedBox(height: 12),
                         TvTextField(
                             controller: _user,
-                            decoration: const InputDecoration(labelText: 'Username')),
+                            decoration: InputDecoration(labelText: tr('Username'))),
                         const SizedBox(height: 12),
                         TvTextField(
                             controller: _pass,
                             obscureText: true,
-                            decoration: const InputDecoration(labelText: 'Password')),
+                            decoration: InputDecoration(labelText: tr('Password'))),
                       ],
                       const SizedBox(height: 20),
                       FilledButton(
@@ -179,29 +180,29 @@ class _SetupScreenState extends State<SetupScreen> {
                             }
                           }
                           s.addSource(Source(
-                            name: _name.text.trim().isEmpty ? 'Source' : _name.text.trim(),
+                            name: _name.text.trim().isEmpty ? tr('Source') : _name.text.trim(),
                             type: _type,
                             url: url,
                             username: user,
                             password: pass,
                           ));
                         },
-                        child: const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text('Connect'),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(tr('Connect')),
                         ),
                       ),
                       TextButton(
                         onPressed: _test,
-                        child: const Text('Test connection'),
+                        child: Text(tr('Test connection')),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreePlaylistsScreen())),
-                        child: const Text('Browse free public channels'),
+                        child: Text(tr('Browse free public channels')),
                       ),
                       TextButton(
                         onPressed: () => s.activate(Source.demo),
-                        child: const Text('Try demo mode'),
+                        child: Text(tr('Try demo mode')),
                       ),
                     ],
                   ),

@@ -13,6 +13,7 @@ import '../state/settings_state.dart';
 import 'details_kit.dart';
 import 'net_image.dart';
 import 'play_options.dart' show clock;
+import '../l10n/l10n.dart';
 
 /// A quick look at a movie or series without leaving the list: poster, facts, the plot, and the few
 /// things people do next (play, My list, open the full page). Opened by pressing and holding a title,
@@ -92,7 +93,7 @@ class _PeekSheetState extends State<PeekSheet> {
                       Padding(padding: const EdgeInsets.only(top: 8), child: Text(t.genres.join(' · '), style: TextStyle(color: p.muted))),
                     Padding(
                       padding: const EdgeInsets.only(top: 10),
-                      child: Text(plot ?? (snap.connectionState == ConnectionState.done ? 'No description from your provider.' : 'Loading…'),
+                      child: Text(plot ?? (snap.connectionState == ConnectionState.done ? tr('No description from your provider.') : tr('Loading…')),
                           maxLines: 6, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, height: 1.4)),
                     ),
                     if (s.progressOf(item) case final pr?)
@@ -106,7 +107,7 @@ class _PeekSheetState extends State<PeekSheet> {
                   FilledButton.icon(
                     autofocus: true,
                     icon: const Icon(Icons.play_arrow),
-                    label: Text(resume == null ? (watched ? 'Watch again' : 'Play') : (auto ? 'Resume ${clock(resume)}' : 'Play from start')),
+                    label: Text(resume == null ? (watched ? tr('Watch again') : tr('Play')) : (auto ? 'Resume ${clock(resume)}' : tr('Play from start'))),
                     onPressed: () {
                       if (!NavGuard.allow()) return;
                       Navigator.pop(context);
@@ -119,7 +120,7 @@ class _PeekSheetState extends State<PeekSheet> {
                   FilledButton.icon(
                     autofocus: true,
                     icon: const Icon(Icons.list),
-                    label: const Text('Episodes'),
+                    label: Text(tr('Episodes')),
                     onPressed: () {
                       Navigator.pop(context);
                       openItem(context, item);
@@ -128,7 +129,7 @@ class _PeekSheetState extends State<PeekSheet> {
                 else
                   OutlinedButton.icon(
                     icon: const Icon(Icons.info_outline),
-                    label: const Text('Full details'),
+                    label: Text(tr('Full details')),
                     onPressed: () {
                       Navigator.pop(context);
                       openItem(context, item);
@@ -136,13 +137,13 @@ class _PeekSheetState extends State<PeekSheet> {
                   ),
                 OutlinedButton.icon(
                   icon: Icon(s.isFavorite(item) ? Icons.favorite : Icons.favorite_border),
-                  label: Text(s.isFavorite(item) ? 'In My list' : 'My list'),
+                  label: Text(s.isFavorite(item) ? tr('In My list') : tr('My list')),
                   onPressed: () => s.toggleFavorite(item),
                 ),
                 if (!series)
                   OutlinedButton.icon(
                     icon: Icon(watched ? Icons.visibility_off_outlined : Icons.check_circle_outline),
-                    label: Text(watched ? 'Mark not watched' : 'Mark watched'),
+                    label: Text(watched ? tr('Mark not watched') : tr('Mark watched')),
                     onPressed: () => s.setWatched([item], !watched),
                   ),
               ]),

@@ -10,6 +10,7 @@ import '../widgets/media_tile.dart';
 import '../widgets/vod_filter_bar.dart';
 import 'open_item.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// Anime: the series, movies and channels in the library that look like anime, found by category names
 /// (Anime, Manga, Donghua, Shonen and so on) and "(Anime)" in a title. It has its own filters, and the
@@ -25,7 +26,7 @@ class _AnimeScreenState extends State<AnimeScreen> {
   MediaKind? _kind;
   String? _cat;
 
-  static const _label = {MediaKind.series: 'Series', MediaKind.movie: 'Movies', MediaKind.live: 'Channels'};
+  static Map<MediaKind, String> get _label => {MediaKind.series: tr('Series'), MediaKind.movie: tr('Movies'), MediaKind.live: tr('Channels')};
 
   @override
   Widget build(BuildContext context) {
@@ -44,15 +45,15 @@ class _AnimeScreenState extends State<AnimeScreen> {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.auto_awesome_outlined, size: 56, color: p.muted),
               const SizedBox(height: 14),
-              Text('No anime found', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: p.text)),
+              Text(tr('No anime found'), style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: p.text)),
               const SizedBox(height: 8),
               Text(
-                  'This page lists the categories whose names say anime, manga, donghua, shonen and similar, and titles marked (Anime). '
-                  'Your library has none. Anime in a category named something else is still under Series and Movies.',
+                  tr('This page lists the categories whose names say anime, manga, donghua, shonen and similar, and titles marked (Anime). '
+                  'Your library has none. Anime in a category named something else is still under Series and Movies.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: p.muted, height: 1.4)),
               const SizedBox(height: 16),
-              FilledButton(onPressed: () => ShellNav.maybeOf(context)?.select(4), child: const Text('Browse series')),
+              FilledButton(onPressed: () => ShellNav.maybeOf(context)?.select(4), child: Text(tr('Browse series'))),
             ]),
           ),
         ),
@@ -79,13 +80,13 @@ class _AnimeScreenState extends State<AnimeScreen> {
       VodFilterBar(list: 'anime', noun: 'anime', shown: items.length),
       if (cats.length > 1)
         ChipRow(
-          labels: ['All', for (final cat in cats) cat.name],
+          labels: [tr('All'), for (final cat in cats) cat.name],
           selected: _cat == null ? 0 : cats.indexWhere((x) => x.id == _cat) + 1,
           onSelect: (i) => setState(() => _cat = i == 0 ? null : cats[i - 1].id),
         ),
       Expanded(
         child: items.isEmpty
-            ? Center(child: Text('No anime matches the filters.', style: TextStyle(color: p.muted)))
+            ? Center(child: Text(tr('No anime matches the filters.'), style: TextStyle(color: p.muted)))
             : GridView.builder(
                 // ignore: deprecated_member_use
                 cacheExtent: 1000,

@@ -12,32 +12,33 @@ import '../widgets/programme_sheet.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 const _ink = Color(0xFF241D14);
 const _paper = Color(0xFFF1E8D4);
 
-const _weekdays = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday'
+List<String> get _weekdays => [
+  tr('Monday'),
+  tr('Tuesday'),
+  tr('Wednesday'),
+  tr('Thursday'),
+  tr('Friday'),
+  tr('Saturday'),
+  tr('Sunday')
 ];
-const _months = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December'
+List<String> get _months => [
+  tr('January'),
+  tr('February'),
+  tr('March'),
+  tr('April'),
+  tr('May'),
+  tr('June'),
+  tr('July'),
+  tr('August'),
+  tr('September'),
+  tr('October'),
+  tr('November'),
+  tr('December')
 ];
 
 String _dateLine(DateTime d) =>
@@ -110,12 +111,12 @@ class _TonightHomeState extends State<TonightHome> {
   }
 
   String _tag(TonightEntry e) => switch (e.kind) {
-        TonightKind.live => 'LIVE',
+        TonightKind.live => tr('LIVE'),
         TonightKind.upcoming =>
-          _day == TonightDay.tomorrow ? 'TOMORROW' : 'TONIGHT',
-        TonightKind.resume => 'CONTINUE',
-        TonightKind.saved => 'MY LIST',
-        TonightKind.archive => 'ARCHIVE',
+          _day == TonightDay.tomorrow ? tr('TOMORROW') : tr('TONIGHT'),
+        TonightKind.resume => tr('CONTINUE'),
+        TonightKind.saved => tr('MY LIST'),
+        TonightKind.archive => tr('ARCHIVE'),
       };
 
   @override
@@ -173,8 +174,8 @@ class _TonightHomeState extends State<TonightHome> {
       }
       final sub = prog == null
           ? (e.kind == TonightKind.resume
-              ? 'Pick up where you left off'
-              : 'In My List')
+              ? tr('Pick up where you left off')
+              : tr('In My List'))
           : (wide
               ? '${e.item.name} · ${t(prog.start)} – ${t(prog.end)}'
               : '${e.item.name} · ${prog.end.difference(prog.start).inMinutes} min');
@@ -200,7 +201,7 @@ class _TonightHomeState extends State<TonightHome> {
                         fontWeight: FontWeight.w700,
                         color: p.text)),
                 if (live)
-                  Text('NOW',
+                  Text(tr('NOW'),
                       style: TextStyle(
                           fontSize: wide ? 11 : 10,
                           letterSpacing: 1.4,
@@ -335,14 +336,14 @@ class _TonightHomeState extends State<TonightHome> {
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Text(
             s.guideLoading
-                ? 'Loading the TV guide...'
+                ? tr('Loading the TV guide...')
                 : guideMissing
-                    ? 'There is no TV guide for this source, so there is nothing to plan yet. Titles you start or save will show up here.'
+                    ? tr('There is no TV guide for this source, so there is nothing to plan yet. Titles you start or save will show up here.')
                     : switch (_day) {
                         TonightDay.catchUp =>
                           'No programmes with an archive in the last day.',
                         TonightDay.tomorrow =>
-                          'The guide has nothing for tomorrow yet.',
+                          tr('The guide has nothing for tomorrow yet.'),
                         _ =>
                           'Nothing lined up. Favorite a channel or start a movie and it will appear here.',
                       },
@@ -356,7 +357,7 @@ class _TonightHomeState extends State<TonightHome> {
     final header = <Widget>[
       // The top bar already carries the name on a TV.
       if (!wide) ...[
-        Text('STREAMBOSS',
+        Text(tr('STREAMBOSS'),
             style: TextStyle(
                 fontSize: 12,
                 letterSpacing: 2.4,
@@ -364,7 +365,7 @@ class _TonightHomeState extends State<TonightHome> {
                 color: p.muted)),
         const SizedBox(height: 4),
       ],
-      Text('Tonight',
+      Text(tr('Tonight'),
           style: TextStyle(
               fontFamily: 'serif',
               fontSize: wide ? 58 : 44,
@@ -483,7 +484,7 @@ class _Details extends StatelessWidget {
         decoration: decoration,
         padding: const EdgeInsets.all(24),
         alignment: Alignment.center,
-        child: Text('Pick a line to see what it is.',
+        child: Text(tr('Pick a line to see what it is.'),
             style:
                 TextStyle(color: _paper.withValues(alpha: 0.7), fontSize: 17)),
       );
@@ -493,7 +494,7 @@ class _Details extends StatelessWidget {
     final desc =
         (prog?.desc?.isNotEmpty ?? false) ? prog!.desc! : (e.item.plot ?? '');
     final meta = prog == null
-        ? (e.item.kind == MediaKind.series ? 'Series' : 'Movie')
+        ? (e.item.kind == MediaKind.series ? tr('Series') : tr('Movie'))
         : '${e.item.name} · ${clock(prog.start)} – ${clock(prog.end)}';
     final art = e.item.poster;
     return Container(
@@ -518,7 +519,7 @@ class _Details extends StatelessWidget {
             Positioned(
                 left: 10,
                 top: 10,
-                child: _Tag(live ? 'LIVE' : time.toUpperCase(), live: live)),
+                child: _Tag(live ? tr('LIVE') : time.toUpperCase(), live: live)),
           ]),
         ),
         const SizedBox(height: 14),
@@ -555,10 +556,10 @@ class _Details extends StatelessWidget {
                   top: BorderSide(color: _paper.withValues(alpha: 0.2)))),
           child: Text.rich(
               TextSpan(children: [
-                const TextSpan(
-                    text: 'Why it is here. ',
+                TextSpan(
+                    text: tr('Why it is here. '),
                     style:
-                        TextStyle(fontWeight: FontWeight.w800, color: _paper)),
+                        const TextStyle(fontWeight: FontWeight.w800, color: _paper)),
                 TextSpan(
                     text: e.reason,
                     style: const TextStyle(color: Color(0xFFE9A58F))),
@@ -569,7 +570,7 @@ class _Details extends StatelessWidget {
         Row(children: [
           Expanded(
             child: _Btn(
-              label: live ? 'Watch now' : (prog == null ? 'Play' : 'Details'),
+              label: live ? tr('Watch now') : (prog == null ? tr('Play') : tr('Details')),
               icon:
                   live || prog == null ? Icons.play_arrow : Icons.info_outline,
               primary: true,
@@ -578,14 +579,14 @@ class _Details extends StatelessWidget {
           ),
           if (onStart != null) ...[
             const SizedBox(width: 8),
-            Expanded(child: _Btn(label: 'From the start', onTap: onStart))
+            Expanded(child: _Btn(label: tr('From the start'), onTap: onStart))
           ],
           const SizedBox(width: 8),
           _Btn(
               label: '',
               icon: inList ? Icons.check : Icons.add,
               onTap: onList,
-              semantic: inList ? 'Remove from My List' : 'Add to My List'),
+              semantic: inList ? tr('Remove from My List') : tr('Add to My List')),
         ]),
       ]),
     );

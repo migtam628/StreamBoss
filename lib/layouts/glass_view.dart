@@ -10,6 +10,7 @@ import 'common.dart';
 import 'home_views.dart';
 import 'shell_nav.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Glass sits on a soft, colorful backdrop of overlapping glows. It is plain gradients (no blur
 /// filter), so it costs almost nothing to draw.
@@ -131,12 +132,12 @@ class GlassHome extends StatelessWidget {
     final feature = resume ?? (c.movies.isNotEmpty ? c.movies.first : (c.live.isNotEmpty ? c.live.first : null));
     return ListView(padding: const EdgeInsets.fromLTRB(0, 12, 0, 16), children: [
       if (feature != null) _Hero(item: feature, resuming: resume != null, wide: wide),
-      _Strip(title: 'Live now', items: c.live.take(12).toList(), queue: c.live),
-      _Strip(title: 'Continue watching', items: s.recents.take(12).toList()),
-      Shelf(title: 'My list', items: s.favoriteItems),
+      _Strip(title: tr('Live now'), items: c.live.take(12).toList(), queue: c.live),
+      _Strip(title: tr('Continue watching'), items: s.recents.take(12).toList()),
+      Shelf(title: tr('My list'), items: s.favoriteItems),
       ...personalShelves(s),
-      Shelf(title: 'Movies', items: c.movies.take(30).toList()),
-      Shelf(title: 'Series', items: c.series.take(30).toList()),
+      Shelf(title: tr('Movies'), items: c.movies.take(30).toList()),
+      Shelf(title: tr('Series'), items: c.series.take(30).toList()),
     ]);
   }
 }
@@ -169,7 +170,7 @@ class _Hero extends StatelessWidget {
       ),
     );
     final copy = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      Eyebrow(resuming ? 'Pick up where you left off' : 'Featured', color: p.accent),
+      Eyebrow(resuming ? tr('Pick up where you left off') : tr('Featured'), color: p.accent),
       const SizedBox(height: 6),
       Text(item.name,
           maxLines: 2,
@@ -178,7 +179,7 @@ class _Hero extends StatelessWidget {
       const SizedBox(height: 8),
       Text(
           [
-            item.kind == MediaKind.live ? 'Live' : (item.kind == MediaKind.series ? 'Series' : 'Movie'),
+            item.kind == MediaKind.live ? tr('Live') : (item.kind == MediaKind.series ? tr('Series') : tr('Movie')),
             if (item.rating != null && item.rating!.isNotEmpty && item.rating != '0') '★ ${item.rating}',
           ].join('  ·  '),
           style: TextStyle(color: p.muted, fontSize: wide ? 17 : 14)),
@@ -196,13 +197,13 @@ class _Hero extends StatelessWidget {
           autofocus: tv,
           onPressed: () => openItem(context, item),
           icon: const Icon(Icons.play_arrow),
-          label: const Text('Play'),
+          label: Text(tr('Play')),
         ),
         FilledButton.tonalIcon(
           onPressed: () => s.toggleFavorite(item),
           style: FilledButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.2), foregroundColor: p.text),
           icon: Icon(fav ? Icons.check : Icons.add),
-          label: Text(fav ? 'In My list' : 'My list'),
+          label: Text(fav ? tr('In My list') : tr('My list')),
         ),
       ]),
     ]);

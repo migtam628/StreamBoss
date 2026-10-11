@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../layouts/ui_layout.dart';
 import '../state/app_state.dart';
 import 'settings/settings_widgets.dart' show confirmDialog;
+import '../l10n/l10n.dart';
 
 /// Settings > Library > Edited channels: every channel that was renamed, hidden or pinned, with a way
 /// to undo each one. A hidden channel is not in any list, so this is where it comes back.
@@ -36,17 +37,17 @@ class EditedChannelsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edited channels'),
+        title: Text(tr('Edited channels')),
         backgroundColor: p.bg,
         actions: [
           if (keys.isNotEmpty)
             TextButton(
               onPressed: () async {
-                if (await confirmDialog(context, title: 'Undo every change?', body: 'Renamed, hidden and pinned channels go back to how the provider lists them.', confirm: 'Undo all')) {
+                if (await confirmDialog(context, title: tr('Undo every change?'), body: tr('Renamed, hidden and pinned channels go back to how the provider lists them.'), confirm: tr('Undo all'))) {
                   s.resetAllChannelEdits();
                 }
               },
-              child: const Text('Undo all'),
+              child: Text(tr('Undo all')),
             ),
         ],
       ),
@@ -54,7 +55,7 @@ class EditedChannelsScreen extends StatelessWidget {
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('No channel has been changed. Press and hold a channel to rename it, hide it or pin it to the top.',
+                child: Text(tr('No channel has been changed. Press and hold a channel to rename it, hide it or pin it to the top.'),
                     textAlign: TextAlign.center, style: TextStyle(color: p.muted, height: 1.4)),
               ),
             )
@@ -66,10 +67,10 @@ class EditedChannelsScreen extends StatelessWidget {
                   subtitle: Text(statusOf(k)),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     if (e.pins.contains(k) && e.pins.indexOf(k) > 0)
-                      IconButton(tooltip: 'Move up', icon: const Icon(Icons.arrow_upward), onPressed: () => s.movePinned(k, -1)),
+                      IconButton(tooltip: tr('Move up'), icon: const Icon(Icons.arrow_upward), onPressed: () => s.movePinned(k, -1)),
                     if (e.pins.contains(k) && e.pins.indexOf(k) < e.pins.length - 1)
-                      IconButton(tooltip: 'Move down', icon: const Icon(Icons.arrow_downward), onPressed: () => s.movePinned(k, 1)),
-                    TextButton(onPressed: () => s.resetChannel(k), child: const Text('Undo')),
+                      IconButton(tooltip: tr('Move down'), icon: const Icon(Icons.arrow_downward), onPressed: () => s.movePinned(k, 1)),
+                    TextButton(onPressed: () => s.resetChannel(k), child: Text(tr('Undo'))),
                   ]),
                 ),
             ]),

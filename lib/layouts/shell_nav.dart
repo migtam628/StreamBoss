@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/tv.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// A main screen of the app, in the order the rest of the code indexes them
 /// (0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings).
@@ -44,7 +45,7 @@ class ShellNav extends InheritedWidget {
 }
 
 /// Name of screen [i] in [l]: Prime Time's Home is the guide, Hub's is the hub.
-String destLabel(UiLayout l, int i) => switch ((l, i)) {
+String destLabel(UiLayout l, int i) => tr(switch ((l, i)) {
       (UiLayout.prime, 0) => 'Guide',
       (UiLayout.hub, 0) => 'Hub',
       (UiLayout.indexList, 0) => 'Index',
@@ -62,7 +63,7 @@ String destLabel(UiLayout l, int i) => switch ((l, i)) {
       (UiLayout.cable, 0) => 'Live',
       (UiLayout.cable, 1) => 'Channels',
       _ => kDests[i].label,
-    };
+    });
 
 IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
     switch ((l, i)) {
@@ -162,8 +163,8 @@ class PhoneNav extends StatelessWidget {
               selectedIcon: Icon(destIcon(layout, i, selected: true)),
               label: destLabel(layout, i)),
         if (hasMore)
-          const NavigationDestination(
-              icon: Icon(Icons.more_horiz), label: 'More'),
+          NavigationDestination(
+              icon: const Icon(Icons.more_horiz), label: tr('More')),
       ],
     );
   }
@@ -305,7 +306,7 @@ class TopNav extends StatelessWidget {
             onTap: () => onSelect(i)),
     ];
     final settings = NavTab(
-      label: 'Settings',
+      label: tr('Settings'),
       icon: Icons.settings_outlined,
       selected: index == 6,
       pill: pill,
@@ -362,7 +363,7 @@ class TopNav extends StatelessWidget {
                   BoxDecoration(color: p.accent, shape: BoxShape.circle)),
           const SizedBox(width: 8),
         ],
-        Text('STREAMBOSS',
+        Text(tr('STREAMBOSS'),
             style: TextStyle(
                 color: soft ? p.text : p.accent,
                 fontWeight: FontWeight.w800,

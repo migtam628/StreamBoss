@@ -12,6 +12,7 @@ import '../widgets/media_tile.dart';
 import '../widgets/vod_filter_bar.dart';
 import 'open_item.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// Live, Movies and Series. What it looks like depends on Settings > Appearance > Layout.
 class BrowseScreen extends StatelessWidget {
@@ -52,7 +53,7 @@ class BrowseScreen extends StatelessWidget {
         final filtered = kind == MediaKind.live ? catalog.itemsFor(kind) : s.filterVod(listKey, catalog.itemsFor(kind));
         final cats = catalog.categoriesFor(kind);
         final view = SpotlightView(sections: [
-          ('All', filtered),
+          (tr('All'), filtered),
           for (final c in cats) (c.name, filtered.where((i) => i.categoryId == c.id).toList()),
         ]);
         if (kind == MediaKind.live) {
@@ -94,21 +95,21 @@ class _MarqueeBrowseState extends State<_MarqueeBrowse> {
 
     if (base.isEmpty) {
       return Center(
-          child: Text('Nothing here yet.',
+          child: Text(tr('Nothing here yet.'),
               style: TextStyle(color: LayoutPalette.of(context).muted)));
     }
 
     return Column(children: [
       if (live) ChannelFilterBar(shown: items.length) else VodFilterBar(list: listKey, noun: list, shown: items.length),
       ChipRow(
-        labels: ['All', for (final c in cats) c.name],
+        labels: [tr('All'), for (final c in cats) c.name],
         selected: _cat == null ? 0 : cats.indexWhere((c) => c.id == _cat) + 1,
         onSelect: (i) => setState(() => _cat = i == 0 ? null : cats[i - 1].id),
       ),
       Expanded(
         child: items.isEmpty
             ? Center(
-                child: Text(live ? 'No channels match the filters.' : 'No titles match the filters.',
+                child: Text(live ? tr('No channels match the filters.') : tr('No titles match the filters.'),
                     style: TextStyle(color: LayoutPalette.of(context).muted)))
             : GridView.builder(
           // ignore: deprecated_member_use

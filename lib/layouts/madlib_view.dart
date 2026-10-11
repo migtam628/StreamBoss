@@ -10,6 +10,7 @@ import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
 import '../widgets/channel_sheet.dart';
+import '../l10n/l10n.dart';
 
 /// Madlib's Home: "Tonight I feel like a [movie] that is [funny], [well rated], from [any year]."
 /// Each bracket is a choice; the titles that fit are listed underneath, best rated first. A blank
@@ -79,11 +80,11 @@ class _MadlibHomeState extends State<MadlibHome> {
     Widget plain(String t) => Text(t, style: TextStyle(fontSize: size, color: p.text, fontWeight: FontWeight.w500));
 
     return ListView(padding: EdgeInsets.fromLTRB(wide ? 32 : 16, wide ? 20 : 12, wide ? 32 : 16, 24), children: [
-      Text('TONIGHT, YOUR WAY', style: TextStyle(fontSize: wide ? 16 : 13, letterSpacing: 2.5, fontWeight: FontWeight.w800, color: p.muted)),
+      Text(tr('TONIGHT, YOUR WAY'), style: TextStyle(fontSize: wide ? 16 : 13, letterSpacing: 2.5, fontWeight: FontWeight.w800, color: p.muted)),
       SizedBox(height: wide ? 14 : 8),
       Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: wide ? 14 : 10, children: [
-        plain('Tonight I feel like a'),
-        word(_s.kind.label, autofocus: true, () => _pick<MadKind>('I feel like a', MadKind.values, _s.kind, (v) => v.label, (v) => _s.copyWith(kind: v), (n) => matches(n).length)),
+        plain(tr('Tonight I feel like a')),
+        word(_s.kind.label, autofocus: true, () => _pick<MadKind>(tr('I feel like a'), MadKind.values, _s.kind, (v) => v.label, (v) => _s.copyWith(kind: v), (n) => matches(n).length)),
         plain('that is'),
         word(_s.mood.label, any: _s.mood == MadMood.any, () => _pick<MadMood>('that is', MadMood.values, _s.mood, (v) => v.label, (v) => _s.copyWith(mood: v), (n) => matches(n).length)),
         plain(','),
@@ -93,7 +94,7 @@ class _MadlibHomeState extends State<MadlibHome> {
         plain('.'),
       ]),
       SizedBox(height: wide ? 24 : 16),
-      Text(items.isEmpty ? 'Nothing matches. Loosen a word.' : '${items.length} ${items.length == 1 ? 'title matches' : 'titles match'}. Best first:',
+      Text(items.isEmpty ? tr('Nothing matches. Loosen a word.') : '${items.length} ${items.length == 1 ? 'title matches' : 'titles match'}. Best first:',
           style: TextStyle(fontSize: wide ? 22 : 16, fontWeight: FontWeight.w700, color: items.isEmpty ? p.muted : p.accent2)),
       const SizedBox(height: 10),
       if (items.isNotEmpty)

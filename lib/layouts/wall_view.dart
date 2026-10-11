@@ -11,6 +11,7 @@ import '../widgets/tv.dart';
 import '../widgets/vod_filter_bar.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 /// Wall's Home: the whole library as one poster wall. Movies, Series and Live each have a wall; the
 /// poster the cursor is on shows its details beside (or under) the wall. Zoom out to see more at once.
@@ -29,7 +30,7 @@ class _WallHomeState extends State<WallHome> {
   MediaItem? _sel;
 
   static const _extent = [190.0, 140.0, 96.0];
-  static const _kinds = [(MediaKind.movie, 'Movies'), (MediaKind.series, 'Series'), (MediaKind.live, 'Live')];
+  static List<(MediaKind, String)> get _kinds => [(MediaKind.movie, tr('Movies')), (MediaKind.series, tr('Series')), (MediaKind.live, tr('Live'))];
 
   String _list(MediaKind k) => k == MediaKind.series ? 'series' : 'movie';
 
@@ -117,7 +118,7 @@ class _WallHomeState extends State<WallHome> {
       bar,
       Expanded(
         child: items.isEmpty
-            ? Center(child: Text(base.isEmpty ? 'Nothing here yet.' : 'No titles match the filters.', style: TextStyle(color: p.muted)))
+            ? Center(child: Text(base.isEmpty ? tr('Nothing here yet.') : tr('No titles match the filters.'), style: TextStyle(color: p.muted)))
             : wide
                 ? Row(children: [Expanded(child: wall), SizedBox(width: 320, child: details)])
                 : Column(children: [Expanded(child: wall), details]),
@@ -157,7 +158,7 @@ class _Details extends StatelessWidget {
         decoration: BoxDecoration(color: p.surface, border: Border(top: BorderSide(color: p.line))),
         child: Row(children: [
           Expanded(child: text),
-          IconButton(tooltip: favorite ? 'Remove from My List' : 'Add to My List', icon: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: p.accent), onPressed: onFavorite),
+          IconButton(tooltip: favorite ? tr('Remove from My List') : tr('Add to My List'), icon: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: p.accent), onPressed: onFavorite),
         ]),
       );
     }

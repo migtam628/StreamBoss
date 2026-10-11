@@ -13,6 +13,7 @@ import '../widgets/net_image.dart';
 import '../widgets/tv.dart';
 import 'common.dart';
 import 'ui_layout.dart';
+import '../l10n/l10n.dart';
 
 const _ink = Color(0xFF10142E);
 
@@ -226,7 +227,7 @@ class _DeckHomeState extends State<DeckHome> {
 
     Widget info() =>
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('PICKED FOR YOU',
+          Text(tr('PICKED FOR YOU'),
               style: TextStyle(
                   fontSize: 13,
                   letterSpacing: 2,
@@ -299,15 +300,15 @@ class _DeckHomeState extends State<DeckHome> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(
               _cards.isEmpty
-                  ? 'Nothing to pick from yet.'
-                  : 'That was the deck.',
+                  ? tr('Nothing to pick from yet.')
+                  : tr('That was the deck.'),
               style: TextStyle(
                   fontSize: 30, fontWeight: FontWeight.w800, color: p.text)),
           const SizedBox(height: 8),
           Text(
             _cards.isEmpty
-                ? 'Movies and series from your library show up here, picked from what you watch and save.'
-                : 'Titles you skipped stay out for a month. Saved ones are in My List.',
+                ? tr('Movies and series from your library show up here, picked from what you watch and save.')
+                : tr('Titles you skipped stay out for a month. Saved ones are in My List.'),
             textAlign: TextAlign.center,
             style: TextStyle(color: p.muted, fontSize: 16),
           ),
@@ -319,12 +320,12 @@ class _DeckHomeState extends State<DeckHome> {
               children: [
                 SizedBox(
                     width: 190,
-                    child: key('↻', 'New deck', () => setState(() => _gen++),
+                    child: key('↻', tr('New deck'), () => setState(() => _gen++),
                         go: true)),
                 if (s.deckSkips.isNotEmpty)
                   SizedBox(
                     width: 230,
-                    child: key('✕', 'Forget my skips', () {
+                    child: key('✕', tr('Forget my skips'), () {
                       s.clearDeckSkips();
                       setState(() => _gen++);
                     }),
@@ -351,13 +352,13 @@ class _DeckHomeState extends State<DeckHome> {
             padding: const EdgeInsets.fromLTRB(12, 8, 32, 8),
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              key('◀', 'Not tonight', () => _skip(s)),
+              key('◀', tr('Not tonight'), () => _skip(s)),
               const SizedBox(height: 12),
-              key('OK', 'Play', _play, go: true),
+              key('OK', tr('Play'), _play, go: true),
               const SizedBox(height: 12),
-              key('▲', 'Save', () => _save(s)),
+              key('▲', tr('Save'), () => _save(s)),
               const SizedBox(height: 12),
-              key('▼', 'Details', _details),
+              key('▼', tr('Details'), _details),
             ]),
           ),
         ),
@@ -373,12 +374,12 @@ class _DeckHomeState extends State<DeckHome> {
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _Round(
-              icon: Icons.close, label: 'Not tonight', onTap: () => _skip(s)),
+              icon: Icons.close, label: tr('Not tonight'), onTap: () => _skip(s)),
           const SizedBox(width: 22),
           _Round(
-              icon: Icons.play_arrow, label: 'Play', onTap: _play, big: true),
+              icon: Icons.play_arrow, label: tr('Play'), onTap: _play, big: true),
           const SizedBox(width: 22),
-          _Round(icon: Icons.add, label: 'Save', onTap: () => _save(s)),
+          _Round(icon: Icons.add, label: tr('Save'), onTap: () => _save(s)),
         ]),
         const SizedBox(height: 10),
       ]);

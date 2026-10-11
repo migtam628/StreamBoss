@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../screens/channel_details_screen.dart';
 import 'collections_sheet.dart';
 import 'peek.dart';
+import '../l10n/l10n.dart';
 
 /// What pressing and holding a title does: a live channel opens its options (see [showChannelSheet]);
 /// a movie or series opens a quick look at it (see [showPeek]) with My list one tap away.
@@ -67,30 +68,30 @@ class ChannelSheet extends StatelessWidget {
         if (edit?.name != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
-            child: Text('Provider name: ${edit!.original}', style: TextStyle(color: pal.muted, fontSize: 13)),
+            child: Text(trf('Provider name: {name}', {'name': edit!.original}), style: TextStyle(color: pal.muted, fontSize: 13)),
           ),
         if (details)
-          tile(Icons.info_outline, 'Channel details', () {
+          tile(Icons.info_outline, tr('Channel details'), () {
             Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChannelDetailsScreen(channel: channel)));
-          }, subtitle: "What's on, the schedule, other copies", close: true),
-        tile(s.isFavorite(channel) ? Icons.star : Icons.star_border, s.isFavorite(channel) ? 'Remove from My list' : 'Add to My list',
+          }, subtitle: tr("What's on, the schedule, other copies"), close: true),
+        tile(s.isFavorite(channel) ? Icons.star : Icons.star_border, s.isFavorite(channel) ? tr('Remove from My list') : tr('Add to My list'),
             () => s.toggleFavorite(channel)),
-        tile(Icons.collections_bookmark_outlined, 'Add to a collection', () => showCollectionsSheet(context, channel)),
-        tile(Icons.edit_outlined, 'Rename', () async {
-          final n = await askCollectionName(context, title: 'Rename channel', initial: channel.name);
+        tile(Icons.collections_bookmark_outlined, tr('Add to a collection'), () => showCollectionsSheet(context, channel)),
+        tile(Icons.edit_outlined, tr('Rename'), () async {
+          final n = await askCollectionName(context, title: tr('Rename channel'), initial: channel.name);
           if (n != null) s.renameChannel(channel, n);
           if (context.mounted) Navigator.pop(context);
         }),
         if (!pinned)
-          tile(Icons.push_pin_outlined, 'Pin to the top', () => s.pinChannel(channel), subtitle: 'Pinned channels come first in every channel list')
+          tile(Icons.push_pin_outlined, tr('Pin to the top'), () => s.pinChannel(channel), subtitle: tr('Pinned channels come first in every channel list'))
         else ...[
-          tile(Icons.push_pin, 'Unpin', () => s.unpinChannel(key)),
-          if (pinAt > 0) tile(Icons.arrow_upward, 'Move up among the pinned', () => s.movePinned(key, -1)),
-          if (pinAt < s.channelEdits.pins.length - 1) tile(Icons.arrow_downward, 'Move down among the pinned', () => s.movePinned(key, 1)),
+          tile(Icons.push_pin, tr('Unpin'), () => s.unpinChannel(key)),
+          if (pinAt > 0) tile(Icons.arrow_upward, tr('Move up among the pinned'), () => s.movePinned(key, -1)),
+          if (pinAt < s.channelEdits.pins.length - 1) tile(Icons.arrow_downward, tr('Move down among the pinned'), () => s.movePinned(key, 1)),
         ],
-        tile(Icons.visibility_off_outlined, 'Hide this channel', () => s.hideChannel(channel),
-            subtitle: 'Settings > Library > Edited channels brings it back', close: true),
-        if (edited) tile(Icons.restore, 'Undo my changes to this channel', () => s.resetChannel(key), close: true),
+        tile(Icons.visibility_off_outlined, tr('Hide this channel'), () => s.hideChannel(channel),
+            subtitle: tr('Settings > Library > Edited channels brings it back'), close: true),
+        if (edited) tile(Icons.restore, tr('Undo my changes to this channel'), () => s.resetChannel(key), close: true),
       ]),
     );
   }

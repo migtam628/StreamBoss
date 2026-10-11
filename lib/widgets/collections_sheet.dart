@@ -4,6 +4,7 @@ import '../layouts/ui_layout.dart';
 import '../models/media.dart';
 import '../state/app_state.dart';
 import 'tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 /// Asks for a name. Returns it, trimmed, or null when cancelled.
 Future<String?> askCollectionName(BuildContext context,
@@ -18,15 +19,15 @@ Future<String?> askCollectionName(BuildContext context,
         autofocus: true,
         maxLength: 30,
         textCapitalization: TextCapitalization.sentences,
-        decoration: const InputDecoration(hintText: 'Friday movie night'),
+        decoration: InputDecoration(hintText: tr('Friday movie night')),
         onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
         FilledButton(
             onPressed: () => Navigator.pop(ctx, c.text.trim()),
-            child: const Text('Save')),
+            child: Text(tr('Save'))),
       ],
     ),
   );
@@ -46,7 +47,7 @@ Future<void> showCollectionsSheet(BuildContext context, MediaItem item) {
         child: ListView(shrinkWrap: true, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-            child: Text('Add "${item.name}" to',
+            child: Text(trf('Add "{name}" to', {'name': item.name}),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style:
@@ -63,14 +64,14 @@ Future<void> showCollectionsSheet(BuildContext context, MediaItem item) {
           ListTile(
             autofocus: app.collections.isEmpty,
             leading: const Icon(Icons.add),
-            title: const Text('New collection'),
+            title: Text(tr('New collection')),
             onTap: () async {
               final n = await askCollectionName(sheet);
               if (n == null || n.isEmpty) return;
               if (!app.createCollection(n)) {
                 if (sheet.mounted) {
                   ScaffoldMessenger.maybeOf(sheet)?.showSnackBar(
-                      const SnackBar(content: Text('That name is taken.')));
+                      SnackBar(content: Text(tr('That name is taken.'))));
                 }
                 return;
               }

@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import 'tv.dart';
 import 'voice_search.dart';
 import 'tv_text_field.dart';
+import '../l10n/l10n.dart';
 
 /// A search field and a Filters button for the live channel lists. It edits [AppState.channelFilter],
 /// which the Live screens and the Guide share.
@@ -65,7 +66,7 @@ class _ChannelFilterBarState extends State<ChannelFilterBar> {
                 isDense: true,
                 filled: true,
                 fillColor: p.wash(0.08),
-                hintText: 'Filter channels',
+                hintText: tr('Filter channels'),
                 hintStyle: TextStyle(color: p.muted),
                 prefixIcon:
                     Icon(Icons.filter_alt_outlined, color: p.muted, size: 20),
@@ -85,7 +86,7 @@ class _ChannelFilterBarState extends State<ChannelFilterBar> {
         const SizedBox(width: 8),
         FocusSurface(
           radius: 24,
-          semanticLabel: f.count == 0 ? 'Filters' : 'Filters, ${f.count} on',
+          semanticLabel: f.count == 0 ? tr('Filters') : 'Filters, ${f.count} on',
           onTap: () => showChannelFilterSheet(context),
           builder: (_, __) => Container(
             padding: EdgeInsets.symmetric(
@@ -97,7 +98,7 @@ class _ChannelFilterBarState extends State<ChannelFilterBar> {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.tune, size: 18, color: f.active ? p.onAccent : p.text),
               const SizedBox(width: 6),
-              Text(f.count == 0 ? 'Filters' : 'Filters · ${f.count}',
+              Text(f.count == 0 ? tr('Filters') : 'Filters · ${f.count}',
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: f.active ? p.onAccent : p.text)),
@@ -107,7 +108,7 @@ class _ChannelFilterBarState extends State<ChannelFilterBar> {
         if (f.active) ...[
           const SizedBox(width: 6),
           IconButton(
-            tooltip: 'Clear filters',
+            tooltip: tr('Clear filters'),
             icon: Icon(Icons.close, color: p.muted),
             onPressed: () => s.setChannelFilter(ChannelFilter.none),
           ),
@@ -189,7 +190,7 @@ class _FilterSheet extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
               child: Row(children: [
                 Expanded(
-                    child: Text('Filter channels',
+                    child: Text(tr('Filter channels'),
                         style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -198,20 +199,20 @@ class _FilterSheet extends StatelessWidget {
                   onPressed: f.active
                       ? () => s.setChannelFilter(ChannelFilter.none)
                       : null,
-                  child: const Text('Clear all'),
+                  child: Text(tr('Clear all')),
                 ),
               ]),
             ),
-            header('QUALITY'),
+            header(tr('QUALITY')),
             chips([
               for (final q in QualityFilter.values)
                 chip(q.label, f.quality == q,
                     () => s.setChannelFilter(f.copyWith(quality: q))),
             ]),
             if (countries.isNotEmpty) ...[
-              header('COUNTRY (PICK AS MANY AS YOU LIKE)'),
+              header(tr('COUNTRY (PICK AS MANY AS YOU LIKE)')),
               chips([
-                chip('All', f.countries.isEmpty,
+                chip(tr('All'), f.countries.isEmpty,
                     () => s.setChannelFilter(f.copyWith(countries: {}))),
                 for (final (c, n) in countries)
                   chip('${c.name}  $n', f.countries.contains(c.code),
@@ -220,9 +221,9 @@ class _FilterSheet extends StatelessWidget {
               ]),
             ],
             if (langs.isNotEmpty) ...[
-              header('LANGUAGE (PICK AS MANY AS YOU LIKE)'),
+              header(tr('LANGUAGE (PICK AS MANY AS YOU LIKE)')),
               chips([
-                chip('All', f.languages.isEmpty,
+                chip(tr('All'), f.languages.isEmpty,
                     () => s.setChannelFilter(f.copyWith(languages: {}))),
                 for (final (l, n) in langs)
                   chip('${l.name}  $n', f.languages.contains(l.code),
@@ -230,20 +231,20 @@ class _FilterSheet extends StatelessWidget {
                           languages: _toggled(f.languages, l.code)))),
               ]),
             ],
-            header('SHOW ONLY'),
+            header(tr('SHOW ONLY')),
             chips([
               chip(
-                  'Favorites',
+                  tr('Favorites'),
                   f.favoritesOnly,
                   () => s.setChannelFilter(
                       f.copyWith(favoritesOnly: !f.favoritesOnly))),
               chip(
-                  'With TV guide',
+                  tr('With TV guide'),
                   f.guideOnly,
                   () =>
                       s.setChannelFilter(f.copyWith(guideOnly: !f.guideOnly))),
             ]),
-            header('ORDER'),
+            header(tr('ORDER')),
             chips([
               for (final o in ChannelSort.values)
                 chip(o.label, f.sort == o,
@@ -253,7 +254,7 @@ class _FilterSheet extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
               child: FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Done')),
+                  child: Text(tr('Done'))),
             ),
           ]),
     );

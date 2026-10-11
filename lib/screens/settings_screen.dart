@@ -7,6 +7,7 @@ import 'profile_picker_screen.dart';
 import '../layouts/common.dart';
 import '../layouts/ui_layout.dart';
 import 'settings/settings_pages.dart';
+import '../l10n/l10n.dart';
 
 /// Settings hub. Wide windows get a two-pane layout (sections on the left, the page on the
 /// right); narrow ones get a list that opens each section as its own page.
@@ -44,8 +45,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       selectedColor: LayoutPalette.of(context).accent,
       selectedTileColor: LayoutPalette.of(context).accent.withValues(alpha: 0.12),
       leading: Icon(sec.icon),
-      title: Text(sec.title),
-      subtitle: Text(sec.subtitle),
+      title: Text(tr(sec.title)),
+      subtitle: Text(tr(sec.subtitle)),
       trailing: wide ? null : const Icon(Icons.chevron_right),
       // Moving focus with a D-pad previews the page, so no extra OK press is needed on TV.
       onFocusChange: wide
@@ -59,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         } else {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => Scaffold(
-              appBar: AppBar(title: Text(sec.title), backgroundColor: LayoutPalette.of(context).bg),
+              appBar: AppBar(title: Text(tr(sec.title)), backgroundColor: LayoutPalette.of(context).bg),
               body: sec.builder(context),
             ),
           ));
@@ -81,11 +82,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final header = Padding(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Settings', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+          Text(tr('Settings'), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
           if (own)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('Layout, text, language, subtitle and filter changes apply to ${ps.current.name} only.',
+              child: Text(trf(tr('Layout, text, language, subtitle and filter changes apply to {name} only.'), {'name': ps.current.name}),
                   style: TextStyle(color: LayoutPalette.of(context).accent2, fontSize: 13)),
             ),
         ]),
@@ -131,15 +132,15 @@ class _Locked extends StatelessWidget {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.lock_outline, size: 56, color: p.muted),
         const SizedBox(height: 14),
-        const Text('Settings are locked', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        Text(tr('Settings are locked'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
-        Text('This is a Kids profile. Enter the PIN to change anything.', style: TextStyle(color: p.muted)),
+        Text(tr('This is a Kids profile. Enter the PIN to change anything.'), style: TextStyle(color: p.muted)),
         const SizedBox(height: 22),
         Wrap(spacing: 12, runSpacing: 12, alignment: WrapAlignment.center, children: [
-          button('Enter PIN', Icons.pin_outlined, () async {
+          button(tr('Enter PIN'), Icons.pin_outlined, () async {
             if (await askPin(context, ps)) ps.openSettings();
           }, autofocus: true),
-          button("Who's watching?", Icons.switch_account_outlined,
+          button(tr("Who's watching?"), Icons.switch_account_outlined,
               () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfilePickerScreen()))),
         ]),
       ]),
