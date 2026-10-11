@@ -1,0 +1,172 @@
+<meta charset="utf-8">
+<title>StreamBoss Spec</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout concept: a product datasheet. Hairline grid, a model plate, a signal-path diagram and tables, because the
+   people who read this want to know exactly what it does and does not do before they install anything. */
+:root{
+  --bg:#eceef1; --sheet:#f8f9fa; --fg:#12151b; --muted:#5a6070; --line:#c4c9d2; --grid:#dfe2e8;
+  --signal:#d71f57; --signal-ink:#ffffff; --ok:#17794a; --amber:#9a5b00;
+  --sans:'Schibsted Grotesk',system-ui,sans-serif; --mono:'DM Mono',ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c0e12; --sheet:#13161c; --fg:#eceef3; --muted:#98a0b3; --line:#2c323f; --grid:#1b1f28;
+  --signal:#ff4f80; --signal-ink:#16030a; --ok:#58d08c; --amber:#f0b44c; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0c0e12; --sheet:#13161c; --fg:#eceef3; --muted:#98a0b3; --line:#2c323f; --grid:#1b1f28;
+  --signal:#ff4f80; --signal-ink:#16030a; --ok:#58d08c; --amber:#f0b44c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 17px/1.55 var(--sans);padding-inline:clamp(16px,3vw,40px);padding-block:clamp(16px,3vw,40px) 64px}
+a{color:inherit}
+.sheet{max-width:1100px;margin-inline:auto;background:var(--sheet);border:1px solid var(--line);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px;background-position:-1px -1px}
+.pad{padding:clamp(20px,4vw,48px)}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+.mono{font-family:var(--mono)}
+.plate{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px;border-bottom:1px solid var(--line);padding:12px clamp(20px,4vw,48px);background:var(--sheet);font:500 12px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.plate b{color:var(--fg);font-weight:500}
+.plate button{font:inherit;letter-spacing:inherit;text-transform:inherit;background:none;border:1px solid var(--line);color:var(--muted);padding:4px 10px;cursor:pointer}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.025em;line-height:1.02;text-wrap:balance}
+h1{font-size:clamp(46px,8vw,104px);max-width:12em}
+h1 mark{background:none;color:var(--signal)}
+.lede{max-width:36em;font-size:20px;color:var(--muted);margin:22px 0 0}
+.stamp{display:inline-block;margin-top:22px;border:2px solid var(--signal);color:var(--signal);padding:6px 12px;font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;transform:rotate(-2deg)}
+.sec{border-top:1px solid var(--line)}
+.sec h2{font-size:clamp(28px,3.6vw,44px);margin-bottom:6px}
+.sec .num{font:500 12px/1 var(--mono);color:var(--signal);letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:12px}
+.sec p.sub{color:var(--muted);max-width:40em;margin:0 0 24px}
+.diagram{background:var(--sheet);border:1px solid var(--line);padding:clamp(12px,2vw,24px);margin-top:8px}
+.diagram svg{display:block;width:100%;height:auto}
+.diagram text{font-family:var(--mono);fill:var(--fg)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border:1px solid var(--line);background:var(--sheet)}
+.cols>div{padding:20px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -1px -1px 0}
+.cols h3{font-size:20px;margin-bottom:8px;letter-spacing:-.01em}
+.cols ul{margin:0;padding:0;list-style:none;color:var(--muted);font-size:16px}
+.cols li{padding-left:1.4em;position:relative;margin:4px 0}
+.cols .yes li::before{content:'+';position:absolute;left:0;font-family:var(--mono);color:var(--ok)}
+.cols .no li::before{content:'–';position:absolute;left:0;font-family:var(--mono);color:var(--signal)}
+.tbl{overflow-x:auto;border:1px solid var(--line);background:var(--sheet)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:16px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 12px/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:color-mix(in srgb,var(--grid) 60%,var(--sheet))}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:700;white-space:nowrap}
+td .pill{display:inline-block;font:500 12px/1 var(--mono);padding:4px 8px;border:1px solid var(--line);margin-right:6px;color:var(--muted)}
+.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));border:1px solid var(--line);background:var(--sheet)}
+.spec div{display:flex;justify-content:space-between;gap:16px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.spec dt{color:var(--muted)}.spec dd{margin:0;font-family:var(--mono);font-size:15px;text-align:right}
+dl.spec{margin:0}
+.cmd{display:flex;align-items:center;gap:12px;background:var(--fg);color:var(--bg);padding:12px 14px;font:500 15px/1.4 var(--mono);margin-top:10px;overflow-x:auto}
+.cmd code{white-space:pre-wrap;overflow-wrap:anywhere;flex:1;min-width:0}
+.cmd button{flex:none;border:1px solid color-mix(in srgb,var(--bg) 40%,transparent);background:none;color:var(--bg);font:500 12px/1 var(--mono);padding:6px 10px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase}
+.big{font:500 clamp(34px,6vw,56px)/1 var(--mono);letter-spacing:.06em;color:var(--signal)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.card{border:1px solid var(--line);background:var(--sheet);padding:20px}
+.card h3{font-size:22px;margin-bottom:8px}
+.card p{margin:0 0 8px;color:var(--muted);font-size:16px}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.shots figure{margin:0;border:1px solid var(--line);background:var(--sheet)}
+.shots img{display:block;width:100%}
+.shots figcaption{padding:8px 12px;font:500 12px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line)}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:16px clamp(20px,4vw,48px);font:500 12px/1.4 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+</style>
+
+<div class="sheet">
+<div class="plate"><span>Model <b>StreamBoss</b></span><span>Class <b>IPTV player</b></span><span>Version <b>0.3 (beta)</b></span><span>Input <b>Xtream Codes · M3U</b></span><button id="theme" type="button">Theme</button></div>
+
+<div class="pad">
+  <h1>The player. <mark>Not the provider.</mark></h1>
+  <p class="lede">StreamBoss plays the Xtream or M3U service you already have, on the TV, phone and computer you already own. It carries nothing of its own: the signal path begins at your provider and ends at your screen.</p>
+  <span class="stamp">Player only · no content included</span>
+</div>
+
+<div class="sec pad">
+  <span class="num">Fig. 1 · Signal path</span>
+  <h2>What is in the chain, and what is not</h2>
+  <p class="sub">Your login stays on your device. StreamBoss opens the stream the provider hands it and plays it.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 900 220" role="img" aria-labelledby="dt dd">
+      <title id="dt">Signal path</title><desc id="dd">Your provider sends a stream to StreamBoss, which plays it on your screen. A sync server is optional and carries settings only.</desc>
+      <g fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--fg)">
+        <rect x="20" y="60" width="200" height="90" fill="var(--sheet)"/>
+        <rect x="350" y="60" width="200" height="90" fill="var(--sheet)" style="stroke:var(--signal)" stroke-width="2.4"/>
+        <rect x="680" y="60" width="200" height="90" fill="var(--sheet)"/>
+        <path d="M220 105h130M550 105h130" stroke-dasharray="0"/>
+        <path d="M338 99l12 6-12 6M668 99l12 6-12 6"/>
+        <path d="M450 150v34h0" stroke-dasharray="4 4" style="color:var(--muted)"/>
+        <rect x="330" y="184" width="240" height="30" stroke-dasharray="4 4" fill="none" style="color:var(--muted)"/>
+      </g>
+      <text x="120" y="98" text-anchor="middle" font-size="15" font-weight="500">YOUR PROVIDER</text><text x="120" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">channels · movies · series</text>
+      <text x="450" y="98" text-anchor="middle" font-size="15" font-weight="500" style="fill:var(--signal)">STREAMBOSS</text><text x="450" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">player · guide · layouts</text>
+      <text x="780" y="98" text-anchor="middle" font-size="15" font-weight="500">YOUR SCREEN</text><text x="780" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">TV · phone · computer</text>
+      <text x="285" y="92" text-anchor="middle" font-size="11" style="fill:var(--muted)">stream</text><text x="615" y="92" text-anchor="middle" font-size="11" style="fill:var(--muted)">picture</text>
+      <text x="450" y="204" text-anchor="middle" font-size="11" style="fill:var(--muted)">optional sync server · settings only</text>
+    </svg>
+  </div>
+  <div class="cols" style="margin-top:20px">
+    <div class="yes"><h3>It does</h3><ul><li>Play live TV, movies and series from your provider</li><li>Show the programme guide, catch-up and reminders</li><li>Remember positions, lists and profiles</li><li>Sync between your devices, through a server you run</li></ul></div>
+    <div class="no"><h3>It does not</h3><ul><li>Supply channels, movies or subscriptions</li><li>Ask you to make a StreamBoss account</li><li>Send your provider login anywhere</li><li>Charge for a layout or a feature unlock</li></ul></div>
+  </div>
+</div>
+
+<div class="sec pad">
+  <span class="num">Table 1 · Platforms</span>
+  <h2>Where it runs, and how to get it</h2>
+  <p class="sub">Releases are on GitHub. Downloader codes work on Fire TV and Android TV.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Device</th><th>Built as</th><th>How to install</th></tr></thead>
+    <tbody>
+      <tr><td>Fire TV, Fire Stick</td><td>Android app</td><td>Downloader code <span class="mono"><b>1652077</b></span> <span class="pill">alt 9055023</span></td></tr>
+      <tr><td>Android TV, Google TV</td><td>Android app</td><td>Same Downloader code, or <span class="mono">adb install -r</span></td></tr>
+      <tr><td>Roku</td><td>Native channel</td><td>Installer program: finds the Roku, uploads, starts</td></tr>
+      <tr><td>Apple TV</td><td>Native app</td><td>Build in Xcode (<span class="mono">tvos/</span>); not in the App Store</td></tr>
+      <tr><td>Windows · macOS · Linux</td><td>Desktop app</td><td>Release archive; updates install in the app</td></tr>
+      <tr><td>Android phone, tablet</td><td>Android app</td><td>APK from the release page</td></tr>
+      <tr><td>iPhone, iPad</td><td>iOS app</td><td>Build from source; not packaged yet</td></tr>
+      <tr><td>Web</td><td>Browser build</td><td>Release archive on a static host (https providers work best)</td></tr>
+    </tbody></table></div>
+  <div class="two" style="margin-top:20px">
+    <div class="card"><h3>Fire TV</h3><p>Open Downloader and type:</p><div class="big">1652077</div><div class="cmd"><code>1652077</code><button type="button" data-copy="1652077">Copy</button></div><p style="margin-top:10px">If it fails, use 9055023.</p></div>
+    <div class="card"><h3>Roku, from a computer</h3><p>Run the installer. It finds the Roku, asks for the developer password you set on the TV, then sends the channel and starts it.</p><div class="cmd"><code>StreamBoss-roku-installer --ip 192.168.1.40</code><button type="button" data-copy="StreamBoss-roku-installer --ip 192.168.1.40">Copy</button></div></div>
+  </div>
+</div>
+
+<div class="sec pad">
+  <span class="num">Table 2 · Specification</span>
+  <h2>The numbers</h2>
+  <dl class="spec">
+    <div><dt>Layouts</dt><dd>21, each with a phone version</dd></div>
+    <div><dt>App languages</dt><dd>EN · ES · IT · PT</dd></div>
+    <div><dt>Sources</dt><dd>Xtream Codes, M3U, several at once</dd></div>
+    <div><dt>Guide</dt><dd>XMLTV, gzipped or plain</dd></div>
+    <div><dt>Catch-up</dt><dd>Xtream timeshift, where kept</dd></div>
+    <div><dt>Profiles</dt><dd>up to 8, Kids with PIN</dd></div>
+    <div><dt>Player</dt><dd>libmpv (browser decoders on web)</dd></div>
+    <div><dt>Sync</dt><dd>self-hosted, e-mail and password</dd></div>
+    <div><dt>Passwords sent to a server</dt><dd>none</dd></div>
+    <div><dt>Reminders</dt><dd>notification + in-app banner</dd></div>
+    <div><dt>Voice search</dt><dd>phones, Mac, Android TV</dd></div>
+    <div><dt>Updates</dt><dd>inside the app</dd></div>
+  </dl>
+</div>
+
+<div class="sec pad">
+  <span class="num">Fig. 2 · Layouts</span>
+  <h2>Three of the twenty-one</h2>
+  <div class="shots">
+    <figure><img src="../../docs/screenshots/prime.jpg" alt="Prime Time layout" loading="lazy"><figcaption>Prime Time · guide as Home</figcaption></figure>
+    <figure><img src="../../docs/screenshots/cable.jpg" alt="Cable Box layout" loading="lazy"><figcaption>Cable Box · channel surfing</figcaption></figure>
+    <figure><img src="../../docs/screenshots/console.jpg" alt="Console layout" loading="lazy"><figcaption>Console · type to find</figcaption></figure>
+  </div>
+</div>
+
+<footer><span>StreamBoss · datasheet concept</span><span><a href="https://github.com/migtam628/StreamBoss/releases">Releases</a> · <a href="https://github.com/migtam628/StreamBoss">Source</a></span></footer>
+</div>
+<script>
+document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',async()=>{
+  const t=b.textContent;
+  try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='Copied'}catch(_){const r=document.createRange();r.selectNodeContents(b.previousElementSibling);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected'}
+  setTimeout(()=>b.textContent=t,1600)}));
+document.getElementById('theme').addEventListener('click',()=>{
+  const r=document.documentElement,cur=r.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  r.dataset.theme=cur==='dark'?'light':'dark'});
+</script>
