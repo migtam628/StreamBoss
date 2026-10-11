@@ -240,6 +240,38 @@ void main() {
       });
     });
 
+    group('a Roku that answers 400 because the install failed', () {
+      final zip = [0x50, 0x4b, 3, 4, 1, 2, 3];
+
+      test('its message is the result, and the file is sent once', () async {
+        roku.result = 'Application Received: 7 bytes stored.<br>Install Failure: Compilation Failed.<br>MainScene';
+        final c = roku.client();
+        final r = await c.install(zip, 'hunter2');
+        expect(r.ok, isFalse);
+        expect(r.outcome, InstallOutcome.failed);
+        expect(r.message, contains('Compilation Failed'));
+        expect(r.message, isNot(contains('DOMContentLoaded')));
+        expect(roku.attempts, hasLength(1));
+        c.close();
+      });
+
+      test('the page\'s script code is not taken for words', () {
+        final r = parseInstallResult(
+            '<html><script>document.addEventListener("DOMContentLoaded", f);</script><body>Install Failure: Compilation Failed. MainScene</body></html>');
+        expect(r.message, 'Install Failure: Compilation Failed. MainScene');
+      });
+
+      test('a 400 that says nothing known still lists what the Roku replied, without script code', () async {
+        roku.alwaysBadRequest = true;
+        final c = roku.client();
+        await expectLater(
+            c.install(zip, 'hunter2'),
+            throwsA(isA<RokuException>().having(
+                (e) => e.message, 'message', isNot(contains('<script')))));
+        c.close();
+      });
+    });
+
     group('the Roku\'s own words after a failed install', () {
       final zip = [0x50, 0x4b, 3, 4, 1, 2, 3];
 

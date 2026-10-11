@@ -107,12 +107,19 @@ class InstallResult {
       outcome == InstallOutcome.identical;
 }
 
+/// The words of an HTML page: no tags, and none of the page's own script or style code.
+String _plainText(String html) => html
+    .replaceAll(
+        RegExp(r'<(script|style)\b[^>]*>.*?</\1\s*>',
+            caseSensitive: false, dotAll: true),
+        ' ')
+    .replaceAll(RegExp(r'<[^>]*>'), ' ')
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
+
 /// What the Roku's installer page said after an upload.
 InstallResult parseInstallResult(String html) {
-  final text = html
-      .replaceAll(RegExp(r'<[^>]*>'), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+  final text = _plainText(html);
   final lower = text.toLowerCase();
   if (lower.contains('identical to previous version')) {
     return const InstallResult(
@@ -295,7 +302,8 @@ class RokuClient {
   /// Sends [zip] to the Roku's installer. [user] is `rokudev`; [password] is the one chosen on the TV.
   ///
   /// Roku firmware differs in what its upload form wants (the button is "Install" or "Replace", and some versions
-  /// want an empty `passwd` field), so a 400 ("bad request") is answered by trying the next way of sending it.
+  /// want an empty `passwd` field), so a 400 that says nothing about the install is answered by trying the next way
+  /// of sending it. A 400 that does say (a Roku answers 400 for "Install Failure: Compilation Failed") is the result.
   Future<InstallResult> install(List<int> zip, String password,
       {String user = 'rokudev', String fileName = 'streamboss.zip'}) async {
     const ways = [
@@ -311,11 +319,14 @@ class RokuClient {
         throw const RokuException(
             'The Roku refused the password. It is the one you chose on the TV when you turned developer mode on (the user name is rokudev).');
       }
-      if (r.status == 400) {
+      // A Roku answers 400 when the install itself fails (a compile error, say) and says why in the page, so the
+      // page is read first. Only a 400 that says nothing we know is taken for a form it did not like.
+      final said = parseInstallResult(r.body);
+      if (r.status == 400 && said.outcome == InstallOutcome.unknown) {
         lastBody = r.body;
         continue;
       }
-      if (r.status != 200) {
+      if (r.status != 200 && r.status != 400) {
         throw RokuException(
             'The Roku answered ${r.status}${_snippet(r.body)}.');
       }
@@ -327,10 +338,7 @@ class RokuClient {
   }
 
   static String _snippet(String body) {
-    final text = body
-        .replaceAll(RegExp(r'<[^>]*>'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+    final text = _plainText(body);
     if (text.isEmpty) return '';
     return ' ("${text.length > 160 ? '${text.substring(0, 160)}...' : text}")';
   }

@@ -88,7 +88,11 @@ class FakeRoku {
         final end = text.lastIndexOf('\r\n--');
         uploadedFile =
             Uint8List.fromList(latin1.encode(text.substring(start, end)));
-        req.response.write('<html><body>$result</body></html>');
+        // The real Roku answers 400 when the install fails (and says why in the page, which also carries script code).
+        if (result.contains('Failure')) req.response.statusCode = 400;
+        req.response.write(
+            '<html><head><script>document.addEventListener("DOMContentLoaded", function(){ var x = 1; });</script></head>'
+            '<body><h1>Roku Development Kit</h1>$result</body></html>');
       } else {
         req.response.write('<html>installer</html>');
       }
