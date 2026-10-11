@@ -73,6 +73,20 @@ class ProfilesState extends ChangeNotifier {
     _pinSalt = p.getString('pinSalt');
   }
 
+  /// Reads the profiles and the PIN again after a sync changed them in storage. Who is in use here stays.
+  void reload() {
+    final p = _p;
+    if (p == null) return;
+    try {
+      final l = [for (final j in jsonDecode(p.getString('profiles') ?? '[]') as List) Profile.fromJson(j as Map<String, dynamic>)];
+      if (l.isNotEmpty) profiles = l;
+    } catch (_) {}
+    if (!profiles.any((e) => e.id == currentId)) currentId = profiles.first.id;
+    _pinHash = p.getString('pinHash');
+    _pinSalt = p.getString('pinSalt');
+    notifyListeners();
+  }
+
   void _save() {
     final p = _p;
     if (p == null) return;

@@ -135,6 +135,7 @@ every release. The first build signed with your key has to be installed after un
 - Android TV / Google TV: a "Continue watching" row on the system home screen (Watch Next) that resumes the title where you stopped
 - Voice search: a microphone button in the search fields (phones, Macs, Android TV with a voice remote)
 - The app in English, Spanish, Italian and Portuguese (Settings > Appearance > Language); channel names and guides stay as your provider sends them
+- Sync between devices through a small server of your own (Settings > Sync, [server/](server/README.md)): e-mail and password sign-in, settings, saved sources, profiles, My List and resume positions kept in step; provider passwords never leave a device
 - TMDB metadata (optional key in Settings): backdrop, overview, rating, cast, trailer link
 - Xtream now/next EPG in the live player, plus a Guide tab: an 8-hour XMLTV time grid (Xtream `xmltv.php` or the M3U `url-tvg` header, plain or gzipped `.xml.gz`; D-pad friendly) with a now/next list fallback
 - Four app icons (Crown, Bold B, Signal, Screen) to switch between at will: Settings > Appearance > App icon (Android, Android TV
@@ -222,6 +223,15 @@ every release. The first build signed with your key has to be installed after un
   an "Add to My list" button on movie pages (no long-press on a remote), and Back returning to Home before it leaves the app
 - Video output on Android TV: hardware surface by default (smoother movies on weak sticks; no embedded subtitles or
   shaders), switchable in Settings > Playback > Video output
+
+## Sync between devices
+
+StreamBoss can keep your settings, saved sources, profiles, My List, collections, watched marks, resume positions,
+edited channels and reminders the same on all your devices. It does this through a small server **you** run (a
+VPS, a Raspberry Pi, a NAS): the [`server/`](server/README.md) folder is a Docker Compose setup with automatic
+HTTPS. Then **Settings > Sync** in the app: create an account on your server, sign in on your other devices.
+Provider passwords, and playlist links that carry a login, are never sent: you type them once on each device.
+There is no StreamBoss account service, and without a server nothing changes.
 
 ## Develop
 

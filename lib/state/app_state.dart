@@ -21,6 +21,7 @@ import '../services/perf_log.dart';
 import '../services/reminder_notifier.dart';
 import '../services/reminders.dart';
 import '../services/watch_next.dart';
+import '../services/sync/sync_policy.dart';
 import '../services/time_format.dart';
 import '../services/languages.dart';
 import '../services/channel_edits.dart';
@@ -273,6 +274,73 @@ class AppState extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  /// Reads the sources and the personal data again after a sync changed them in storage. Passwords stay
+  /// where they are: the keystore of this device.
+  void reloadFromPrefs() {
+    final p = _prefs;
+    if (p == null) return;
+    final had = {for (final s in sources) s.name: s};
+    sources = [
+      for (final raw in (p.getStringList('sources') ?? const []))
+        () {
+          final src = Source.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+          return Source(name: src.name, type: src.type, url: src.url, username: src.username, password: had[src.name]?.password ?? '');
+        }()
+    ];
+    extraSources
+      ..clear()
+      ..addAll(p.getStringList('extraSources') ?? const []);
+    _loadPersonal();
+    _ver++;
+    notifyListeners();
+    unawaited(_fillSecrets());
+    unawaited(rescheduleReminders());
+    // A device that has just been given its sources has nothing open yet: open the main one.
+    if (active == null && sources.isNotEmpty) {
+      final name = p.getString('active');
+      final src = sources.where((s) => s.name == name).firstOrNull ?? sources.first;
+      if (!sourceNeedsPassword(src)) unawaited(activate(src));
+    }
+  }
+
+  Future<void> _fillSecrets() async {
+    var any = false;
+    for (var i = 0; i < sources.length; i++) {
+      final s = sources[i];
+      if (s.type != SourceType.xtream || s.password.isNotEmpty) continue;
+      final pw = await _readSecret(s.name);
+      if (pw == null || pw.isEmpty) continue;
+      sources[i] = Source(name: s.name, type: s.type, url: s.url, username: s.username, password: pw);
+      any = true;
+    }
+    if (any) notifyListeners();
+  }
+
+  /// A source that came from another device and still lacks its password here: passwords never travel.
+  bool sourceNeedsPassword(Source s) => switch (s.type) {
+        SourceType.xtream => s.password.isEmpty,
+        SourceType.m3u => SyncPolicy.urlPasswordBlank(s.url),
+        _ => false,
+      };
+
+  /// Gives a source its password on this device (in the keystore, or in the playlist address for a link that
+  /// carries one) and opens it again when it is the one in use.
+  Future<void> setSourcePassword(Source s, String password) async {
+    final i = sources.indexWhere((e) => e.name == s.name);
+    if (i < 0) return;
+    final updated = s.type == SourceType.xtream
+        ? Source(name: s.name, type: s.type, url: s.url, username: s.username, password: password)
+        : Source(name: s.name, type: s.type, url: SyncPolicy.fillUrlPassword(s.url, password), username: s.username);
+    sources[i] = updated;
+    if (s.type == SourceType.xtream) await _writeSecret(s.name, password);
+    await _saveSources();
+    if (active?.name == s.name || active == null) {
+      await activate(updated);
+    } else {
+      notifyListeners();
+    }
   }
 
   // Passwords live in the platform keystore, never in shared_preferences.

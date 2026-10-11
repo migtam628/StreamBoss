@@ -29,6 +29,24 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm test
+        working-directory: server
+      - run: docker build -t streamboss-sync server
+      - name: The image starts and answers
+        run: |
+          docker run -d --name sync -p 8080:8080 streamboss-sync
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/api/health && exit 0; sleep 1; done
+          docker logs sync
+          exit 1
+      - run: docker compose -f server/docker-compose.yml config -q
+        env: { SYNC_DOMAIN: sync.example.com }
+
   build:
     needs: test
     strategy:

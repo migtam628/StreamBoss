@@ -1,0 +1,7 @@
+# For a server on your own network without a domain name (no HTTPS): publishes the sync port directly.
+#   docker compose -f docker-compose.yml -f docker-compose.lan.yml up -d sync
+# Then use http://<this machine's address>:8080 as the server in StreamBoss. Do not expose this to the internet.
+services:
+  sync:
+    ports:
+      - "8080:8080"

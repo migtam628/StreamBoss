@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
@@ -20,6 +21,8 @@ import 'state/app_state.dart';
 import 'services/app_icon.dart';
 import 'state/profiles_state.dart';
 import 'state/settings_state.dart';
+import 'state/sync_state.dart';
+import 'widgets/sync_host.dart';
 import 'theme.dart';
 import 'services/time_format.dart';
 import 'services/mini_player.dart';
@@ -74,6 +77,19 @@ Future<void> main() async {
     if (launchedBy != null) state.pendingOpenChannel = launchedBy;
   }
   state.startReminderWatch();
+  // Sync with the account on the user's own server, when there is one.
+  final sync = SyncState();
+  await sync.init();
+  sync.reload = () {
+    profiles.reload();
+    settings.reloadFromPrefs();
+    state.reloadFromPrefs();
+  };
+  void changed() => sync.changed();
+  state.addListener(changed);
+  settings.addListener(changed);
+  profiles.addListener(changed);
+  unawaited(sync.syncNow(quiet: true));
   // Android TV: the Continue watching row on the home screen, and opening the title chosen there.
   if (AndroidWatchNext.platformSupported) {
     final wn = AndroidWatchNext(onLaunch: state.openFromWatchNext);
@@ -86,6 +102,7 @@ Future<void> main() async {
       ChangeNotifierProvider.value(value: state),
       ChangeNotifierProvider.value(value: settings),
       ChangeNotifierProvider.value(value: profiles),
+      ChangeNotifierProvider.value(value: sync),
     ],
     child: const StreamBossApp(),
   ));
@@ -130,6 +147,7 @@ class StreamBossApp extends StatelessWidget {
                 if (s.refreshing)
                   const Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: LinearProgressIndicator(minHeight: 2))),
                 const ReminderHost(),
+                const SyncHost(),
                 const MiniPlayerOverlay(),
               ]),
             ),

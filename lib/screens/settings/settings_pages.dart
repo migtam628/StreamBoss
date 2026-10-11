@@ -17,6 +17,7 @@ import '../collections_screen.dart';
 import '../edited_channels_screen.dart';
 import '../free_playlists_screen.dart';
 import '../onboarding_screen.dart';
+import 'sync_page.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -59,6 +60,7 @@ final settingsSections = <SettingsSection>[
   SettingsSection('Subtitles', 'Size, color, position', Icons.subtitles_outlined, (_) => const SubtitlesPage()),
   SettingsSection('Appearance', 'Text size, posters, start screen', Icons.palette_outlined, (_) => const AppearancePage()),
   SettingsSection('Library & guide', 'Filters, sorting, clock', Icons.video_library_outlined, (_) => const LibraryPage()),
+  SettingsSection('Sync', 'Keep your devices in step, with your own server', Icons.cloud_sync_outlined, (_) => const SyncPage()),
   SettingsSection('Reminders', tr('Programmes you asked to be told about'), Icons.notifications_none, (_) => const RemindersPage()),
   SettingsSection('Profiles & PIN', tr('Who is watching, Kids profiles, PIN lock'), Icons.family_restroom, (_) => const ProfilesPage()),
   SettingsSection('Network & metadata', 'User-Agent, TMDB', Icons.public, (_) => const NetworkPage()),
@@ -228,10 +230,10 @@ class SourcePage extends StatelessWidget {
           title: Text(src.name),
           subtitle: Text([
             src.type.name.toUpperCase(),
-            if (active?.name == src.name) 'main source' else if (s.extraSources.contains(src.name)) 'also in the library',
+            if (s.sourceNeedsPassword(src)) tr('password needed on this device, tap to enter it') else if (active?.name == src.name) 'main source' else if (s.extraSources.contains(src.name)) 'also in the library',
             if (s.extraErrors[src.name] != null) '\nCould not load: ${s.extraErrors[src.name]}',
           ].join(' · ').replaceAll(' · \n', '\n')),
-          onTap: active?.name == src.name ? null : () => s.activate(src),
+          onTap: s.sourceNeedsPassword(src) ? () => askSourcePassword(context, s, src) : active?.name == src.name ? null : () => s.activate(src),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
             if (active != null && active.name != src.name)
               Tooltip(

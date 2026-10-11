@@ -107,8 +107,38 @@ class SettingsState extends ChangeNotifier {
 
   /// Follows the profile in use: one that has its own settings gets them, others get the shared ones.
   void bindProfiles(ProfilesState p) {
+    _profileState = p;
     _syncProfile(p, notify: false);
     p.addListener(() => _syncProfile(p));
+  }
+
+  ProfilesState? _profileState;
+
+  /// Reads every preference again after a sync changed them in storage.
+  void reloadFromPrefs() {
+    final p = _p;
+    if (p == null) return;
+    for (final e in defaults.entries) {
+      final d = e.value;
+      final stored = d is bool
+          ? p.getBool(e.key)
+          : d is int
+              ? p.getInt(e.key)
+              : d is double
+                  ? p.getDouble(e.key)
+                  : p.getString(e.key);
+      _v[e.key] = stored ?? d;
+    }
+    customShaders = [
+      for (final j in (p.getStringList('shaderCustom') ?? const [])) ShaderDef.fromJson(jsonDecode(j) as Map<String, dynamic>),
+    ];
+    shaderOrder = p.getStringList('shaderOrder') ?? [];
+    shaderEnabled = (p.getStringList('shaderEnabled') ?? const []).toSet();
+    NetConfig.userAgent = userAgent;
+    _o = null;
+    _oId = null;
+    if (_profileState != null) _syncProfile(_profileState!, notify: false);
+    notifyListeners();
   }
 
   void _syncProfile(ProfilesState p, {bool notify = true}) {

@@ -1,0 +1,38 @@
+# StreamBoss sync server with automatic HTTPS.
+#   1. Point a DNS name (an A record) at this machine, and open ports 80 and 443.
+#   2. cp .env.example .env   and put that name in SYNC_DOMAIN.
+#   3. docker compose up -d
+# Caddy gets and renews the certificate by itself. Your data is in the "sync-data" volume.
+services:
+  sync:
+    build: .
+    restart: unless-stopped
+    environment:
+      REGISTRATION: ${REGISTRATION:-first} # first = only the first account | open = anyone | closed = nobody
+      TRUST_PROXY: "1" # the address of a caller comes from Caddy
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*} # the web build of StreamBoss needs this; set your site to narrow it
+    volumes:
+      - sync-data:/data
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - sync
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SYNC_DOMAIN: ${SYNC_DOMAIN:?Put your server name in .env (SYNC_DOMAIN=sync.example.com)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  sync-data:
+  caddy-data:
+  caddy-config:
