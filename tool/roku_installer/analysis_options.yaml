@@ -1,0 +1,3 @@
+# This folder is its own small program (see roku.dart), not part of the app: it does not use the app's lint set.
+analyzer:
+  errors: {}
