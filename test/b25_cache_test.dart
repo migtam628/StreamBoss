@@ -65,9 +65,17 @@ void main() {
     CatalogCache.directory = dir;
     PerfLog.start();
   });
-  tearDown(() {
+  tearDown(() async {
     CatalogCache.directory = null;
-    dir.deleteSync(recursive: true);
+    // A background save can still be writing into the folder; try again until it is done.
+    for (var i = 0; i < 20; i++) {
+      try {
+        dir.deleteSync(recursive: true);
+        return;
+      } on FileSystemException {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    }
   });
 
   group('CatalogCache', () {
