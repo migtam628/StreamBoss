@@ -106,7 +106,7 @@ The APKs are signed for sideloading, not the Play Store (see "Android signing" b
 if that one does not work) to fetch the newest StreamBoss.
 
 **Roku:** run the [Roku installer](docs/ROKU.md#install-the-easy-way-the-installer-program) from the release
-assets: it finds the Roku, installs the channel and starts it.
+assets: it opens a page in your browser that finds the Roku, installs the channel and starts it.
 On a TV the app appears in the apps row with its own banner; use the D-pad to navigate, OK to select,
 Back to go up. Android picture-in-picture is available from the player's controls.
 

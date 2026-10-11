@@ -1,16 +1,21 @@
-// StreamBoss Roku installer. Run it (double-click on Windows), answer two questions, and the channel is on the Roku.
+// StreamBoss Roku installer. Run it and a page opens in your browser that walks you through putting the channel on
+// the Roku. With --cli (or --ip / --password) it runs in the terminal instead, for scripts.
 import 'dart:io';
 import 'roku.dart';
+import 'ui.dart';
 
 const _help = '''StreamBoss Roku installer
 
   Finds your Roku on the network, sends it the StreamBoss channel and starts it.
+  Run it with no options and a page opens in your browser that walks you through it.
 
 Usage: roku_installer [options]
-  --ip ADDRESS      the Roku's address (skip the search)
-  --password TEXT   the developer password you chose on the TV
+  --cli             ask the questions here in the terminal instead of opening a page
+  --ip ADDRESS      the Roku's address (skip the search); runs in the terminal
+  --password TEXT   the developer password you chose on the TV; runs in the terminal
   --zip FILE        install this channel file instead of downloading the newest release
   --no-launch       do not start the channel afterwards
+  --no-browser      do not open the page (it prints the address to open yourself)
   --help            this text
 ''';
 
@@ -43,11 +48,46 @@ void _waitToClose() {
   }
 }
 
+/// The page in the browser (the default).
+Future<int> _runUi(List<String> args) async {
+  final file = _arg(args, '--zip');
+  Future<ChannelFile> Function()? channel;
+  if (file != null) {
+    final List<int> bytes;
+    try {
+      bytes = File(file).readAsBytesSync();
+    } on FileSystemException {
+      stderr.writeln('Could not read $file.');
+      return 1;
+    }
+    if (!looksLikeZip(bytes)) {
+      stderr.writeln('$file is not a zip file.');
+      return 1;
+    }
+    final name = file.split(RegExp(r'[\\/]')).last;
+    channel = () async => (bytes: bytes, name: name, tag: 'your file');
+  }
+  final ui = InstallerUi(
+      channel: channel, launchAfter: !args.contains('--no-launch'));
+  final url = await ui.start();
+  stdout.writeln('StreamBoss Roku installer\n');
+  stdout.writeln('The installer is open in your browser. If it did not open, go to:');
+  stdout.writeln('  $url\n');
+  stdout.writeln('Close the browser tab (or press Ctrl+C here) when you are done.');
+  if (!args.contains('--no-browser')) await openInBrowser(url.toString());
+  await ui.done;
+  return 0;
+}
+
 Future<int> main(List<String> args) async {
   if (args.contains('--help') || args.contains('-h')) {
     stdout.write(_help);
     return 0;
   }
+  final terminal = args.contains('--cli') ||
+      args.contains('--ip') ||
+      args.contains('--password');
+  if (!terminal) return _runUi(args);
   stdout.writeln('StreamBoss Roku installer\n');
   try {
     // 1. Which Roku.

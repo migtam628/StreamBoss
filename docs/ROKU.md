@@ -28,14 +28,21 @@ newest channel, sends it to the Roku and starts it, so there is no zip to handle
      notarized): right-click the file, choose *Open*, then *Open* again. If you moved the files apart, keep
      `roku-installer` next to the `.command` file. Intel Macs: use the browser steps below.
    - **Linux:** `tar xzf StreamBoss-*-roku-installer-linux.tar.gz && ./roku-installer` in a terminal.
-2. It lists the Rokus on your network and you pick one (or type the address from Roku **Settings > Network >
-   About**). The computer must be on the same network as the Roku.
-3. If **developer mode** is off, the installer offers to open the *Developer Settings* screen on the TV for you
-   (it sends the remote's secret key sequence). On the TV choose **Enable installer and restart**, accept the
-   licence, **choose a password** and wait for the restart. This one step has to be done on the TV.
-4. Type that password when asked. The channel is installed and starts on the Roku.
+2. A page opens in your browser (it is served by the installer on your own computer, nothing goes to the internet
+   but the download of the channel). It lists the Rokus on your network and you pick one (or type the address
+   from Roku **Settings > Network > About**). The computer must be on the same network as the Roku.
+3. If **developer mode** is off, the page says so and has a button, **Open Developer Settings on my TV**, that sends
+   the remote's secret key sequence. On the TV choose **Enable installer and restart**, accept the licence,
+   **choose a password** and wait for the restart, then press **Check again**. This one step has to be done on
+   the TV.
+4. Type that password and press **Install StreamBoss**. The page shows each step (download, send, start) and
+   says when StreamBoss is on the Roku. Closing the tab closes the installer.
 
-Options for scripts: `--ip 192.168.1.40 --password ... --zip StreamBoss-...-roku.zip --no-launch`.
+If no page opens, the installer prints an address that starts with `http://127.0.0.1:`; open it in a browser.
+
+Terminal version, for scripts or a computer with no browser: `--cli` asks the same questions in the terminal, and
+`--ip 192.168.1.40 --password ...` does it without asking. Other options: `--zip StreamBoss-...-roku.zip` (use that
+channel file instead of downloading), `--no-launch` (do not start it), `--no-browser` (do not open the page).
 If the Roku has *Settings > System > Advanced system settings > Control by mobile apps* set to **Disabled** or
 **Limited**, the installer cannot press keys for you and cannot start the channel; it says so, and you do those
 two things by hand.

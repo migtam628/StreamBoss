@@ -1,5 +1,6 @@
 #!/bin/bash
-# Double-click this file (it opens Terminal and runs the installer that sits next to it).
+# Double-click this file (it opens Terminal, which starts the installer that sits next to it; the installer then
+# opens its page in your browser. Closing that browser tab ends it).
 cd "$(dirname "$0")" || exit 1
 # The download marks these files as "from the internet"; clear that so macOS does not block the installer.
 xattr -dr com.apple.quarantine . 2>/dev/null

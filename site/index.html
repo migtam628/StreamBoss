@@ -207,7 +207,7 @@ footer{padding-top:64px;color:var(--muted);font-size:15px;display:flex;flex-wrap
   <h2 style="margin-bottom:24px">Before you install</h2>
   <details open><summary>Does it come with channels?</summary><p>No. You bring an Xtream Codes login or an M3U playlist from a service you are licensed to use. Without one you can try the demo mode, or browse public lists of free channels kept by third parties.</p></details>
   <details><summary>Do I need an account with you?</summary><p>No. Sync between devices is optional and goes through a small server that you host. Provider passwords never leave a device.</p></details>
-  <details><summary>Will it work on my Roku?</summary><p>Yes, as a separate native channel. A small installer program finds your Roku and puts the channel on it, so you do not have to use the Roku's upload page.</p></details>
+  <details><summary>Will it work on my Roku?</summary><p>Yes, as a separate native channel. A small installer program opens a page in your browser, finds your Roku and puts the channel on it, so you do not have to use the Roku's upload page.</p></details>
   <details><summary>How do I update?</summary><p>In the app: Settings, About, Check for updates. It downloads and installs inside the app.</p></details>
 </div></section>
 
@@ -236,7 +236,7 @@ const DEVICES=[
   files:[{label:'Android APK (most TVs)',re:/android-arm64-v8a\.apk$/},{label:'Older TVs and boxes',re:/android-armeabi-v7a\.apk$/}],
   side:['<b>Which APK?</b>arm64-v8a suits most TVs and boxes; armeabi-v7a suits older ones.']},
  {id:'roku',name:'Roku',sub:'Installer program',icon:'tv',title:'Roku',
-  steps:['Download the <b>Roku installer</b> for your computer (button below).','Run it. It finds your Roku on the network and offers to open <b>Developer Settings</b> on the TV. Choose <b>Enable installer</b>, pick a password, let the Roku restart.','Type that password into the installer. It sends the channel and starts it.'],
+  steps:['Download the <b>Roku installer</b> for your computer (button below).','Run it. A page opens in your browser and finds your Roku on the network. If developer mode is off it offers to open <b>Developer Settings</b> on the TV: choose <b>Enable installer</b>, pick a password, let the Roku restart.','Type that password on the page and press <b>Install StreamBoss</b>. It sends the channel and starts it.'],
   note:'Developer mode is turned on once, on the TV. After that, updating is a re-run of the installer. On a Mac, unzip the download and double-click <b>Install StreamBoss on Roku</b> (the first time, right-click it and choose Open). On Linux, unpack the .tar.gz and run it in a terminal.',
   files:[{label:'Installer for Windows',re:/roku-installer-windows\.exe$/},{label:'Installer for Mac (Apple silicon)',re:/roku-installer-macos\.zip$/},{label:'Installer for Linux',re:/roku-installer-linux\.tar\.gz$/},{label:'Channel file only (.zip)',re:/-roku\.zip$/}],
   side:['<b>Why not the Channel Store?</b>StreamBoss is not listed there yet, so it installs as a developer channel.']},
