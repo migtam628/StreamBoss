@@ -852,6 +852,16 @@ class AppState extends ChangeNotifier {
     positions.addAll((m['positions'] as Map? ?? const {}).map((k, v) => MapEntry('$k', (v as num).toInt())));
     watched.addAll([for (final w in (m['watched'] as List? ?? const [])) '$w']);
     _prefs?.setStringList(_k('watched'), watched.toList());
+    for (final j in (m['reminders'] as List? ?? const [])) {
+      final r = Reminder.fromJson(j);
+      if (r != null && !reminders.any((e) => e.id == r.id)) reminders.add(r);
+    }
+    final current = keepCurrent(reminders);
+    reminders
+      ..clear()
+      ..addAll(current);
+    _saveReminders();
+    unawaited(rescheduleReminders());
     final have = recents.map((e) => e.key).toSet();
     for (final j in (m['recents'] as List? ?? const [])) {
       final it = MediaItem.fromJson(j as Map<String, dynamic>);

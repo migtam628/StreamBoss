@@ -184,6 +184,18 @@ void main() {
       expect(app.bannerReminder, isNull);
     });
 
+    test('a backup carries them, and restoring puts them back and schedules them', () async {
+      final (app, _, _) = await boot();
+      await app.addReminder(ch, soon(30));
+      final data = jsonDecode(jsonEncode(app.exportData())) as Map<String, dynamic>;
+      final (fresh, _, n) = await boot();
+      expect(fresh.reminders, isEmpty);
+      fresh.importData(data);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(fresh.reminders.single.title, 'Arsenal v Chelsea');
+      expect(n.scheduled, isNotEmpty);
+    });
+
     test('profiles each have their own reminders', () async {
       final (app, st, _) = await boot();
       await app.addReminder(ch, soon(30));
