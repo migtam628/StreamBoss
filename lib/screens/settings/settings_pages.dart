@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../services/app_icon.dart';
 import '../../services/catalog_cache.dart';
 import '../../services/perf_log.dart';
+import '../../services/reminders.dart';
+import '../../services/time_format.dart';
 import '../../services/boot_launch.dart';
 import '../../widgets/screensaver.dart';
 import '../../layouts/common.dart';
@@ -55,6 +57,7 @@ final settingsSections = <SettingsSection>[
   SettingsSection('Subtitles', 'Size, color, position', Icons.subtitles_outlined, (_) => const SubtitlesPage()),
   SettingsSection('Appearance', 'Text size, posters, start screen', Icons.palette_outlined, (_) => const AppearancePage()),
   SettingsSection('Library & guide', 'Filters, sorting, clock', Icons.video_library_outlined, (_) => const LibraryPage()),
+  SettingsSection('Reminders', 'Programmes you asked to be told about', Icons.notifications_none, (_) => const RemindersPage()),
   SettingsSection('Profiles & PIN', 'Who is watching, Kids profiles, PIN lock', Icons.family_restroom, (_) => const ProfilesPage()),
   SettingsSection('Network & metadata', 'User-Agent, TMDB', Icons.public, (_) => const NetworkPage()),
   SettingsSection('Data & backup', 'Backup, history, reset', Icons.storage_outlined, (_) => const DataPage()),
@@ -717,6 +720,65 @@ class LibraryPage extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------------------
+
+class RemindersPage extends StatelessWidget {
+  const RemindersPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    final st = context.watch<SettingsState>();
+    final p = LayoutPalette.of(context);
+    String when(Reminder r) {
+      final d = r.start;
+      final n = DateTime.now();
+      final today = d.year == n.year && d.month == n.month && d.day == n.day;
+      final t = fmtTime(d, use24h: st.use24h);
+      return today ? 'Today $t' : '${d.day}/${d.month} $t';
+    }
+
+    return ListView(children: [
+      const SettingsHeader('Reminders'),
+      ChoiceRow<int>(
+        icon: Icons.timer_outlined,
+        title: 'Remind me',
+        subtitle: 'How long before a programme starts',
+        value: st.reminderLead,
+        options: [for (final m in reminderLeadChoices) (m, '$m min before')],
+        onChanged: (v) async {
+          st.set('reminderLead', v);
+          await app.rescheduleReminders();
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.info_outline),
+        title: Text(app.notifier.supported
+            ? 'Notifications are on: a reminder arrives even when StreamBoss is closed.'
+            : 'On this device a reminder shows as a banner while StreamBoss is open.'),
+        subtitle: Text(app.notifier.supported
+            ? 'If one does not arrive, check that notifications are allowed for StreamBoss in the system settings.'
+            : 'Phones, iPads and Macs can also send a notification when it is closed.'),
+      ),
+      SettingsHeader(app.reminders.isEmpty ? 'No reminders yet' : 'Coming up'),
+      if (app.reminders.isEmpty)
+        ListTile(
+          leading: Icon(Icons.notifications_none, color: p.muted),
+          title: const Text('Open a programme in the guide, or on a channel\'s page, and choose Remind me.'),
+        ),
+      for (final r in app.reminders)
+        ListTile(
+          leading: Icon(Icons.notifications_active, color: p.accent),
+          title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text('${r.channelName}  ·  ${when(r)}'),
+          trailing: IconButton(
+            tooltip: 'Remove',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => app.removeReminder(r),
+          ),
+        ),
+    ]);
+  }
+}
 
 class ProfilesPage extends StatelessWidget {
   const ProfilesPage({super.key});

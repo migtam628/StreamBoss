@@ -17,6 +17,7 @@ void main() {
     _patchIconAliases();
     _patchBoot();
     _patchUpdate();
+    _patchReminders();
     stdout.writeln('Already patched.');
     return;
   }
@@ -48,6 +49,7 @@ void main() {
   _patchIconAliases();
   _patchBoot();
   _patchUpdate();
+  _patchReminders();
   stdout.writeln('Patched AndroidManifest.xml for TV.');
 }
 
@@ -153,6 +155,45 @@ class BootReceiver : BroadcastReceiver() {
 }
 '''.trimLeft());
   stdout.writeln('Added the start-on-boot receiver.');
+}
+
+/// Programme reminders (Settings > Reminders): the notification plugin shows a scheduled notification from
+/// a receiver and puts it back after a restart, exact timing is a permission on Android 12 and later, and
+/// the plugin needs Java's newer time classes on older Android versions ("desugaring").
+void _patchReminders() {
+  final m = File('android/app/src/main/AndroidManifest.xml');
+  var x = m.readAsStringSync();
+  if (!x.contains('ScheduledNotificationReceiver')) {
+    x = x.replaceFirstMapped(
+        RegExp(r'<manifest[^>]*>'),
+        (e) => '${e[0]}\n'
+            '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n'
+            '    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>');
+    x = x.replaceFirst('</application>', '''        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+    </application>''');
+    m.writeAsStringSync(x);
+    stdout.writeln('Added the reminder notification receivers and permissions.');
+  }
+  final g = File('android/app/build.gradle.kts');
+  if (!g.existsSync()) return;
+  var y = g.readAsStringSync();
+  if (y.contains('coreLibraryDesugaring')) return;
+  if (!y.contains('compileOptions {') || !y.contains('\nflutter {')) {
+    stderr.writeln('Unexpected build.gradle.kts layout; reminders may not build.');
+    return;
+  }
+  y = y.replaceFirst('compileOptions {', 'compileOptions {\n        isCoreLibraryDesugaringEnabled = true');
+  y = y.replaceFirst('\nflutter {', '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n\nflutter {');
+  g.writeAsStringSync(y);
+  stdout.writeln('Patched build.gradle.kts for core library desugaring.');
 }
 
 /// Updating from inside the app (Settings > About > Check for updates): the permission to install

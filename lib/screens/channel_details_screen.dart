@@ -12,6 +12,7 @@ import '../state/app_state.dart';
 import '../widgets/channel_sheet.dart';
 import '../widgets/collections_sheet.dart';
 import '../widgets/details_kit.dart';
+import '../widgets/programme_sheet.dart';
 import '../widgets/tv.dart';
 import 'open_item.dart';
 
@@ -159,6 +160,9 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
                 openItem(context, ch, queue: s.shown.live);
               } else if (s.catchUpFor(ch, x)) {
                 openCatchUp(context, ch, x);
+              } else if (x.start.isAfter(DateTime.now())) {
+                // Not on yet: what it is, and a reminder for it.
+                showProgrammeSheet(context, ch, x, queue: s.shown.live);
               }
             },
             builder: (_, __) => Container(
@@ -176,7 +180,11 @@ class _ChannelDetailsScreenState extends State<ChannelDetailsScreen> {
                 if (x.isNow)
                   Text('NOW', style: TextStyle(color: p.accent, fontWeight: FontWeight.w800, fontSize: 12))
                 else if (s.catchUpFor(ch, x))
-                  Icon(Icons.history, color: p.accent, size: 20),
+                  Icon(Icons.history, color: p.accent, size: 20)
+                else if (s.hasReminder(ch, x))
+                  Icon(Icons.notifications_active, color: p.accent, size: 20)
+                else if (x.start.isAfter(DateTime.now()))
+                  Icon(Icons.notifications_none, color: p.muted, size: 20),
               ]),
             ),
           ),

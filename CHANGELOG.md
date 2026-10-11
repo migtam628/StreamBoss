@@ -4,6 +4,13 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b28 - 2026-10-11
+- **Programme reminders.** Open a programme that has not started yet (in the Guide, or on a channel's page: Channel details > Today) and choose **Remind me**. A few minutes before it starts (Settings > Reminders > Remind me: 1, 5, 10, 15 or 30 minutes, 5 by default) you are told, and tapping the notification opens that channel.
+  - **A notification, even when StreamBoss is closed,** on Android, iPhone, iPad and Mac. The first reminder asks permission to send notifications (Android 13 and later, iOS, macOS). On Android 12 and later exact timing is a separate switch; without it the reminder can arrive a few minutes late. Run `dart run tool/patch_android.dart` (and `tool/patch_ios.dart`) after `flutter create` if you build the project yourself: they add the notification receivers, the permissions and the Java time support the plugin needs.
+  - **A banner inside the app, everywhere,** while StreamBoss is open: "Late Show, starts in 3 min, Sportsline" with Watch and Dismiss. This is the only form on Fire TV, Android TV, Windows, Linux and the web, which cannot show a notification for a closed app.
+  - **Settings > Reminders** lists what is coming up (with a delete button for each) and the lead time. Reminders belong to the profile, are removed once the programme has been on for ten minutes, and are included in the backup.
+- **Not in this version:** reminders for programmes the guide does not list; and a reminder cannot wake a TV that is off.
+
 ## 0.3.0b27 - 2026-10-11
 - **Roku guide, wireframes and layout.** New [docs/ROKU.md](docs/ROKU.md): how to install the Roku channel (turn on developer mode, upload the zip from the release, update and remove it), how to connect a provider and use it (tabs, categories, My List, search, series, playback, a remote-control table), what it does not do, and a troubleshooting table. It includes twelve wireframes drawn from the channel's real source (setup, keyboard, Live, Movies, episodes, My List, Search, Settings, playback), a table of the exact positions and sizes of every part of the screen, and a diagram of where focus goes. The wireframes are plain SVG files in `docs/roku/wireframes/`, regenerated with `python3 tool/roku_wireframes.py docs/roku/wireframes`. The Roku channel itself is unchanged, and its screens still have not been tried on a real Roku.
 

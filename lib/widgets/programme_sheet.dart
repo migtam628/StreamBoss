@@ -72,6 +72,7 @@ Future<void> showProgrammeSheet(BuildContext context, MediaItem ch, Programme p,
                       height: 1.4,
                       fontSize: 15)),
             ),
+            if (!live && !past) _ReminderTile(channel: ch, programme: p, sheet: sheet, outer: context, use24h: use24h),
             if (catchUp)
               ListTile(
                 autofocus: true,
@@ -111,4 +112,45 @@ Future<void> showProgrammeSheet(BuildContext context, MediaItem ch, Programme p,
           ]),
     ),
   );
+}
+
+/// Remind me / Remove the reminder, for a programme that has not started.
+class _ReminderTile extends StatelessWidget {
+  final MediaItem channel;
+  final Programme programme;
+  final BuildContext sheet, outer;
+  final bool use24h;
+  const _ReminderTile(
+      {required this.channel, required this.programme, required this.sheet, required this.outer, required this.use24h});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    final set = app.hasReminder(channel, programme);
+    return ListTile(
+      autofocus: true,
+      leading: Icon(set ? Icons.notifications_active : Icons.notifications_none),
+      title: Text(set ? 'Remove the reminder' : 'Remind me'),
+      subtitle: Text(set
+          ? 'You will be told ${app.reminderLead} min before it starts'
+          : 'A notification ${app.reminderLead} min before ${fmtTime(programme.start, use24h: use24h)}'),
+      onTap: () async {
+        final messenger = ScaffoldMessenger.maybeOf(outer);
+        Navigator.pop(sheet);
+        if (set) {
+          final r = app.reminders.firstWhere((e) => e.channelKey == channel.key && e.startMs == programme.start.millisecondsSinceEpoch);
+          await app.removeReminder(r);
+          messenger?.showSnackBar(const SnackBar(content: Text('Reminder removed')));
+        } else {
+          final res = await app.addReminder(channel, programme);
+          messenger?.showSnackBar(SnackBar(
+              content: Text(!res.added
+                  ? 'That programme has already started'
+                  : res.system
+                      ? 'Reminder set for ${fmtTime(programme.start, use24h: use24h)}'
+                      : 'Reminder set. It shows in the app while it is open (allow notifications to get it when it is closed)')));
+        }
+      },
+    );
+  }
 }

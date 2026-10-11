@@ -10,6 +10,7 @@ void main() {
         .writeln('ios/Runner/Info.plist not found. Run flutter create first.');
     exit(1);
   }
+  _patchNotifications();
   var x = f.readAsStringSync();
   if (x.contains('NSBonjourServices')) {
     stdout.writeln('Already patched.');
@@ -31,4 +32,24 @@ void main() {
   x = '${x.substring(0, i)}$add${x.substring(i)}';
   f.writeAsStringSync(x);
   stdout.writeln('Patched Info.plist for casting.');
+}
+
+/// Programme reminders arrive as local notifications; iOS needs the app to be the notification centre's
+/// delegate for them to show while the app is open and to report a tap. Best effort: the generated
+/// AppDelegate differs between Flutter versions, so this only adds the line where it knows the place.
+void _patchNotifications() {
+  final d = File('ios/Runner/AppDelegate.swift');
+  if (!d.existsSync()) return;
+  var x = d.readAsStringSync();
+  if (x.contains('UNUserNotificationCenter')) return;
+  const line = '    UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate\n';
+  final anchor = RegExp(r'(didFinishLaunchingWithOptions[^\n]*\{\n)');
+  if (!anchor.hasMatch(x)) {
+    stderr.writeln('ios/Runner/AppDelegate.swift has an unexpected layout; add the notification delegate line by hand '
+        '(see flutter_local_notifications, "iOS setup").');
+    return;
+  }
+  x = x.replaceFirstMapped(anchor, (m) => '${m[1]}$line');
+  d.writeAsStringSync(x);
+  stdout.writeln('Patched AppDelegate.swift for reminder notifications.');
 }

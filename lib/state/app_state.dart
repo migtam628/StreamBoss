@@ -18,6 +18,9 @@ import '../services/provider_url.dart';
 import '../services/anime.dart';
 import '../services/catalog_cache.dart';
 import '../services/perf_log.dart';
+import '../services/reminder_notifier.dart';
+import '../services/reminders.dart';
+import '../services/time_format.dart';
 import '../services/languages.dart';
 import '../services/channel_edits.dart';
 import '../services/channel_filter.dart';
@@ -114,7 +117,7 @@ class AppState extends ChangeNotifier {
 
   /// Removes everything a deleted profile saved.
   Future<void> forgetProfile(String id) async {
-    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings', 'deckSkips', 'channelEdits', 'introSkips', 'watched', 'durations']) {
+    for (final base in const ['favorites', 'positions', 'recents', 'searches', 'collections', 'profileSettings', 'deckSkips', 'channelEdits', 'introSkips', 'watched', 'durations', 'reminders']) {
       await _prefs?.remove('$base:$id');
     }
   }
@@ -126,6 +129,7 @@ class AppState extends ChangeNotifier {
     positions.clear();
     durations.clear();
     watched.clear();
+    reminders.clear();
     recentSearches.clear();
     collections.clear();
     deckSkips.clear();
@@ -169,6 +173,16 @@ class AppState extends ChangeNotifier {
       if (d != null) durations.addAll((jsonDecode(d) as Map<String, dynamic>).map((k, v) => MapEntry(k, v as int)));
     } catch (_) {}
     watched.addAll(p.getStringList(_k('watched')) ?? const []);
+    for (final raw in (p.getStringList(_k('reminders')) ?? const [])) {
+      try {
+        final r = Reminder.fromJson(jsonDecode(raw));
+        if (r != null) reminders.add(r);
+      } catch (_) {}
+    }
+    final current = keepCurrent(reminders);
+    reminders
+      ..clear()
+      ..addAll(current);
     favorites.addAll(p.getStringList(_k('favorites')) ?? const []);
     recents.addAll([
       for (final s in (p.getStringList(_k('recents')) ?? const []))
@@ -669,6 +683,118 @@ class AppState extends ChangeNotifier {
     if (notify) Future.microtask(notifyListeners);
   }
 
+  // --- Reminders ----------------------------------------------------------------
+
+  /// Programmes the viewer asked to be told about, soonest first (per profile).
+  final List<Reminder> reminders = [];
+  final Set<int> _remindersShown = {};
+  Timer? _reminderTimer;
+
+  /// The reminder the app is showing a banner for right now, if any.
+  Reminder? bannerReminder;
+
+  /// A channel the viewer asked to open by tapping a reminder notification; the screen that can open it
+  /// takes it and clears this.
+  String? pendingOpenChannel;
+
+  ReminderNotifier notifier = const NoopReminderNotifier();
+
+  int get reminderLead => _settings?.reminderLead ?? 5;
+
+  /// Connects the system notifications and puts every reminder in them.
+  void attachNotifier(ReminderNotifier n) {
+    notifier = n;
+    unawaited(rescheduleReminders());
+  }
+
+  /// Checks for a due reminder every twenty seconds while the app runs.
+  void startReminderWatch() {
+    _reminderTimer?.cancel();
+    _reminderTimer = Timer.periodic(const Duration(seconds: 20), (_) => checkReminders());
+  }
+
+  bool hasReminder(MediaItem ch, Programme p) =>
+      reminders.any((r) => r.channelKey == ch.key && r.startMs == p.start.millisecondsSinceEpoch);
+
+  String _reminderBody(Reminder r) =>
+      '${r.channelName}  ·  starts at ${fmtTime(r.start, use24h: _settings?.use24h ?? false)}';
+
+  void _saveReminders() =>
+      _prefs?.setStringList(_k('reminders'), [for (final r in reminders) jsonEncode(r.toJson())]);
+
+  /// Asks to be reminded of [p] on [ch]. [system] says whether the notification will arrive when the app
+  /// is closed (otherwise the banner shows while it is open). Nothing is added for a programme that has
+  /// already started.
+  Future<({bool added, bool system})> addReminder(MediaItem ch, Programme p) async {
+    if (!p.start.isAfter(DateTime.now())) return (added: false, system: false);
+    if (hasReminder(ch, p)) return (added: true, system: notifier.supported);
+    final r = Reminder(channelKey: ch.key, channelName: ch.name, title: p.title, startMs: p.start.millisecondsSinceEpoch);
+    reminders
+      ..add(r)
+      ..sort((a, b) => a.startMs.compareTo(b.startMs));
+    _saveReminders();
+    notifyListeners();
+    final allowed = await notifier.ensurePermission();
+    if (allowed) await notifier.schedule(r, reminderFireTime(r, reminderLead), _reminderBody(r));
+    return (added: true, system: allowed);
+  }
+
+  Future<void> removeReminder(Reminder r) async {
+    reminders.removeWhere((e) => e.id == r.id);
+    _remindersShown.remove(r.id);
+    if (bannerReminder?.id == r.id) bannerReminder = null;
+    _saveReminders();
+    notifyListeners();
+    await notifier.cancel(r.id);
+  }
+
+  /// Schedules every reminder again (after the lead time changed, a profile switched or the notifier was
+  /// attached).
+  Future<void> rescheduleReminders() async {
+    await notifier.cancelAll();
+    if (reminders.isEmpty || !await notifier.ensurePermission()) return;
+    for (final r in reminders) {
+      await notifier.schedule(r, reminderFireTime(r, reminderLead), _reminderBody(r));
+    }
+  }
+
+  /// Shows the banner for a reminder that is due. [now] is for tests.
+  void checkReminders({DateTime? now}) {
+    final kept = keepCurrent(reminders, now: now);
+    if (kept.length != reminders.length) {
+      reminders
+        ..clear()
+        ..addAll(kept);
+      _saveReminders();
+    }
+    if (bannerReminder != null) {
+      // A banner is already up; leave it until it is answered or has been up for a minute.
+      if (bannerReminder!.startMs + 60000 < (now ?? DateTime.now()).millisecondsSinceEpoch) {
+        bannerReminder = null;
+        notifyListeners();
+      }
+      return;
+    }
+    final due = dueReminder(reminders, _remindersShown, reminderLead, now: now);
+    if (due != null) {
+      _remindersShown.add(due.id);
+      bannerReminder = due;
+      notifyListeners();
+    }
+  }
+
+  void dismissBanner() {
+    if (bannerReminder == null) return;
+    bannerReminder = null;
+    notifyListeners();
+  }
+
+  /// A reminder notification was tapped.
+  void openFromNotification(String channelKey) {
+    pendingOpenChannel = channelKey;
+    notifyListeners();
+  }
+
   // --- Watched and progress ---------------------------------------------------
 
   bool isWatched(MediaItem i) => watched.contains(i.key);
@@ -708,6 +834,7 @@ class AppState extends ChangeNotifier {
         'favorites': favorites.toList(),
         'positions': positions,
         'watched': watched.toList(),
+        'reminders': [for (final r in reminders) r.toJson()],
         'recents': [for (final r in recents) r.toJson()],
         'collections': collections,
         'channelEdits': {

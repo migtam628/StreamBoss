@@ -8,6 +8,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/profile_picker_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/crash_guard.dart';
+import 'services/local_reminder_notifier.dart';
 import 'services/perf_log.dart';
 import 'services/provider_url.dart' show redactUrls;
 import 'services/device.dart';
@@ -21,6 +22,7 @@ import 'services/time_format.dart';
 import 'services/mini_player.dart';
 import 'widgets/live_preview.dart';
 import 'widgets/mini_player_overlay.dart';
+import 'widgets/reminder_banner.dart';
 import 'widgets/screensaver.dart';
 import 'widgets/tv.dart';
 
@@ -61,6 +63,14 @@ Future<void> main() async {
   // Someone who already has a provider has been through setup, whichever version they came from.
   if (state.sources.isNotEmpty && !settings.onboarded) settings.set('onboarded', true);
   AppIconService.restore(AppIcon.fromKey(settings.appIcon));
+  // Reminders: system notifications where the platform can schedule them, and the in-app banner always.
+  if (LocalReminderNotifier.platformSupported) {
+    final n = LocalReminderNotifier(onOpen: state.openFromNotification);
+    final launchedBy = await n.init();
+    state.attachNotifier(n);
+    if (launchedBy != null) state.pendingOpenChannel = launchedBy;
+  }
+  state.startReminderWatch();
   WidgetsBinding.instance.addPostFrameCallback((_) => PerfLog.mark('first frame'));
   runApp(MultiProvider(
     providers: [
@@ -105,6 +115,7 @@ class StreamBossApp extends StatelessWidget {
                 // A saved library is on screen while the provider's current one is fetched.
                 if (s.refreshing)
                   const Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: LinearProgressIndicator(minHeight: 2))),
+                const ReminderHost(),
                 const MiniPlayerOverlay(),
               ]),
             ),

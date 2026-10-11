@@ -62,6 +62,7 @@ void main() {
 
   testWidgets('about page shows the app version', (t) async {
     await pump(t, const Size(1200, 900));
+    await t.scrollUntilVisible(find.text('About'), 100, scrollable: find.byType(Scrollable).first);
     await t.tap(find.text('About'));
     await t.pumpAndSettle();
     expect(find.text('${appVersion('1.2.3')} (build 4)'), findsOneWidget);
@@ -70,6 +71,7 @@ void main() {
   testWidgets('reset all settings restores defaults after confirming', (t) async {
     final st = await pump(t, const Size(1200, 900));
     st.set('sortAz', true);
+    await t.scrollUntilVisible(find.text('Data & backup'), 100, scrollable: find.byType(Scrollable).first);
     await t.tap(find.text('Data & backup'));
     await t.pumpAndSettle();
     await t.tap(find.text('Reset all settings'));
