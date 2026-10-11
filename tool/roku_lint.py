@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Checks the Roku channel's BrightScript for things the Roku's own compiler rejects but BrighterScript (the check in
 CI) lets through: reserved words used as names, the component's `m` used as a loop variable, a method called on a
-parenthesised expression. Usage: python3 tool/roku_lint.py [roku-folder]"""
+parenthesised expression. (On a real Roku the first of these was the cause of "Compilation Failed. MainScene":
+"For-Each index variable must be 'dynamic' type" for `for each m in ...`.) Usage: python3 tool/roku_lint.py [roku-folder]"""
 import re
 import sys
 from pathlib import Path
