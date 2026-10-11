@@ -39,14 +39,14 @@ class SyncPage extends StatelessWidget {
           icon: Icons.login,
           title: tr('Sign in'),
           subtitle: tr('To an account you already have on your sync server'),
-          onTap: sync.busy ? null : () => _account(context, create: false),
+          onTap: sync.busy ? null : () => account(context, create: false),
         ),
         ActionRow(
           icon: Icons.person_add_alt,
           title: tr('Create an account'),
           subtitle:
               tr('On your own sync server; the first account is the owner'),
-          onTap: sync.busy ? null : () => _account(context, create: true),
+          onTap: sync.busy ? null : () => account(context, create: true),
         ),
       ] else ...[
         const SettingsHeader('Account'),
@@ -122,7 +122,7 @@ class SyncPage extends StatelessWidget {
     return trf('{n} days ago', {'n': d.inDays});
   }
 
-  static Future<void> _account(BuildContext context,
+  static Future<void> account(BuildContext context,
       {required bool create}) async {
     final sync = context.read<SyncState>();
     final server = TextEditingController(

@@ -11,6 +11,7 @@ import 'package:streamboss/services/next_episode.dart';
 import 'package:streamboss/services/xtream_client.dart';
 import 'package:streamboss/state/app_state.dart';
 import 'package:streamboss/state/settings_state.dart';
+import 'package:streamboss/state/sync_state.dart';
 import 'package:streamboss/theme.dart';
 
 MediaItem ep(String id) => MediaItem(id: 'ep$id', name: 'Episode $id', kind: MediaKind.movie, streamUrl: 'http://x/$id');
@@ -27,6 +28,7 @@ Future<void> pumpScreen(WidgetTester t, Widget home, Size size, {Map<String, Obj
     providers: [
       ChangeNotifierProvider<AppState>.value(value: app),
       ChangeNotifierProvider<SettingsState>.value(value: st),
+      ChangeNotifierProvider<SyncState>(create: (_) => SyncState()),
     ],
     child: MaterialApp(theme: Boss.theme(), home: home),
   ));

@@ -9,6 +9,7 @@ import 'package:streamboss/screens/setup_screen.dart';
 import 'package:streamboss/services/pairing.dart';
 import 'package:streamboss/state/app_state.dart';
 import 'package:streamboss/state/settings_state.dart';
+import 'package:streamboss/state/sync_state.dart';
 import 'package:streamboss/theme.dart';
 
 class FakeSession implements PairingSession {
@@ -88,6 +89,7 @@ void main() {
       providers: [
         ChangeNotifierProvider<AppState>(create: (_) => AppState()),
         ChangeNotifierProvider<SettingsState>.value(value: st),
+        ChangeNotifierProvider<SyncState>(create: (_) => SyncState()),
       ],
       child: MaterialApp(theme: Boss.theme(), home: const SetupScreen()),
     ));

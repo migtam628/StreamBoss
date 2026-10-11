@@ -887,4 +887,5 @@ const Map<String, String> stringsPt = {
   'Sync': 'Sincronização',
   'Keep your devices in step, with your own server': 'Mantenha seus aparelhos em dia, com seu próprio servidor',
   'What is synced': 'O que é sincronizado',
+  'Use my sync account': 'Usar minha conta de sincronização',
 };

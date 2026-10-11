@@ -11,6 +11,8 @@ import 'free_playlists_screen.dart';
 import 'pairing_dialog.dart';
 import '../widgets/tv_text_field.dart';
 import '../l10n/l10n.dart';
+import 'settings/sync_page.dart';
+import '../state/sync_state.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -120,8 +122,8 @@ class _SetupScreenState extends State<SetupScreen> {
                           ListTile(
                             leading: const Icon(Icons.dns),
                             title: Text(src.name),
-                            subtitle: Text(src.type.name),
-                            onTap: () => s.activate(src),
+                            subtitle: Text(s.sourceNeedsPassword(src) ? tr('password needed on this device, tap to enter it') : src.type.name),
+                            onTap: () => s.sourceNeedsPassword(src) ? askSourcePassword(context, s, src) : s.activate(src),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () => s.removeSource(src),
@@ -200,6 +202,11 @@ class _SetupScreenState extends State<SetupScreen> {
                         onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreePlaylistsScreen())),
                         child: Text(tr('Browse free public channels')),
                       ),
+                      if (!context.watch<SyncState>().signedIn)
+                        TextButton(
+                          onPressed: () => SyncPage.account(context, create: false),
+                          child: Text(tr('Use my sync account')),
+                        ),
                       TextButton(
                         onPressed: () => s.activate(Source.demo),
                         child: Text(tr('Try demo mode')),
