@@ -7,7 +7,9 @@
 services:
   moobee:
     build:
-      context: https://github.com/migtam628/moobee.git#main
+      # MOOBEE_SRC: a folder with MooBee's code on this machine (needed while its repository is private),
+      # else it is fetched from GitHub.
+      context: ${MOOBEE_SRC:-https://github.com/migtam628/moobee.git#main}
       args:
         # Only if you run your own video player for MooBee (see its README, "Playback status"). Compiled into the site.
         PLAYBACK_BASE_URL: ${MOOBEE_PLAYBACK_BASE_URL:-}

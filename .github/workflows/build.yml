@@ -2,6 +2,17 @@ name: Build
 on:
   push:
     branches: [main, "claude/**"]
+    # Changes that touch only the server files, the website, the docs or the website upload scripts build nothing new
+    # (a private repository has a monthly allowance of build minutes). Releases and pull requests always build.
+    paths-ignore:
+      - "server/**"
+      - "site/**"
+      - "docs/**"
+      - "README.md"
+      - "LICENSE"
+      - "tool/publish_site.sh"
+      - ".github/workflows/site.yml"
+      - ".github/workflows/publish-downloads.yml"
   pull_request:
   workflow_dispatch:
   # Reused by release.yml so releases ship exactly what CI builds.

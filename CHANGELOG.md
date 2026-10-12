@@ -4,6 +4,11 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b44 - 2026-10-12
+- **MooBee can be built from a folder on the server.** Building it straight from GitHub failed because its repository is private (`could not read Username for 'https://github.com'`). `docker-compose.moobee.yml` now takes `MOOBEE_SRC` from `.env` (a folder with MooBee's code on the machine, copied there with `rsync` from your computer); without it the code is still fetched from GitHub, which works while the repository is public. The steps are in `server/README.md`.
+- **Fewer build minutes.** A push that changes only `server/`, `site/`, `docs/`, the README, the LICENSE or the website upload scripts no longer starts the full seven-platform build (a private repository has a monthly allowance of free build minutes). Releases (tags), pull requests and every other change still build.
+- No change to the app.
+
 ## 0.3.0b43 - 2026-10-12
 - **Releases now reach the website even when the private GitHub release step fails.** The b41 release run built everything and then stopped at "Create GitHub Release": a release for that tag already existed from an earlier try, and the repository has immutable releases, which refuse to replace its files. The upload to the website server came after that step, so it never ran. Now the website upload comes first, and keeping a copy in this repository's Releases is optional (a failure there is a warning, and an existing release is left as it is). The upload is one script, `tool/publish_site.sh`, which also says plainly when `VPS_KNOWN_HOSTS` has no line for `VPS_HOST` (the mistake behind the failed website runs).
 - **New: Actions > Publish downloads.** Sends the files of a Release run that already finished to the website server, without building anything: give it the run's number (from its address) and its tag. This is how b41's downloads get published without waiting for another full build, and the way to recover from a failed upload in future.

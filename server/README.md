@@ -115,19 +115,31 @@ cd /srv/streamboss/web/downloads && ls -d v* | sort -V | head -n -12 | xargs -r 
 
 ## Run MooBee on the same machine
 
-[MooBee](https://github.com/migtam628/moobee) (a movie and TV discovery site) can run next to the sync server, behind the same
+[MooBee](https://github.com/migtam628/moobee) (a movie and TV discovery site) can run next to the website, behind the same
 Caddy, on its own name such as `moobee.streamboss.site`. It builds from its repository's `Dockerfile`.
+
+While MooBee's repository is private, the machine cannot fetch it from GitHub without a login, so copy its code there
+from your own computer (and again after each change to MooBee):
+
+```sh
+cd /path/to/moobee && git pull
+rsync -a --exclude node_modules --exclude dist --exclude .git --exclude .env ./ root@YOUR-VPS-IP:~/moobee-src/
+```
+
+On the machine, in this folder:
 
 ```sh
 cp moobee.env.example moobee.env      # put your TMDB read token in it
-# in .env: MOOBEE_DOMAIN=moobee.streamboss.site   (its DNS A record must point at this machine)
+# in .env: MOOBEE_DOMAIN=moobee.streamboss.site   and   MOOBEE_SRC=/root/moobee-src
+# (the A record for moobee.streamboss.site must point at this machine)
 docker compose -f docker-compose.site.yml -f docker-compose.moobee.yml up -d --build
 # with the sync server: -f docker-compose.yml -f docker-compose.web.yml -f docker-compose.moobee.yml
 ```
 
-All the files at once: set `COMPOSE_FILE=docker-compose.site.yml:docker-compose.moobee.yml` in
-`.env` and run `docker compose up -d --build`. To update MooBee later: `docker compose up -d --build moobee`.
-The TMDB token is read from `moobee.env` on the machine only; it is never in an image or a repository.
+All the files at once: set `COMPOSE_FILE=docker-compose.site.yml:docker-compose.moobee.yml` in `.env` and run
+`docker compose up -d --build`. To update MooBee later, copy its code again and run `docker compose up -d --build moobee`.
+The TMDB token is read from `moobee.env` on the machine only; it is never in an image or a repository. Leave `MOOBEE_SRC`
+out if the repository is public: the code is then fetched from GitHub.
 
 ### Backups and updates
 
