@@ -11,6 +11,10 @@ It is a player only: you supply your own Xtream or M3U provider.
 - `*` (Options button) adds/removes My List entries
 - Resume position for movies/episodes; Up/Down zap channels while watching live TV
 - Demo mode with public test streams
+- Sync with your own sync server (Settings > Sign in to sync, or "Use my sync account" on the first screen): My List and
+  resume positions are kept in step with the other StreamBoss apps, and the sources saved on your other devices are listed
+  on the first screen (address and login name only, you type the password). The logic is in `components/lib/Sync.brs`,
+  tested with `brs-cli components/lib/Common.brs components/lib/Strings.brs components/lib/Sync.brs tests/sync.test.brs`
 - English, Spanish, Italian and Portuguese: it follows the Roku's language, or choose one in Settings > Language
   (Device language, English, Español, Italiano, Português). Texts are in `i18n/strings.json`;
   `python3 tool/roku_i18n.py` compiles them into `components/lib/Strings.brs` and CI checks every text has all three
@@ -18,7 +22,7 @@ It is a player only: you supply your own Xtream or M3U provider.
 
 ## Limits (compared with the Flutter app)
 - No TMDB metadata, EPG guide, subtitle styling or shaders
-- Roku's registry caps a channel at 32 KB, so My List holds 40 items and resume history 80
+- Roku's registry caps a channel at 32 KB, so My List keeps 200 entries (25 of them also stored whole, so it works before the library loads; the rest are found in the library) and resume history 150. When a synced list is longer, the newest entries are kept here and the others stay on the server
 - Roku plays HLS, MP4 and (some) MKV/TS; formats it can't decode will show a playback error
 
 ## Develop

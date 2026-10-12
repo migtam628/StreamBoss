@@ -7,4 +7,5 @@
   <script type="text/brightscript" uri="pkg:/components/tasks/FetchTask.brs" />
   <script type="text/brightscript" uri="pkg:/components/lib/Common.brs" />
   <script type="text/brightscript" uri="pkg:/components/lib/Strings.brs" />
+  <script type="text/brightscript" uri="pkg:/components/lib/Sync.brs" />
 </component>

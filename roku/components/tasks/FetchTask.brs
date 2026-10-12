@@ -17,6 +17,13 @@ sub execute()
         end if
     else if req.kind = "episodes" then
         res = loadEpisodes(req.cfg, req.seriesId)
+    else if req.kind = "syncsignin" then
+        res = syncSignIn(req.cfg)
+    else if req.kind = "sync" then
+        res = syncRun(syncApi(req.cfg.server, req.cfg.token), req.local, req.base)
+    else if req.kind = "synclogout" then
+        syncCall(req.cfg.server, req.cfg.token, "POST", "/api/logout", "{}")
+        res = { ok: true }
     end if
 
     res.kind = req.kind

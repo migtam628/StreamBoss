@@ -11,6 +11,7 @@ sub init()
     m.video = m.top.findNode("video")
     m.osd = m.top.findNode("osd")
     m.fetch = m.top.findNode("fetch")
+    m.syncTask = m.top.findNode("syncTask")
 
     m.lib = { live: [], movies: [], series: [], liveCats: [], movieCats: [], seriesCats: [] }
     m.tabIdx = 0
@@ -21,8 +22,14 @@ sub init()
     m.connected = false
     m.playItem = invalid
     m.lastSaved = 0
-    m.favs = regReadJson("fav", [])
+    initFavs()
     m.resume = regReadJson("pos", {})
+    m.syncCfg = regReadJson("sync", { server: "", email: "", token: "" })
+    m.syncBase = regReadJson("syncbase", {})
+    m.syncSources = []
+    m.syncing = false
+    m.localRev = 0
+    m.syncSentRev = 0
     m.cfg = regReadJson("cfg", { kind: "", url: "", user: "", pass: "" })
 
     buildTabs()
@@ -36,6 +43,8 @@ sub init()
     m.video.observeField("state", "onVideoState")
     m.video.observeField("position", "onVideoPosition")
     m.fetch.observeField("result", "onFetchResult")
+    m.syncTask.observeField("result", "onSyncResult")
+    m.top.findNode("syncTimer").observeField("fire", "onSyncTimer")
     m.top.findNode("osdTimer").observeField("fire", "onOsdTimer")
 
     if m.cfg.kind = "" then
@@ -43,6 +52,7 @@ sub init()
     else
         connect()
     end if
+    syncNow()
 end sub
 
 ' ---- generic helpers -------------------------------------------------------
@@ -143,6 +153,17 @@ sub refreshSetup()
     ids.push("connect")
     rows.push(L("Try demo mode"))
     ids.push("demo")
+    if m.syncCfg.token = "" then
+        rows.push(L("Use my sync account"))
+        ids.push("syncin")
+    else
+        for i = 0 to m.syncSources.count() - 1
+            if i < 5 then
+                rows.push(LF("From sync: {name}", { name: m.syncSources[i].name }))
+                ids.push("src" + i.ToStr())
+            end if
+        end for
+    end if
     m.setupIds = ids
     m.setup.content = makeList(rows)
 end sub
@@ -165,6 +186,13 @@ sub onSetupSelect()
     else if id = "demo" then
         m.cfg = { kind: "demo", url: "", user: "", pass: "" }
         connect()
+    else if id = "syncin" then
+        startSyncSignIn(false)
+    else if Left(id, 3) = "src" then
+        ' a source saved on another device: its address and login name arrive, the password is typed here
+        src = m.syncSources[Int(Val(Mid(id, 4)))]
+        m.cfg = { kind: src.kind, url: src.url, user: src.user, pass: "" }
+        refreshSetup()
     end if
 end sub
 
@@ -187,10 +215,12 @@ sub onKeyboardButton()
     text = dlg.text
     m.top.dialog = invalid
     if pressed <> 0 then
-        if m.kbMode = "setup" then m.setup.setFocus(true) else m.items.setFocus(true)
+        if m.kbMode = "setup" or (m.kbMode = "sync" and m.setup.visible) then m.setup.setFocus(true) else m.items.setFocus(true)
         return
     end if
-    if m.kbMode = "setup" then
+    if m.kbMode = "sync" then
+        nextSyncStep(text)
+    else if m.kbMode = "setup" then
         m.cfg[m.kbField] = text.Trim()
         refreshSetup()
         m.setup.setFocus(true)
@@ -232,6 +262,7 @@ end sub
 sub applyLibrary(res as Object)
     m.lib = res
     m.connected = true
+    resolveFavs()
     setStatus(librarySummary())
     m.tabs.jumpToItem = 0
     showTab(0)
@@ -272,7 +303,7 @@ sub showTab(idx as Integer)
         setCats(m.lib.seriesCats)
     else if idx = 3 then
         setCats([])
-        setItems(m.favs)
+        setItems(favList())
     else if idx = 4 then
         setCats([])
         setItems([])
@@ -339,8 +370,22 @@ end sub
 
 sub showSettingsItems()
     m.curItems = []
-    m.settingIds = ["reload", "source", "clearlist", "clearresume", "language", "about"]
-    m.items.content = makeList([L("Reload library"), L("Change source"), L("Clear My List"), L("Clear resume history"), LF("Language: {name}", { name: languageName() }), L("About StreamBoss")])
+    m.settingIds = ["reload", "source", "clearlist", "clearresume", "language"]
+    rows = [L("Reload library"), L("Change source"), L("Clear My List"), L("Clear resume history"), LF("Language: {name}", { name: languageName() })]
+    if m.syncCfg.token = "" then
+        m.settingIds.push("syncin")
+        rows.push(L("Sign in to sync"))
+        m.settingIds.push("synccreate")
+        rows.push(L("Create a sync account"))
+    else
+        m.settingIds.push("syncnow")
+        rows.push(L("Sync now"))
+        m.settingIds.push("syncout")
+        rows.push(L("Sign out of sync"))
+    end if
+    m.settingIds.push("about")
+    rows.push(L("About StreamBoss"))
+    m.items.content = makeList(rows)
     if m.keepCursor <> invalid then
         m.items.jumpToItem = m.keepCursor
         m.keepCursor = invalid
@@ -370,15 +415,28 @@ sub runSetting(idx as Integer)
     else if id = "source" then
         showSetup()
     else if id = "clearlist" then
-        m.favs = []
-        regWrite("fav", "[]")
+        m.favKeys = []
+        m.favItems = {}
+        rebuildFavSet()
+        saveFavs()
+        bumpLocal()
         setStatus(L("My List cleared"))
     else if id = "clearresume" then
         m.resume = {}
         regWrite("pos", "{}")
+        bumpLocal()
         setStatus(L("Resume history cleared"))
     else if id = "language" then
         cycleLanguage()
+    else if id = "syncin" then
+        startSyncSignIn(false)
+    else if id = "synccreate" then
+        startSyncSignIn(true)
+    else if id = "syncnow" then
+        setStatus(L("Syncing..."))
+        syncNow()
+    else if id = "syncout" then
+        signOutSync()
     else
         setStatus(L("StreamBoss: a player only. Bring your own licensed provider."))
     end if
@@ -437,33 +495,89 @@ end sub
 ' ---- favourites / resume ---------------------------------------------------
 
 function isFav(item as Object) as Boolean
-    k = itemKey(item)
-    for each f in m.favs
-        if itemKey(f) = k then return true
-    end for
-    return false
+    return m.favSet.DoesExist(itemKey(item))
 end function
+
+' My List is kept as item keys (movie:123, the same keys the other apps use, so it can be synced). The items to show come
+' from the cache below (the last 25, so My List works before the library has loaded) and from the library itself.
+sub initFavs()
+    m.favItems = {}
+    cache = regReadJson("fav", [])
+    m.favKeys = regReadJson("favk", invalid)
+    if m.favKeys = invalid then
+        m.favKeys = []
+        for each f in cache
+            m.favKeys.push(itemKey(f))
+        end for
+    end if
+    for each f in cache
+        m.favItems[itemKey(f)] = f
+    end for
+    rebuildFavSet()
+end sub
+
+sub rebuildFavSet()
+    m.favSet = syncSetOf(m.favKeys)
+end sub
+
+sub saveFavs()
+    regWrite("favk", FormatJson(m.favKeys))
+    cache = []
+    i = m.favKeys.count() - 1
+    while i >= 0 and cache.count() < 25
+        it = m.favItems[m.favKeys[i]]
+        if it <> invalid then cache.unshift(it)
+        i = i - 1
+    end while
+    regWrite("fav", FormatJson(cache))
+end sub
+
+function favList() as Object
+    out = []
+    for each k in m.favKeys
+        it = m.favItems[k]
+        if it <> invalid then out.push(it)
+    end for
+    return out
+end function
+
+' Finds, in the library, the items of My List that came from another device.
+sub resolveFavs()
+    wanted = {}
+    for each k in m.favKeys
+        if not m.favItems.DoesExist(k) then wanted[k] = true
+    end for
+    if wanted.count() = 0 then return
+    for each arr in [m.lib.live, m.lib.movies, m.lib.series]
+        for each it in arr
+            k = itemKey(it)
+            if wanted.DoesExist(k) then m.favItems[k] = it
+        end for
+    end for
+    saveFavs()
+end sub
 
 sub toggleFavorite(item as Object)
     k = itemKey(item)
+    removed = m.favSet.DoesExist(k)
     kept = []
-    removed = false
-    for each f in m.favs
-        if itemKey(f) = k then
-            removed = true
-        else
-            kept.push(f)
-        end if
+    for each f in m.favKeys
+        if f <> k then kept.push(f)
     end for
-    if not removed then
+    if removed then
+        m.favItems.Delete(k)
+    else
         ' store only what's needed to replay it; keep the registry small
-        kept.push({ id: item.id, name: item.name, kind: item.kind, url: item.url, poster: "", cat: item.cat, plot: "" })
-        if kept.count() > 40 then kept.shift()
+        kept.push(k)
+        m.favItems[k] = { id: item.id, name: item.name, kind: item.kind, url: item.url, poster: "", cat: item.cat, plot: "" }
+        if kept.count() > 200 then kept.shift()
     end if
-    m.favs = kept
-    regWrite("fav", FormatJson(kept))
+    m.favKeys = kept
+    rebuildFavSet()
+    saveFavs()
+    bumpLocal()
     if removed then setStatus(L("Removed from My List")) else setStatus(L("Added to My List"))
-    if m.tabIdx = 3 then setItems(m.favs)
+    if m.tabIdx = 3 then setItems(favList())
 end sub
 
 sub savePosition(item as Object, secs as Integer, total as Integer)
@@ -474,11 +588,12 @@ sub savePosition(item as Object, secs as Integer, total as Integer)
     else if secs > 10 then
         m.resume[k] = secs
     end if
-    if m.resume.Count() > 80 then
+    if m.resume.Count() > 150 then
         keys = m.resume.Keys()
         m.resume.Delete(keys[0])
     end if
     regWrite("pos", FormatJson(m.resume))
+    bumpLocal()
 end sub
 
 ' ---- playback --------------------------------------------------------------
@@ -527,6 +642,7 @@ sub onVideoState()
     if state = "finished" and m.playItem <> invalid and m.playItem.kind <> "live" then
         m.resume.Delete(itemKey(m.playItem))
         regWrite("pos", FormatJson(m.resume))
+        bumpLocal()
         closeVideo()
     else if state = "error" then
         setStatus(LF("Playback error: {error}", { error: m.video.errorMsg }))
@@ -543,6 +659,154 @@ sub closeVideo()
     m.osd.visible = false
     m.playItem = invalid
     m.items.setFocus(true)
+    bumpLocal()
+end sub
+
+' ---- sync ------------------------------------------------------------------
+' My List and resume positions are kept in step with the other StreamBoss apps through the sync server (components/lib/Sync.brs).
+' The registry holds 32 KB for the whole channel, so at most 200 My List entries and 150 resume positions are kept here.
+
+sub bumpLocal()
+    m.localRev = m.localRev + 1
+    if m.syncCfg.token <> "" then m.top.findNode("syncTimer").control = "start"
+end sub
+
+sub onSyncTimer()
+    syncNow()
+end sub
+
+function resumeMs() as Object
+    out = {}
+    for each k in m.resume
+        out[k] = m.resume[k] * 1000
+    end for
+    return out
+end function
+
+sub syncNow()
+    if m.syncCfg.token = "" or m.syncing then return
+    m.syncing = true
+    m.syncSentRev = m.localRev
+    m.syncTask.request = { kind: "sync", cfg: { server: m.syncCfg.server, token: m.syncCfg.token }, local: { favs: m.favKeys, resume: resumeMs() }, base: m.syncBase }
+    m.syncTask.control = "RUN"
+end sub
+
+sub startSyncSignIn(create as Boolean)
+    m.syncCreate = create
+    m.syncDraft = { server: m.syncCfg.server, email: m.syncCfg.email, password: "" }
+    askSyncText("server")
+end sub
+
+sub askSyncText(field as String)
+    m.kbField = field
+    m.kbMode = "sync"
+    dlg = CreateObject("roSGNode", "StandardKeyboardDialog")
+    if field = "server" then
+        dlg.title = L("Sync server address")
+    else if field = "email" then
+        dlg.title = L("E-mail")
+    else
+        dlg.title = L("Password")
+    end if
+    if field <> "password" then dlg.text = m.syncDraft[field]
+    dlg.textEditBox.secureMode = (field = "password")
+    dlg.buttons = [L("OK"), L("Cancel")]
+    dlg.observeFieldScoped("buttonSelected", "onKeyboardButton")
+    m.kbDialog = dlg
+    m.top.dialog = dlg
+end sub
+
+sub nextSyncStep(text as String)
+    m.syncDraft[m.kbField] = text
+    if m.kbField = "server" then
+        askSyncText("email")
+    else if m.kbField = "email" then
+        askSyncText("password")
+    else
+        setStatus(L("Signing in..."))
+        m.syncTask.request = { kind: "syncsignin", cfg: { server: m.syncDraft.server, email: m.syncDraft.email, password: m.syncDraft.password, create: m.syncCreate } }
+        m.syncTask.control = "RUN"
+        m.syncDraft.password = ""
+    end if
+end sub
+
+sub signOutSync()
+    if m.syncCfg.token <> "" and not m.syncing then
+        m.syncTask.request = { kind: "synclogout", cfg: { server: m.syncCfg.server, token: m.syncCfg.token } }
+        m.syncTask.control = "RUN"
+    end if
+    m.syncCfg = { server: m.syncCfg.server, email: m.syncCfg.email, token: "" }
+    regWrite("sync", FormatJson(m.syncCfg))
+    m.syncBase = {}
+    regWrite("syncbase", "{}")
+    m.syncSources = []
+    m.syncing = false
+    if m.setup.visible then refreshSetup()
+    if m.tabIdx = 5 then showSettingsItems()
+end sub
+
+sub onSyncResult()
+    res = m.syncTask.result
+    if res = invalid then return
+    if res.kind = "synclogout" then return
+
+    if res.kind = "syncsignin" then
+        if res.ok then
+            m.syncCfg = { server: res.server, email: res.email, token: res.token }
+            regWrite("sync", FormatJson(m.syncCfg))
+            m.syncBase = {}
+            regWrite("syncbase", "{}")
+            setStatus(LF("Signed in as {email}", { email: res.email }))
+            if m.tabIdx = 5 then showSettingsItems()
+            syncNow()
+        else
+            setStatus(LF("Sign-in failed: {error}", { error: res.error }))
+        end if
+        if m.setup.visible then
+            refreshSetup()
+            m.setup.setFocus(true)
+        end if
+        return
+    end if
+
+    m.syncing = false
+    if not res.ok then
+        if res.signedOut = true then
+            signOutSync()
+            setStatus(L("You were signed out. Sign in again."))
+        else
+            setStatus(LF("Sync failed: {error}", { error: res.error }))
+        end if
+        return
+    end if
+    if m.localRev <> m.syncSentRev then
+        ' something changed here while the server was being asked: drop this answer and ask again, so nothing is overwritten
+        syncNow()
+        return
+    end if
+
+    if res.pulled > 0 then
+        m.favKeys = syncCapList(res.state.favs, 200)
+        rebuildFavSet()
+        resume = {}
+        capped = syncCapMap(res.state.resume, 150)
+        for each k in capped
+            resume[k] = Int(capped[k] / 1000)
+        end for
+        m.resume = resume
+        regWrite("pos", FormatJson(m.resume))
+        saveFavs()
+        if m.connected then resolveFavs()
+        if m.tabIdx = 3 and m.connected then setItems(favList())
+    end if
+    base = res.base
+    if base["favorites"] <> invalid and base["favorites"].value <> invalid then base["favorites"].value = syncCapList(base["favorites"].value, 200)
+    if base["positions"] <> invalid and base["positions"].value <> invalid then base["positions"].value = syncCapMap(base["positions"].value, 150)
+    m.syncBase = base
+    regWrite("syncbase", FormatJson(base))
+    m.syncSources = syncSources(res.sources)
+    if m.setup.visible then refreshSetup()
+    setStatus(L("Synced"))
 end sub
 
 ' ---- remote keys -----------------------------------------------------------

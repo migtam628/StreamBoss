@@ -293,5 +293,100 @@
   "es": "Películas libres",
   "it": "Film liberi",
   "pt": "Filmes livres"
+ },
+ "Could not reach the sync server. Check the address and that you are online.": {
+  "es": "No se pudo conectar con el servidor de sincronización. Revisa la dirección y que tengas conexión.",
+  "it": "Impossibile raggiungere il server di sincronizzazione. Controlla l'indirizzo e la connessione.",
+  "pt": "Não foi possível acessar o servidor de sincronização. Verifique o endereço e a conexão."
+ },
+ "Create a sync account": {
+  "es": "Crear una cuenta de sincronización",
+  "it": "Crea un account di sincronizzazione",
+  "pt": "Criar uma conta de sincronização"
+ },
+ "E-mail": {
+  "es": "Correo electrónico",
+  "it": "E-mail",
+  "pt": "E-mail"
+ },
+ "From sync: {name}": {
+  "es": "De la sincronización: {name}",
+  "it": "Dalla sincronizzazione: {name}",
+  "pt": "Da sincronização: {name}"
+ },
+ "Sign in to sync": {
+  "es": "Iniciar sesión para sincronizar",
+  "it": "Accedi per sincronizzare",
+  "pt": "Entrar para sincronizar"
+ },
+ "Sign out of sync": {
+  "es": "Cerrar sesión de la sincronización",
+  "it": "Esci dalla sincronizzazione",
+  "pt": "Sair da sincronização"
+ },
+ "Sign-in failed: {error}": {
+  "es": "No se pudo iniciar sesión: {error}",
+  "it": "Accesso non riuscito: {error}",
+  "pt": "Falha ao entrar: {error}"
+ },
+ "Signed in as {email}": {
+  "es": "Sesión iniciada como {email}",
+  "it": "Accesso eseguito come {email}",
+  "pt": "Sessão iniciada como {email}"
+ },
+ "Signing in...": {
+  "es": "Iniciando sesión...",
+  "it": "Accesso in corso...",
+  "pt": "Entrando..."
+ },
+ "Sync failed: {error}": {
+  "es": "Falló la sincronización: {error}",
+  "it": "Sincronizzazione non riuscita: {error}",
+  "pt": "Falha na sincronização: {error}"
+ },
+ "Sync now": {
+  "es": "Sincronizar ahora",
+  "it": "Sincronizza ora",
+  "pt": "Sincronizar agora"
+ },
+ "Sync server address": {
+  "es": "Dirección del servidor de sincronización",
+  "it": "Indirizzo del server di sincronizzazione",
+  "pt": "Endereço do servidor de sincronização"
+ },
+ "Synced": {
+  "es": "Sincronizado",
+  "it": "Sincronizzato",
+  "pt": "Sincronizado"
+ },
+ "Syncing...": {
+  "es": "Sincronizando...",
+  "it": "Sincronizzazione...",
+  "pt": "Sincronizando..."
+ },
+ "That does not look like a server address.": {
+  "es": "Eso no parece una dirección de servidor.",
+  "it": "Non sembra un indirizzo di server.",
+  "pt": "Isso não parece um endereço de servidor."
+ },
+ "The sync server answered with an error.": {
+  "es": "El servidor de sincronización respondió con un error.",
+  "it": "Il server di sincronizzazione ha risposto con un errore.",
+  "pt": "O servidor de sincronização respondeu com um erro."
+ },
+ "The sync server did not answer.": {
+  "es": "El servidor de sincronización no respondió.",
+  "it": "Il server di sincronizzazione non ha risposto.",
+  "pt": "O servidor de sincronização não respondeu."
+ },
+ "Use my sync account": {
+  "es": "Usar mi cuenta de sincronización",
+  "it": "Usa il mio account di sincronizzazione",
+  "pt": "Usar minha conta de sincronização"
+ },
+ "You were signed out. Sign in again.": {
+  "es": "Se cerró tu sesión. Inicia sesión de nuevo.",
+  "it": "Sei stato disconnesso. Accedi di nuovo.",
+  "pt": "Você foi desconectado. Entre novamente."
  }
 }
