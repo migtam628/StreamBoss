@@ -129,7 +129,7 @@ right ([wireframe 4](#wireframes-and-layout)).
 | **Series** | Your series, by category. OK on a series lists its **episodes** (Xtream only); OK on an episode plays it. Back returns to the series list. |
 | **My List** | Titles you marked with `*`. |
 | **Search** | OK opens the keyboard; the matching channels, movies and series (up to 300) fill the list. |
-| **Settings** | **Reload library**, **Change source**, **Clear My List**, **Clear resume history**, **About StreamBoss**. |
+| **Settings** | **Reload library**, **Change source**, **Clear My List**, **Clear resume history**, **Language**, **Sign in to sync** / **Create a sync account** (then **Sync now** and **Sign out of sync**), **About StreamBoss**. Signing in keeps My List and resume positions in step with your other StreamBoss devices; the first screen then lists your other devices' sources as **From sync: name** (type the password). |
 
 ### Remote control
 
