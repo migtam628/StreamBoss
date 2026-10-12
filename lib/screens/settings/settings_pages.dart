@@ -336,6 +336,13 @@ class PlaybackPage extends StatelessWidget {
         value: st.creditsNext,
         onChanged: (v) => st.set('creditsNext', v),
       ),
+      SwitchRow(
+        icon: Icons.web_asset,
+        title: tr('Watch page'),
+        subtitle: tr('Movies and episodes play in a page with the details and what to watch next beside the video. Off: straight to the full-screen player. Not used on a TV.'),
+        value: st.watchPage,
+        onChanged: (v) => st.set('watchPage', v),
+      ),
       ChoiceRow<String>(
         icon: Icons.aspect_ratio,
         title: tr('Picture shape'),

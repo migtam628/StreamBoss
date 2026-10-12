@@ -7,14 +7,13 @@ import '../models/media.dart';
 import '../services/details_logic.dart';
 import '../services/languages.dart';
 import '../services/tmdb.dart';
-import '../services/nav_guard.dart';
+import '../services/watch_logic.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/collections_sheet.dart';
 import '../widgets/details_kit.dart';
 import '../widgets/tv.dart';
 import 'open_item.dart';
-import 'player_screen.dart';
 import '../l10n/l10n.dart';
 
 /// The series page: the Showcase picture, a Continue button that knows which episode is next, and tabs
@@ -63,19 +62,16 @@ class _SeriesScreenState extends State<SeriesScreen> {
       ];
 
   void _play(List<_Ep> all, int i, {Duration? at}) {
-    if (!NavGuard.allow()) return;
     final s = context.read<AppState>();
     final ep = all[i].item;
     final auto = context.read<SettingsState>().autoResume;
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => PlayerScreen(
-        title: ep.name,
-        url: ep.streamUrl!,
-        item: ep,
-        startAt: at ?? (auto ? s.resumeFor(ep) : null),
-        episodes: [for (final x in all) x.item],
-      ),
-    ));
+    playMedia(
+      context,
+      ep,
+      startAt: at ?? (auto ? s.resumeFor(ep) : null),
+      series: series,
+      episodes: [for (final x in all) WatchEpisode(x.e, x.item)],
+    );
   }
 
   @override

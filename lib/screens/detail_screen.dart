@@ -6,7 +6,6 @@ import '../models/media.dart';
 import '../services/details_logic.dart';
 import '../services/languages.dart';
 import '../services/tmdb.dart';
-import '../services/nav_guard.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/collections_sheet.dart';
@@ -14,7 +13,6 @@ import '../widgets/details_kit.dart';
 import '../widgets/play_options.dart';
 import '../widgets/tv.dart';
 import 'open_item.dart';
-import 'player_screen.dart';
 import '../l10n/l10n.dart';
 
 /// The movie page: a big picture with the title and facts, the play buttons, and tabs for the rest
@@ -37,10 +35,7 @@ class _DetailScreenState extends State<DetailScreen> {
   MediaItem get item => widget.item;
 
   void _play(MediaItem what, {Duration? at, required PlayRequest? req}) {
-    if (!NavGuard.allow()) return;
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => PlayerScreen(
-            title: what.name, url: what.streamUrl!, item: what, startAt: at, choices: req?.choices)));
+    playMedia(context, what, startAt: at, choices: req?.choices);
   }
 
   Future<void> _options() async {

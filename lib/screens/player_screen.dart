@@ -61,6 +61,13 @@ class PlayerScreen extends StatefulWidget {
   /// Audio, subtitles and speed picked on the details page for this play.
   final PlayChoices? choices;
 
+  /// The player in [adopt] belongs to the screen that opened this one (the watch page), which takes it
+  /// back when this closes: it is not stopped or handed to the mini window here.
+  final bool lent;
+
+  /// Told which movie or episode is playing, when this opens and each time the next episode starts.
+  final void Function(MediaItem item, String title)? onItem;
+
   const PlayerScreen({
     super.key,
     required this.title,
@@ -72,6 +79,8 @@ class PlayerScreen extends StatefulWidget {
     this.catchUp = false,
     this.adopt,
     this.choices,
+    this.lent = false,
+    this.onItem,
   });
 
   @override
@@ -372,6 +381,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   void _onChannelChanged() {
     _anchorPos = null; // a new channel starts a new "live edge"
+    widget.onItem?.call(_cur, _title);
     if (!widget.catchUp) _app.markWatched(_cur);
     if (_live && !widget.catchUp) {
       // So "open where I left off" can come back to this channel.
@@ -416,7 +426,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _root.dispose();
     _playBtn.dispose();
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    if (!_handedOff) {
+    if (!_handedOff && !widget.lent) {
       WakelockPlus.disable().catchError((_) {});
       _player.dispose();
     }
@@ -1156,7 +1166,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   /// Picture-in-picture inside the app: close this screen and keep the stream going in a small window
   /// above everything, which opens this screen again when tapped.
   void _minimize() {
-    if (_error != null) return;
+    if (_error != null || widget.lent) return;
     _handedOff = true;
     _savePosition(notify: true);
     MiniPlayer.instance.start(MiniSession(
@@ -1508,7 +1518,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 if (shadersSupported)
                   _btn(Icons.auto_fix_high, tr('Shaders'), _pickShaders, on: _settings.shaderEnabled.isNotEmpty),
                 _btn(Icons.bedtime, tr('Sleep timer'), _pickSleep, on: _sleepAt != null),
-                _btn(Icons.picture_in_picture, 'Mini player (P)', _minimize),
+                if (!widget.lent) _btn(Icons.picture_in_picture, 'Mini player (P)', _minimize),
                 if (castSupported) _btn(Icons.cast, 'Cast to TV (experimental)', _cast),
                 if (airPlaySupported) const AirPlayButton(),
                 if (_canPip) _btn(Icons.picture_in_picture_alt, 'Picture-in-picture (system)', _enterPip),
