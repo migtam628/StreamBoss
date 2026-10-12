@@ -22,9 +22,10 @@ services:
     depends_on:
       - sync
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      # BIND_IP: the machine's public address, when something else (Tailscale, say) already listens on 443 at another one.
+      - "${BIND_IP:-0.0.0.0}:80:80"
+      - "${BIND_IP:-0.0.0.0}:443:443"
+      - "${BIND_IP:-0.0.0.0}:443:443/udp"
     environment:
       SYNC_DOMAIN: ${SYNC_DOMAIN:?Put your server name in .env (SYNC_DOMAIN=sync.example.com)}
     volumes:

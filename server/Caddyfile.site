@@ -1,0 +1,2 @@
+# Caddy for a machine that serves the website (and MooBee) but not the sync server. Each site is a file in sites/.
+import sites/*

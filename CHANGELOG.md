@@ -4,6 +4,10 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b42 - 2026-10-12
+- **The website can run without the sync server, and on a machine where something else already uses port 443.** The server in use had no Caddy and no sync server, and Tailscale listens on its 443. `docker-compose.site.yml` is Caddy on its own, serving the website and the downloads (`docker compose -f docker-compose.site.yml up -d`); MooBee still adds on with `docker-compose.moobee.yml`. A new `BIND_IP` setting in `.env` makes Caddy take ports 80 and 443 only at the machine's public address (the sync server's `docker-compose.yml` honours it too), so it does not collide with Tailscale. The Caddy configuration and the compose files are checked (valid, and the published ports carry the chosen address); not run on the real machine yet.
+- No change to the app.
+
 ## 0.3.0b41 - 2026-10-12
 - **The website and the downloads moved to your own server, because the repository is private now.** GitHub Pages and public GitHub Releases are not available for a private repository, and the website was already off. Now Caddy on the same machine as the sync server serves `https://streamboss.site/` (the page), `https://streamboss.site/downloads/` (every release's files, and `downloads/latest/` with the newest build under a name without the version, for a short link such as a Fire TV Downloader code) and `https://streamboss.site/releases.json`.
   - **`releases.json`** is a list of the newest 12 releases in the shape of GitHub's releases list. The app's **Check for updates**, the **Roku installer** and the website's download buttons read it instead of GitHub (a stable build is still only offered stable releases; a beta build is also offered newer betas). Checked by tests, including the update check's request address and the installer's download from such a list.

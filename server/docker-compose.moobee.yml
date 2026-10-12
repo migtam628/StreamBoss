@@ -1,8 +1,9 @@
 # Adds MooBee (https://github.com/migtam628/moobee) next to the sync server, behind the same Caddy, on its own name.
 #   1. Point a DNS name (an A record, e.g. moobee.streamboss.site) at this machine.
 #   2. Put MOOBEE_DOMAIN in .env, and your TMDB token in moobee.env (cp moobee.env.example moobee.env).
-#   3. docker compose -f docker-compose.yml -f docker-compose.moobee.yml up -d --build
-# The sync server keeps working exactly as before; leave this file out and nothing changes.
+#   3. docker compose -f docker-compose.site.yml -f docker-compose.moobee.yml up -d --build
+#      (or -f docker-compose.yml -f docker-compose.web.yml -f docker-compose.moobee.yml on a machine with the sync server)
+# Leave this file out and nothing changes.
 services:
   moobee:
     build:

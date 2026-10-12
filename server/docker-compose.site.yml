@@ -1,0 +1,26 @@
+# The website and the downloads on their own, without the sync server: Caddy with automatic HTTPS, serving /srv/web.
+#   1. Point streamboss.site (and www) at this machine's public address.
+#   2. In .env: WEB_DOMAIN=streamboss.site and BIND_IP=<the machine's public address>
+#   3. docker compose -f docker-compose.site.yml up -d
+# MooBee too: add  -f docker-compose.moobee.yml  (see README, "Run MooBee on the same machine").
+# For the sync server as well, use docker-compose.yml with docker-compose.web.yml instead.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "${BIND_IP:-0.0.0.0}:80:80"
+      - "${BIND_IP:-0.0.0.0}:443:443"
+      - "${BIND_IP:-0.0.0.0}:443:443/udp"
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN:?Put the website name in .env (WEB_DOMAIN=streamboss.site)}
+    volumes:
+      - ./Caddyfile.site:/etc/caddy/Caddyfile:ro
+      - ./sites/web.caddy:/etc/caddy/sites/web.caddy:ro
+      - ${WEB_ROOT:-/srv/streamboss/web}:/srv/web:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:

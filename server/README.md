@@ -93,14 +93,15 @@ restrict,command="rrsync /srv/streamboss/web" ssh-ed25519 AAAA...the contents of
 A release run fails loudly (red) if these are missing, so a release is never silently left off the website.
 
 **4. Start serving it.** In `.env` on the machine: `WEB_DOMAIN=streamboss.site` (and `WEB_ROOT` if you used another
-folder), then:
+folder). If something else already listens on port 443 at another address of the machine (Tailscale does, on its own
+address), also set `BIND_IP` to the machine's public address, so Caddy takes ports 80 and 443 there only.
 
-```sh
-docker compose -f docker-compose.yml -f docker-compose.web.yml up -d
-```
+- **Without the sync server** (the website alone): `docker compose -f docker-compose.site.yml up -d`
+- **Next to the sync server**: `docker compose -f docker-compose.yml -f docker-compose.web.yml up -d`
 
-Caddy gets the certificates for `streamboss.site` and `www.streamboss.site` by itself. Run **Actions > Website >
-Run workflow** once to put the page there. The first tagged release creates `releases.json` and the downloads.
+Caddy gets the certificates for `streamboss.site` and `www.streamboss.site` by itself (ports 80 and 443 must be open to the
+internet). Run **Actions > Website > Run workflow** once to put the page there. The first tagged release creates
+`releases.json` and the downloads.
 
 **Housekeeping.** `releases.json` keeps the newest 12 releases; remove older folders from the machine now and then
 (`downloads/latest` and the 12 newest stay):
@@ -117,10 +118,11 @@ Caddy, on its own name such as `moobee.streamboss.site`. It builds from its repo
 ```sh
 cp moobee.env.example moobee.env      # put your TMDB read token in it
 # in .env: MOOBEE_DOMAIN=moobee.streamboss.site   (its DNS A record must point at this machine)
-docker compose -f docker-compose.yml -f docker-compose.moobee.yml up -d --build
+docker compose -f docker-compose.site.yml -f docker-compose.moobee.yml up -d --build
+# with the sync server: -f docker-compose.yml -f docker-compose.web.yml -f docker-compose.moobee.yml
 ```
 
-All the extra files at once: set `COMPOSE_FILE=docker-compose.yml:docker-compose.web.yml:docker-compose.moobee.yml` in
+All the files at once: set `COMPOSE_FILE=docker-compose.site.yml:docker-compose.moobee.yml` in
 `.env` and run `docker compose up -d --build`. To update MooBee later: `docker compose up -d --build moobee`.
 The TMDB token is read from `moobee.env` on the machine only; it is never in an image or a repository.
 
