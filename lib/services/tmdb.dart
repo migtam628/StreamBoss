@@ -125,6 +125,26 @@ String cleanTitle(String raw) {
   return t.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
+/// A title from one of TMDB's lists (trending, popular, top rated): what the Discover page shows.
+class DiscoverTitle {
+  final int id;
+  final String title;
+  final int? year;
+  final String? poster;
+  final double? rating;
+  final String overview;
+  final bool tv;
+  const DiscoverTitle({
+    required this.id,
+    required this.title,
+    required this.tv,
+    this.year,
+    this.poster,
+    this.rating,
+    this.overview = '',
+  });
+}
+
 class TmdbService {
   final String apiKey;
   final http.Client? _client;
@@ -137,6 +157,37 @@ class TmdbService {
     final res = await (_client?.get(uri) ?? http.get(uri)).timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) return null;
     return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// One of TMDB's lists, for example `trending/movie/week` or `tv/top_rated`: null when it could not be
+  /// asked (no key, no network).
+  Future<List<DiscoverTitle>?> discoverList(String path, {required bool tv}) async {
+    if (apiKey.isEmpty) return null;
+    try {
+      final d = await _json(path, const {});
+      final results = d?['results'] as List?;
+      if (results == null) return null;
+      final out = <DiscoverTitle>[];
+      for (final r in results) {
+        final title = (r[tv ? 'name' : 'title'] ?? '') as String;
+        if (title.isEmpty || r['id'] is! num) continue;
+        final date = (r[tv ? 'first_air_date' : 'release_date'] ?? '') as String;
+        final poster = r['poster_path'] as String?;
+        final rating = (r['vote_average'] as num?)?.toDouble();
+        out.add(DiscoverTitle(
+          id: (r['id'] as num).toInt(),
+          title: title,
+          tv: tv,
+          year: date.length >= 4 ? int.tryParse(date.substring(0, 4)) : null,
+          poster: poster == null || poster.isEmpty ? null : '$_img/w342$poster',
+          rating: rating == null || rating <= 0 ? null : rating,
+          overview: (r['overview'] ?? '') as String,
+        ));
+      }
+      return out;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// A poster address for a movie or series that came without one: '' when TMDB has none for it,

@@ -9,6 +9,7 @@ import '../state/app_state.dart';
 import '../state/settings_state.dart';
 import '../widgets/media_tile.dart';
 import '../widgets/voice_search.dart';
+import 'discover_screen.dart';
 import 'open_item.dart';
 import '../widgets/channel_sheet.dart';
 import '../widgets/tv_text_field.dart';
@@ -185,6 +186,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 _setQuery(w);
                 s.rememberSearch(w);
               }),
+              IconButton(
+                  tooltip: tr('Discover'),
+                  icon: const Icon(Icons.explore_outlined),
+                  onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const DiscoverScreen()))),
               if (_q.isNotEmpty)
                 IconButton(
                     tooltip: tr('Clear'),

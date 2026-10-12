@@ -1016,6 +1016,9 @@ class AppState extends ChangeNotifier {
   @visibleForTesting
   void useTmdbClientForTest(http.Client c) => _tmdbClient = c;
 
+  /// TMDB, with the key from Settings (the Discover page).
+  TmdbService tmdb() => TmdbService(_settings?.tmdbKey ?? '', client: _tmdbClient);
+
   /// Missing posters can be filled in: there is a TMDB key and the setting is on.
   bool get canResolvePosters => (_settings?.tmdbKey.isNotEmpty ?? false) && (_settings?.realPosters ?? true);
 
