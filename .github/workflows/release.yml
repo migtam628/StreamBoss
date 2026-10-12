@@ -92,15 +92,12 @@ jobs:
         with:
           name: release-preview-${{ needs.meta.outputs.version }}
           path: artifacts/*
-      - name: Create GitHub Release
+      - name: Release notes (this version's CHANGELOG section)
         if: needs.meta.outputs.publish == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.meta.outputs.tag }}
-          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
         run: |
           VERSION="${TAG#v}"
-          # Release notes = this version's CHANGELOG.md section (falls back to generated notes).
           python3 - "$VERSION" > notes.md <<'PY'
           import re, sys
           v = sys.argv[1]
@@ -115,14 +112,6 @@ jobs:
                   out.append(line)
           print("".join(out).strip())
           PY
-          flags=(--title "StreamBoss $TAG" --verify-tag)
-          if [ -s notes.md ]; then flags+=(--notes-file notes.md); else flags+=(--generate-notes); fi
-          [ "$PRERELEASE" = "true" ] && flags+=(--prerelease)
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" artifacts/* --clobber -R "${{ github.repository }}"
-          else
-            gh release create "$TAG" artifacts/* "${flags[@]}" -R "${{ github.repository }}"
-          fi
       - name: Publish to the website server
         if: needs.meta.outputs.publish == 'true'
         env:
@@ -133,31 +122,22 @@ jobs:
           VPS_PORT: ${{ secrets.VPS_PORT }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: bash tool/publish_site.sh
+      - name: Keep a copy in this repository's Releases (optional)
+        # The website is where people download. This copy is only your own record, so a failure here (a release for
+        # the tag that already exists, or immutable releases refusing a change) does not fail the run.
+        if: needs.meta.outputs.publish == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.meta.outputs.tag }}
+          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
         run: |
-          set -euo pipefail
-          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ] || [ -z "$VPS_KNOWN_HOSTS" ]; then
-            echo "::error::The website server secrets are not set (VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_KNOWN_HOSTS), so $TAG was NOT published to the website. See server/README.md."
-            exit 1
+          flags=(--title "StreamBoss $TAG" --verify-tag)
+          if [ -s notes.md ]; then flags+=(--notes-file notes.md); else flags+=(--generate-notes); fi
+          [ "$PRERELEASE" = "true" ] && flags+=(--prerelease)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "A release for $TAG already exists in this repository; leaving it as it is."
+          else
+            gh release create "$TAG" artifacts/* "${flags[@]}" -R "${{ github.repository }}"
           fi
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          SSH="ssh -i $HOME/.ssh/deploy_key -p ${VPS_PORT:-22} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
-          DEST="$VPS_USER@$VPS_HOST"
-          # The list as it is now. Only "not found" means a first release; any other failure stops here, so the
-          # history is never replaced by an empty list.
-          code="$(curl -sS -o feed.json -w '%{http_code}' --retry 3 https://streamboss.site/releases.json || true)"
-          case "$code" in
-            200) ;;
-            404) echo '[]' > feed.json ;;
-            *) echo "::error::Could not read the current releases.json (HTTP $code)"; exit 1 ;;
-          esac
-          python3 tool/make_manifest.py --tag "$TAG" --artifacts artifacts --notes notes.md \
-            --prerelease "$PRERELEASE" --feed feed.json --out releases.json --latest-dir latest
-          # Files first, the list last: nobody is pointed at a file that is not there yet.
-          RS=(rsync -a --chmod=D755,F644 -e "$SSH")
-          "${RS[@]}" artifacts/ "$DEST:downloads/$TAG/"
-          "${RS[@]}" --delete latest/ "$DEST:downloads/latest/"
-          "${RS[@]}" releases.json "$DEST:releases.json"
-          echo "Published $TAG to the website server." | tee -a "$GITHUB_STEP_SUMMARY"

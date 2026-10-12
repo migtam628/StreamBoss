@@ -4,6 +4,12 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b43 - 2026-10-12
+- **Releases now reach the website even when the private GitHub release step fails.** The b41 release run built everything and then stopped at "Create GitHub Release": a release for that tag already existed from an earlier try, and the repository has immutable releases, which refuse to replace its files. The upload to the website server came after that step, so it never ran. Now the website upload comes first, and keeping a copy in this repository's Releases is optional (a failure there is a warning, and an existing release is left as it is). The upload is one script, `tool/publish_site.sh`, which also says plainly when `VPS_KNOWN_HOSTS` has no line for `VPS_HOST` (the mistake behind the failed website runs).
+- **New: Actions > Publish downloads.** Sends the files of a Release run that already finished to the website server, without building anything: give it the run's number (from its address) and its tag. This is how b41's downloads get published without waiting for another full build, and the way to recover from a failed upload in future.
+- Tried with stand-ins for `rsync`, `curl` and `ssh-keygen` (the order of the uploads, the release list, the `latest` folder, the error for a wrong host line); not against the real server yet.
+- No change to the app.
+
 ## 0.3.0b42 - 2026-10-12
 - **The website can run without the sync server, and on a machine where something else already uses port 443.** The server in use had no Caddy and no sync server, and Tailscale listens on its 443. `docker-compose.site.yml` is Caddy on its own, serving the website and the downloads (`docker compose -f docker-compose.site.yml up -d`); MooBee still adds on with `docker-compose.moobee.yml`. A new `BIND_IP` setting in `.env` makes Caddy take ports 80 and 443 only at the machine's public address (the sync server's `docker-compose.yml` honours it too), so it does not collide with Tailscale. The Caddy configuration and the compose files are checked (valid, and the published ports carry the chosen address); not run on the real machine yet.
 - No change to the app.

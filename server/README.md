@@ -90,7 +90,10 @@ restrict,command="rrsync /srv/streamboss/web" ssh-ed25519 AAAA...the contents of
 | `VPS_KNOWN_HOSTS` | the output of `ssh-keyscan -p 22 <the machine's address>` run from your own computer |
 | `VPS_PORT` | only if SSH is not on port 22 |
 
-A release run fails loudly (red) if these are missing, so a release is never silently left off the website.
+A release run fails loudly (red) if these are missing, so a release is never silently left off the website. If an upload
+fails (a wrong secret, the server down), fix it and run **Actions > Publish downloads** with that Release run's number and
+tag: it sends the files again without building anything. The release's copy in the private repository's Releases is
+optional; the website is where people download.
 
 **4. Start serving it.** In `.env` on the machine: `WEB_DOMAIN=streamboss.site` (and `WEB_ROOT` if you used another
 folder). If something else already listens on port 443 at another address of the machine (Tailscale does, on its own

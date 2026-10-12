@@ -1,0 +1,68 @@
+name: Publish downloads
+
+# Sends the files of a finished Release run to the website server again, without building anything.
+# Use it when the upload step of a release failed (wrong secret, server down): Actions > Publish downloads > Run workflow,
+# with the number from the Release run's address (.../actions/runs/NUMBER) and its tag.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: The Release run whose files to publish (the number in its address, .../actions/runs/NUMBER)
+        required: true
+      tag:
+        description: The tag of that run, e.g. v0.3.0b41
+        required: true
+      prerelease:
+        description: A beta or release candidate
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: streamboss-*
+          merge-multiple: true
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Checksums
+        run: |
+          ls -la artifacts
+          cd artifacts && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Release notes (this version's CHANGELOG section)
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          python3 - "$VERSION" > notes.md <<'PY'
+          import re, sys
+          v = sys.argv[1]
+          out, on = [], False
+          for line in open("CHANGELOG.md", encoding="utf-8"):
+              if line.startswith("## "):
+                  if on:
+                      break
+                  on = re.match(r"## \[?" + re.escape(v) + r"\]?( |$)", line) is not None
+                  continue
+              if on:
+                  out.append(line)
+          print("".join(out).strip())
+          PY
+      - name: Publish to the website server
+        env:
+          TAG: ${{ inputs.tag }}
+          PRERELEASE: ${{ inputs.prerelease }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: bash tool/publish_site.sh
