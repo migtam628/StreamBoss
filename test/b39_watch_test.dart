@@ -49,12 +49,13 @@ void main() {
         id: 'c', name: 'News', kind: MediaKind.live, streamUrl: 'http://x/c');
 
     test(
-        'on by default for a movie or an episode, off on a TV, never for live or catch-up',
+        'on by default for a movie, an episode or a channel, off on a TV, never for catch-up',
         () {
       expect(useWatchPage(enabled: true, isTv: false, item: film), isTrue);
       expect(useWatchPage(enabled: true, isTv: true, item: film), isFalse);
       expect(useWatchPage(enabled: false, isTv: false, item: film), isFalse);
-      expect(useWatchPage(enabled: true, isTv: false, item: channel), isFalse);
+      expect(useWatchPage(enabled: true, isTv: false, item: channel), isTrue);
+      expect(useWatchPage(enabled: true, isTv: true, item: channel), isFalse);
       expect(
           useWatchPage(enabled: true, isTv: false, item: film, catchUp: true),
           isFalse);

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:media_kit/media_kit.dart' show VideoTrack;
 import '../models/media.dart';
+import 'xtream_client.dart' show EpgEntry;
 
 /// One episode of a series for the watch page: what the provider says about it and the item that is
 /// played, saved and resumed.
@@ -10,14 +11,14 @@ class WatchEpisode {
   const WatchEpisode(this.episode, this.item);
 }
 
-/// The watch page replaces the full-screen player on phones, tablets, computers and the web, for movies and
-/// episodes. A TV keeps the full-screen player (a remote cannot use a page), and so does live TV and catch-up.
+/// The watch page replaces the full-screen player on phones, tablets, computers and the web, for movies, episodes
+/// and live channels. A TV keeps the full-screen player (a remote cannot use a page), and so does catch-up.
 bool useWatchPage(
         {required bool enabled,
         required bool isTv,
         required MediaItem item,
         bool catchUp = false}) =>
-    enabled && !isTv && !catchUp && item.kind != MediaKind.live;
+    enabled && !isTv && !catchUp;
 
 /// Side by side from this width up; below it the page is one column, the video on top.
 const watchWideFrom = 900.0;
@@ -119,4 +120,30 @@ LeaveAction leaveAction({
     default:
       return LeaveAction.none;
   }
+}
+
+/// Which part of a channel list to show beside a live channel: [size] channels, starting a little before the one on
+/// screen (a list can have thousands). Indexes into the list, [end] not included.
+({int start, int end}) channelWindow(int length, int current, {int size = 100}) {
+  if (length <= size) return (start: 0, end: length);
+  final start = (current - 8).clamp(0, length - size);
+  return (start: start, end: start + size);
+}
+
+/// What is on, what is next and how far through the programme on now is (0 to 1), from a channel's guide.
+({EpgEntry? now, EpgEntry? next, double progress}) nowAndNext(List<EpgEntry> epg, DateTime at) {
+  EpgEntry? now, next;
+  for (final e in epg) {
+    if (!at.isBefore(e.start) && at.isBefore(e.end)) {
+      now = e;
+    } else if (e.start.isAfter(at) && (next == null || e.start.isBefore(next.start))) {
+      next = e;
+    }
+  }
+  var progress = 0.0;
+  if (now != null) {
+    final total = now.end.difference(now.start).inSeconds;
+    if (total > 0) progress = (at.difference(now.start).inSeconds / total).clamp(0.0, 1.0);
+  }
+  return (now: now, next: next, progress: progress);
 }

@@ -19,6 +19,7 @@ import '../services/nav_guard.dart';
 import '../services/play_choices.dart';
 import '../services/provider_url.dart';
 import '../services/tmdb.dart';
+import '../services/xtream_client.dart' show EpgEntry;
 import '../services/watch_logic.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
@@ -33,7 +34,8 @@ import 'series_screen.dart';
 
 /// The watch page: the video in the page, what it is underneath, and a column of what to watch next beside it
 /// (stacked under it on a narrow screen). It plays movies and episodes; the full-screen player stays one tap
-/// away and takes over the same running video. TVs, live channels and catch-up keep the full-screen player.
+/// away and takes over the same running video. Live channels play here too, with the guide and the channel list
+/// beside the video. TVs and catch-up keep the full-screen player.
 class WatchScreen extends StatefulWidget {
   /// The movie or episode that plays first.
   final MediaItem item;
@@ -44,6 +46,9 @@ class WatchScreen extends StatefulWidget {
   /// For an episode: the series it belongs to and all of its episodes, in order.
   final MediaItem? series;
   final List<WatchEpisode>? episodes;
+
+  /// For a live channel: the channels to zap through (null when it is the only one).
+  final List<MediaItem>? queue;
 
   /// For tests: where the details come from, and a stand-in for the video (no player is started then).
   final Future<TmdbInfo?> Function()? loadInfo;
@@ -56,6 +61,7 @@ class WatchScreen extends StatefulWidget {
     this.choices,
     this.series,
     this.episodes,
+    this.queue,
     this.loadInfo,
     this.stage,
   });
@@ -75,11 +81,14 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
   final _focus = FocusNode(debugLabel: 'watch-root');
 
   late MediaItem _cur = widget.item;
-  late Future<TmdbInfo?> _info = _load(widget.series ?? widget.item);
+  late Future<TmdbInfo?> _info = widget.item.kind == MediaKind.live
+      ? Future.value(null)
+      : _load(widget.series ?? widget.item);
   int?
       _season; // the season the episode list shows; null follows the episode playing
 
-  List<QualityChoice> _quality = const []; // what the stream offers (empty for a plain file)
+  List<QualityChoice> _quality =
+      const []; // what the stream offers (empty for a plain file)
   VideoTrack? _track; // the picture size the player has selected
   bool _pausedByLeave = false; // paused because the tab or window was hidden
   bool _playing = true,
@@ -93,6 +102,24 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
   String? _error;
   WatchEpisode? _upNext;
   int _nextIn = 0;
+
+  // Live: the guide of the channel on, the copies tried when it fails, and the zapping.
+  List<EpgEntry> _epg = const [];
+  final _override =
+      <String, MediaItem>{}; // channel key -> the copy playing instead
+  final _altTried = <String, int>{};
+  final _zap = Zap();
+  Timer? _zapTimer, _stallTimer, _epgTimer, _toastTimer;
+  bool _gotPicture = false;
+  String? _toast;
+  int _epgTick = 0;
+
+  bool get _live => _cur.kind == MediaKind.live;
+  List<MediaItem> get _channels => widget.queue ?? [widget.item];
+  int get _index {
+    final at = _channels.indexWhere((e) => e.key == _cur.key);
+    return at < 0 ? 0 : at;
+  }
 
   bool get _hasPlayer => widget.stage == null;
   bool get _isEpisode => widget.series != null && widget.episodes != null;
@@ -116,7 +143,10 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
     }
     // Into the history once the page is up (it tells the rest of the app, which cannot happen while building).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _app.markWatched(_cur);
+      if (mounted) {
+        _app.markWatched(_cur);
+        if (_live) _onTuned();
+      }
     });
     if (!_hasPlayer) return;
     WidgetsBinding.instance.addObserver(this);
@@ -135,6 +165,13 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
       p.stream.duration.listen((v) => _set(() => _dur = v)),
       p.stream.position.listen((v) {
         if (!mounted || _full) return;
+        if (v > Duration.zero) _gotPicture = true;
+        if (_live) {
+          if (_error != null && v > Duration.zero) {
+            setState(() => _error = null);
+          }
+          return; // a live channel has no seek bar to move
+        }
         // The seek bar moves a few times a second; repaint only when the shown second changes.
         if (v.inSeconds != _pos.inSeconds && _drag == null) {
           setState(() => _pos = v);
@@ -142,20 +179,31 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
         if (_error != null && v > Duration.zero) setState(() => _error = null);
       }),
       p.stream.volume.listen((v) => _set(() => _volume = v)),
-      p.stream.tracks.listen((t) => _set(() => _quality = qualityChoices(t.video))),
+      p.stream.tracks
+          .listen((t) => _set(() => _quality = qualityChoices(t.video))),
       p.stream.track.listen((t) => _set(() => _track = t.video)),
       p.stream.error.listen((e) {
         CrashGuard.log('error ${redactUrls(e)}');
+        if (_live && !_full && _failover()) return;
         _set(() => _error = redactUrls(e));
       }),
       p.stream.completed.listen((done) {
-        if (done && !_full && mounted) _offerNext();
+        if (done && !_full && !_live && mounted) _offerNext();
       }),
     ]);
     _saveTimer =
         Timer.periodic(const Duration(seconds: 5), (_) => _savePosition());
     _start();
     _scheduleHide();
+    if (_live) {
+      _epgTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+        if (!mounted || _full) return;
+        if (++_epgTick % 10 == 0) {
+          _loadEpg(); // the guide again every five minutes
+        }
+        setState(() {}); // the programme on now moves along
+      });
+    }
   }
 
   void _set(VoidCallback f) {
@@ -166,6 +214,10 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
     final p = _player!;
     try {
       await applyBuffer(p, _settings.bufferSecs);
+      if (_live) {
+        await allowRewind(p, _settings.isTv ? 24 : 48);
+        await applyFastStart(p, _settings.fastStart);
+      }
       await applyPlaybackPrefs(
         p,
         audioLang: widget.choices?.audioLang ?? _settings.audioLang,
@@ -173,10 +225,12 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
         subsOn: widget.choices?.subsOn ?? _settings.subsOn,
         userAgent: _settings.userAgent,
       );
-      await p.open(Media(_cur.streamUrl!,
-          start: widget.startAt, httpHeaders: _cur.headers));
+      final src = _live ? (_override[_cur.key] ?? _cur) : _cur;
+      await p.open(Media(src.streamUrl!,
+          start: _live ? null : widget.startAt, httpHeaders: src.headers));
+      if (_live) _armStall();
       final speed = widget.choices?.speed ?? _settings.speed;
-      if (speed != 1) await p.setRate(speed);
+      if (!_live && speed != 1) await p.setRate(speed);
     } catch (e) {
       CrashGuard.log('exception ${redactUrls('$e')}');
       _set(() => _error = redactUrls('$e'));
@@ -187,7 +241,11 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final p = _player;
     if (p == null || _full) return; // the full player looks after itself
-    switch (leaveAction(state: state, enabled: _settings.pauseOnLeave, playing: p.state.playing, pausedByUs: _pausedByLeave)) {
+    switch (leaveAction(
+        state: state,
+        enabled: _settings.pauseOnLeave,
+        playing: p.state.playing,
+        pausedByUs: _pausedByLeave)) {
       case LeaveAction.pause:
         _pausedByLeave = true;
         p.pause();
@@ -210,6 +268,14 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
     _hideTimer?.cancel();
     _saveTimer?.cancel();
     _nextTimer?.cancel();
+    _zapTimer?.cancel();
+    _stallTimer?.cancel();
+    _epgTimer?.cancel();
+    _toastTimer?.cancel();
+    // Leaving on purpose: nothing to come back to for "open where I left off".
+    if (_live && _hasPlayer) {
+      _settings.set('lastLiveOpen', false, notify: false);
+    }
     _focus.dispose();
     if (_hasPlayer) {
       WakelockPlus.disable().catchError((_) {});
@@ -220,8 +286,103 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
 
   void _savePosition({bool notify = false}) {
     final p = _player;
-    if (p == null) return;
+    if (p == null || _live) return;
     _app.savePosition(_cur, p.state.position, p.state.duration, notify: notify);
+  }
+
+  // --- Live -----------------------------------------------------------------------------------------------
+
+  /// A channel came on: remember it for "open where I left off", and fetch its guide.
+  void _onTuned() {
+    _settings.set('lastLive', _cur.key, notify: false);
+    _settings.set('lastLiveOpen', true, notify: false);
+    _loadEpg();
+  }
+
+  void _loadEpg() {
+    final at = _cur.key;
+    _app.epg(_cur).then((e) {
+      if (mounted && _cur.key == at) setState(() => _epg = e);
+    }).catchError((_) {});
+  }
+
+  void _flash(String msg) {
+    _toastTimer?.cancel();
+    setState(() => _toast = msg);
+    _toastTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _toast = null);
+    });
+  }
+
+  /// Aims [delta] channels along the list; the channel changes once the keys go quiet.
+  void _zapBy(int delta) {
+    final q = _channels;
+    if (q.length < 2) return;
+    final to = _zap.step(_index, delta, q.length);
+    _flash('${to + 1} · ${q[to].name}');
+    _armZap(const Duration(milliseconds: 450));
+  }
+
+  void _armZap(Duration wait) {
+    _zapTimer?.cancel();
+    _zapTimer = Timer(wait, () {
+      final to = _zap.take();
+      if (mounted && to != null && to != _index) _tuneTo(_channels[to]);
+    });
+  }
+
+  /// Plays channel [ch] in the page.
+  Future<void> _tuneTo(MediaItem ch) async {
+    if (ch.streamUrl == null || ch.key == _cur.key) return;
+    _stallTimer?.cancel();
+    setState(() {
+      _cur = ch;
+      _error = null;
+      _quality = const [];
+      _epg = const [];
+      _gotPicture = false;
+    });
+    _app.markWatched(ch);
+    _onTuned();
+    await _openLive(_override[ch.key] ?? ch);
+  }
+
+  Future<void> _openLive(MediaItem src) async {
+    final p = _player;
+    if (p == null) return;
+    try {
+      await p.open(Media(src.streamUrl!, httpHeaders: src.headers));
+      _armStall();
+    } catch (e) {
+      CrashGuard.log('exception ${redactUrls('$e')}');
+      _set(() => _error = redactUrls('$e'));
+    }
+  }
+
+  /// A channel that has not shown a picture after a while counts as failed, like one that errors.
+  void _armStall() {
+    _stallTimer?.cancel();
+    if (!_live) return;
+    _stallTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted && !_full && !_gotPicture) _failover();
+    });
+  }
+
+  /// Moves to the next copy of the channel on. False when there is none left, so the error is shown.
+  bool _failover() {
+    if (!_live || !mounted) return false;
+    final alts = _app.alternatesFor(_cur);
+    var n = _altTried[_cur.key] ?? 0;
+    while (n < alts.length && alts[n].streamUrl == null) {
+      n++;
+    }
+    if (n >= alts.length) return false;
+    _altTried[_cur.key] = n + 1;
+    _override[_cur.key] = alts[n];
+    _gotPicture = false;
+    _flash(trf('Trying another copy of {name}', {'name': _cur.name}));
+    _openLive(alts[n]);
+    return true;
   }
 
   // --- Playing --------------------------------------------------------------------------------------------
@@ -229,6 +390,7 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
   /// Plays [it] in the page. A movie from "More like this" brings its own details; an episode keeps the series'.
   Future<void> _switchTo(MediaItem it, {Duration? at}) async {
     if (it.streamUrl == null) return;
+    if (it.kind == MediaKind.live) return _tuneTo(it);
     _savePosition();
     _nextTimer?.cancel();
     final startAt = at ?? (_settings.autoResume ? _app.resumeFor(it) : null);
@@ -332,6 +494,7 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
         url: _cur.streamUrl!,
         item: _cur,
         episodes: eps == null ? null : [for (final e in eps) e.item],
+        queue: _live ? widget.queue : null,
         adopt:
             MiniSession(player: p, controller: c, item: _cur, title: _cur.name),
         lent: true,
@@ -349,6 +512,10 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
       _season = null;
       _error = null;
     });
+    if (_live) {
+      _epg = const [];
+      _onTuned(); // the full player may have moved on to another channel
+    }
     _showControls();
   }
 
@@ -379,6 +546,14 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
     final k = e.logicalKey;
     if (k == LogicalKeyboardKey.space || k == LogicalKeyboardKey.keyK) {
       _togglePlay();
+    } else if (_live && k == LogicalKeyboardKey.arrowUp) {
+      _zapBy(-1);
+    } else if (_live && k == LogicalKeyboardKey.arrowDown) {
+      _zapBy(1);
+    } else if (_live &&
+        (k == LogicalKeyboardKey.arrowLeft ||
+            k == LogicalKeyboardKey.arrowRight)) {
+      return KeyEventResult.ignored; // nothing to seek on a live channel
     } else if (k == LogicalKeyboardKey.arrowLeft) {
       _seekBy(-_settings.seekSecs);
     } else if (k == LogicalKeyboardKey.arrowRight) {
@@ -408,26 +583,41 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
         item: _cur, series: widget.series, episode: _episode?.episode);
     final app = context.watch<AppState>();
 
-    final main = _Main(
-      heading: heading,
-      info: _info,
-      item: _cur,
-      series: widget.series,
-      more: _more,
-      onMore: () => setState(() => _more = !_more),
-      onOpenDetails: _openDetails,
-      onSwitch: _switchTo,
-    );
-    final side = _Side(
-      item: _cur,
-      series: widget.series,
-      episodes: widget.episodes,
-      season: _season ?? seasonOfItem(widget.episodes ?? const [], _cur.key),
-      onSeason: (s) => setState(() => _season = s),
-      onEpisode: (e) => _switchTo(e.item),
-      onMovie: _switchTo,
-      app: app,
-    );
+    final Widget main = _live
+        ? _LiveMain(
+            channel: _cur,
+            epg: _epg,
+            category: app.liveCategoryName(_cur),
+            onFull: _fullScreen,
+          )
+        : _Main(
+            heading: heading,
+            info: _info,
+            item: _cur,
+            series: widget.series,
+            more: _more,
+            onMore: () => setState(() => _more = !_more),
+            onOpenDetails: _openDetails,
+            onSwitch: _switchTo,
+          );
+    final Widget side = _live
+        ? _LiveSide(
+            channels: _channels,
+            current: _cur,
+            app: app,
+            onTune: _tuneTo,
+          )
+        : _Side(
+            item: _cur,
+            series: widget.series,
+            episodes: widget.episodes,
+            season:
+                _season ?? seasonOfItem(widget.episodes ?? const [], _cur.key),
+            onSeason: (s) => setState(() => _season = s),
+            onEpisode: (e) => _switchTo(e.item),
+            onMovie: _switchTo,
+            app: app,
+          );
 
     final top = _TopBar(
         title: heading.title, onBack: () => Navigator.of(context).maybePop());
@@ -523,6 +713,7 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
                     const Center(child: CircularProgressIndicator()),
                   if (_error != null) _errorBanner(),
                   if (_upNext != null) _upNextCard(p),
+                  if (_toast != null) _toastChip(),
                   if (_hasPlayer) _controlBar(p),
                 ]),
               ),
@@ -532,6 +723,24 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
       ),
     );
   }
+
+  Widget _toastChip() => Positioned(
+        top: 10,
+        left: 10,
+        right: 10,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+                color: Colors.black87, borderRadius: BorderRadius.circular(8)),
+            child: Text(_toast!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 13)),
+          ),
+        ),
+      );
 
   Widget _errorBanner() => Center(
         child: Container(
@@ -625,47 +834,58 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
             child: Row(children: [
               icon(_playing ? Icons.pause : Icons.play_arrow,
                   _playing ? tr('Pause') : tr('Play'), _togglePlay),
-              if (!narrow)
+              if (_live && _channels.length > 1)
+                icon(Icons.skip_previous, tr('Previous channel'),
+                    () => _zapBy(-1)),
+              if (_live && _channels.length > 1)
+                icon(Icons.skip_next, tr('Next channel'), () => _zapBy(1)),
+              if (!_live && !narrow)
                 icon(Icons.replay_10, '-${_settings.seekSecs}s',
                     () => _seekBy(-_settings.seekSecs)),
-              if (!narrow)
+              if (!_live && !narrow)
                 icon(Icons.forward_10, '+${_settings.seekSecs}s',
                     () => _seekBy(_settings.seekSecs)),
-              Text('${clock(shown)} / ${clock(_dur)}',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontFeatures: [FontFeature.tabularFigures()])),
-              Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 3,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 12),
-                    activeTrackColor: p.accent,
-                    inactiveTrackColor: Colors.white24,
-                    thumbColor: p.accent,
-                  ),
-                  child: Slider(
-                    value: value,
-                    onChanged: _dur > Duration.zero
-                        ? (v) => setState(() => _drag = v)
-                        : null,
-                    onChangeEnd: (v) {
-                      _player?.seek(Duration(
-                          milliseconds: (_dur.inMilliseconds * v).round()));
-                      setState(() {
-                        _pos = Duration(
-                            milliseconds: (_dur.inMilliseconds * v).round());
-                        _drag = null;
-                      });
-                      _showControls();
-                    },
+              if (_live)
+                const _LiveChip()
+              else
+                Text('${clock(shown)} / ${clock(_dur)}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontFeatures: [FontFeature.tabularFigures()])),
+              if (_live)
+                const Spacer()
+              else
+                Expanded(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 3,
+                      thumbShape:
+                          const RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape:
+                          const RoundSliderOverlayShape(overlayRadius: 12),
+                      activeTrackColor: p.accent,
+                      inactiveTrackColor: Colors.white24,
+                      thumbColor: p.accent,
+                    ),
+                    child: Slider(
+                      value: value,
+                      onChanged: _dur > Duration.zero
+                          ? (v) => setState(() => _drag = v)
+                          : null,
+                      onChangeEnd: (v) {
+                        _player?.seek(Duration(
+                            milliseconds: (_dur.inMilliseconds * v).round()));
+                        setState(() {
+                          _pos = Duration(
+                              milliseconds: (_dur.inMilliseconds * v).round());
+                          _drag = null;
+                        });
+                        _showControls();
+                      },
+                    ),
                   ),
                 ),
-              ),
               if (_quality.isNotEmpty) _qualityMenu(),
               icon(_volume <= 0 ? Icons.volume_off : Icons.volume_up,
                   _volume <= 0 ? tr('Unmute') : tr('Mute'), _toggleMute),
@@ -1182,6 +1402,254 @@ class _EpisodeTile extends StatelessWidget {
               Padding(
                   padding: const EdgeInsets.only(left: 6, top: 2),
                   child: Icon(Icons.check_circle, size: 16, color: p.accent)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// --- Live -----------------------------------------------------------------------------------------------------
+
+/// The red "LIVE" mark in the control bar.
+class _LiveChip extends StatelessWidget {
+  const _LiveChip();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+            color: const Color(0xFFD32F2F),
+            borderRadius: BorderRadius.circular(5)),
+        child: Text(tr('LIVE'),
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6)),
+      );
+}
+
+/// Under a live channel's video: its name, what is on and what is next, and the actions.
+class _LiveMain extends StatelessWidget {
+  final MediaItem channel;
+  final List<EpgEntry> epg;
+  final String category;
+  final VoidCallback onFull;
+  const _LiveMain({
+    required this.channel,
+    required this.epg,
+    required this.category,
+    required this.onFull,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    final s = context.watch<AppState>();
+    final fav = s.isFavorite(channel);
+    final g = nowAndNext(epg, DateTime.now());
+    String hm(DateTime t) => TimeOfDay.fromDateTime(t).format(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        if (channel.poster != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: ColoredBox(
+                      color: p.surfaceHi,
+                      child: NetImage(channel.poster!, decodeWidth: 120))),
+            ),
+          ),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(channel.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: p.text,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2)),
+            if (category.isNotEmpty)
+              Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text(category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: p.muted, fontSize: 14))),
+          ]),
+        ),
+      ]),
+      const SizedBox(height: 12),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        _Pill(fav ? Icons.favorite : Icons.favorite_border,
+            fav ? tr('In My list') : tr('My list'),
+            on: fav, onTap: () => s.toggleFavorite(channel)),
+        _Pill(Icons.fullscreen, tr('Full player'), onTap: onFull),
+      ]),
+      const SizedBox(height: 14),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: p.line)),
+        child: g.now == null && g.next == null
+            ? Text(tr('No guide for this channel.'),
+                style: TextStyle(color: p.muted, fontSize: 14))
+            : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (g.now != null) ...[
+                  Text(tr('On now'),
+                      style: TextStyle(
+                          color: p.accent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text(g.now!.title,
+                      style: TextStyle(
+                          color: p.text,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text('${hm(g.now!.start)} – ${hm(g.now!.end)}',
+                      style: TextStyle(color: p.muted, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  ProgressStripe(g.progress),
+                ],
+                if (g.next != null) ...[
+                  SizedBox(height: g.now != null ? 14 : 0),
+                  Text(tr('Next'),
+                      style: TextStyle(
+                          color: p.muted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text(g.next!.title,
+                      style: TextStyle(color: p.text, fontSize: 14)),
+                  const SizedBox(height: 2),
+                  Text('${hm(g.next!.start)} – ${hm(g.next!.end)}',
+                      style: TextStyle(color: p.muted, fontSize: 12)),
+                ],
+              ]),
+      ),
+    ]);
+  }
+}
+
+/// Beside a live channel's video: the channels around it, to tune with a tap.
+class _LiveSide extends StatelessWidget {
+  final List<MediaItem> channels;
+  final MediaItem current;
+  final AppState app;
+  final void Function(MediaItem) onTune;
+  const _LiveSide({
+    required this.channels,
+    required this.current,
+    required this.app,
+    required this.onTune,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    final at = channels.indexWhere((c) => c.key == current.key);
+    final w = channelWindow(channels.length, at < 0 ? 0 : at);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+        child: Text(tr('Channels'),
+            style: TextStyle(
+                color: p.text, fontSize: 17, fontWeight: FontWeight.w800)),
+      ),
+      if (channels.length < 2)
+        Padding(
+            padding: const EdgeInsets.all(4),
+            child: Text(tr('Nothing else in this category.'),
+                style: TextStyle(color: p.muted)))
+      else
+        for (var i = w.start; i < w.end; i++)
+          _ChannelTile(channels[i],
+              number: i + 1,
+              current: channels[i].key == current.key,
+              category: app.liveCategoryName(channels[i]),
+              onTap: () => onTune(channels[i])),
+    ]);
+  }
+}
+
+class _ChannelTile extends StatelessWidget {
+  final MediaItem channel;
+  final int number;
+  final bool current;
+  final String category;
+  final VoidCallback onTap;
+  const _ChannelTile(this.channel,
+      {required this.number,
+      required this.current,
+      required this.category,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = LayoutPalette.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        color: current ? p.accent.withValues(alpha: 0.14) : null,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Row(children: [
+            SizedBox(
+                width: 30,
+                child: Text('$number',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: p.muted, fontSize: 12))),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Stack(fit: StackFit.expand, children: [
+                  ColoredBox(color: p.surfaceHi),
+                  if (channel.poster != null)
+                    NetImage(channel.poster!, decodeWidth: 120),
+                ]),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(channel.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: p.text,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5)),
+                    if (category.isNotEmpty)
+                      Text(category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: p.muted, fontSize: 12)),
+                  ]),
+            ),
+            if (current)
+              Icon(Icons.play_circle_fill, color: p.accent, size: 22),
           ]),
         ),
       ),

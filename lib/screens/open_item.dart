@@ -25,12 +25,15 @@ void openItem(BuildContext context, MediaItem item, {List<MediaItem>? queue}) {
       page = DetailScreen(item: item);
     case MediaKind.live:
       final q = (queue ?? const <MediaItem>[]).where((e) => e.kind == MediaKind.live).toList();
-      page = PlayerScreen(
-        title: item.name,
-        url: item.streamUrl!,
-        item: item,
-        queue: q.length > 1 ? q : null,
-      );
+      final st = context.read<SettingsState>();
+      page = useWatchPage(enabled: st.watchPage, isTv: st.isTv, item: item)
+          ? WatchScreen(item: item, title: item.name, queue: q.length > 1 ? q : null)
+          : PlayerScreen(
+              title: item.name,
+              url: item.streamUrl!,
+              item: item,
+              queue: q.length > 1 ? q : null,
+            );
   }
   Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 }

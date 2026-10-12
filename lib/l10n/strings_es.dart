@@ -913,4 +913,6 @@ const Map<String, String> stringsEs = {
   'Keep your devices in step, with your own server': 'Mantén tus dispositivos al día, con tu propio servidor',
   'What is synced': 'Qué se sincroniza',
   'Use my sync account': 'Usar mi cuenta de sincronización',
+  'No guide for this channel.': 'No hay guía para este canal.',
+  'Trying another copy of {name}': 'Probando otra copia de {name}',
 };
