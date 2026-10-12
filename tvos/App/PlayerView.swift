@@ -57,6 +57,7 @@ struct PlayerView: UIViewControllerRepresentable {
 
         func finish() {
             save()
+            model.onChange?()
             if let o = observer { player?.removeTimeObserver(o) }
             observer = nil
         }

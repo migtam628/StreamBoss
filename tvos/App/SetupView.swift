@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SetupView: View {
     @EnvironmentObject var model: AppModel
+    @EnvironmentObject var sync: SyncModel
+    @State private var showSignIn = false
 
     var body: some View {
         VStack(spacing: 28) {
@@ -39,8 +41,31 @@ struct SetupView: View {
             HStack(spacing: 24) {
                 Button("Connect") { Task { await model.connect() } }
                 Button("Try demo") { Task { await model.useDemo() } }
+                if !sync.signedIn { Button("Use my sync account") { showSignIn = true } }
+            }
+
+            if sync.signedIn && !sync.sources.isEmpty {
+                VStack(spacing: 12) {
+                    Text("From your sync account").foregroundStyle(.secondary)
+                    Text("Sources come without their password: pick one, type the password, then Connect.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(sync.sources, id: \.name) { s in
+                                Button {
+                                    model.source = Source(type: s.type, url: s.url, username: s.username, password: "")
+                                } label: {
+                                    Text(verbatim: s.name)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                }
             }
         }
         .padding(60)
+        .sheet(isPresented: $showSignIn) { SyncSignInView() }
     }
 }

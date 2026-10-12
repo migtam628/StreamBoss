@@ -140,6 +140,7 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
             Button("Reload library") { Task { await model.connect() } }
             Button("Switch source") { model.signOut() }
+            SyncSettings()
             Text("StreamBoss is a player only. No content is included.")
                 .font(.footnote).foregroundStyle(.secondary)
         }

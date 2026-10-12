@@ -17,12 +17,20 @@ swift test                         # Core logic tests (works on Linux too)
 
 ## Features
 Xtream / M3U sources (password in the keychain), Live / Movies / Series with episodes,
-categories, My List (long-press), resume position, demo mode, native Siri Remote player with
+categories, My List (long-press), resume position, sync with your own sync server (see below), demo mode, native Siri Remote player with
 audio + subtitle menus. The app speaks English, Spanish, Italian and Portuguese and follows the Apple TV's
 language (Settings > General > Language). The texts are in `i18n/strings.json`; `python3 tool/tvos_i18n.py` turns
 them into the `App/Resources/<lang>.lproj/Localizable.strings` files and CI checks that every text has all three
 translations. In code, SwiftUI's `Text("...")` / `Button("...")` translate by themselves; for a plain string in
 `Core/` use `tr("...")` or `trf("... %lld ...", n)`.
+
+## Sync
+Settings > Sync signs in to the same sync server the other StreamBoss apps use (`server/`). **My List** and **where you
+stopped watching** are kept in step with your phone, tablet and computer apps, in both directions, with the same merge rules
+(a title added on one device and another removed on a second both stay applied). On the first screen, **Use my sync
+account** lists the sources saved on your other devices; pick one and type its password (passwords never leave a device).
+Only the address, the login name and the sync token are sent, never a provider password. The logic is in `Core/Sync.swift`
+(tested with `swift test`, with a stand-in server); `App/SyncApi.swift` is the HTTP part.
 
 ## Limits
 - AVPlayer plays HLS and MP4 only. MKV and raw MPEG-TS streams will not play on Apple TV.
