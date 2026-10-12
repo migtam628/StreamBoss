@@ -64,7 +64,7 @@ class WatchScreen extends StatefulWidget {
   State<WatchScreen> createState() => _WatchScreenState();
 }
 
-class _WatchScreenState extends State<WatchScreen> {
+class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
   late final SettingsState _settings = context.read<SettingsState>();
   late final AppState _app = context.read<AppState>();
 
@@ -79,6 +79,9 @@ class _WatchScreenState extends State<WatchScreen> {
   int?
       _season; // the season the episode list shows; null follows the episode playing
 
+  List<QualityChoice> _quality = const []; // what the stream offers (empty for a plain file)
+  VideoTrack? _track; // the picture size the player has selected
+  bool _pausedByLeave = false; // paused because the tab or window was hidden
   bool _playing = true,
       _buffering = true,
       _controls = true,
@@ -116,6 +119,7 @@ class _WatchScreenState extends State<WatchScreen> {
       if (mounted) _app.markWatched(_cur);
     });
     if (!_hasPlayer) return;
+    WidgetsBinding.instance.addObserver(this);
     WakelockPlus.enable().catchError((_) {});
     final p = Player(
         configuration: PlayerConfiguration(
@@ -138,6 +142,8 @@ class _WatchScreenState extends State<WatchScreen> {
         if (_error != null && v > Duration.zero) setState(() => _error = null);
       }),
       p.stream.volume.listen((v) => _set(() => _volume = v)),
+      p.stream.tracks.listen((t) => _set(() => _quality = qualityChoices(t.video))),
+      p.stream.track.listen((t) => _set(() => _track = t.video)),
       p.stream.error.listen((e) {
         CrashGuard.log('error ${redactUrls(e)}');
         _set(() => _error = redactUrls(e));
@@ -178,7 +184,24 @@ class _WatchScreenState extends State<WatchScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final p = _player;
+    if (p == null || _full) return; // the full player looks after itself
+    switch (leaveAction(state: state, enabled: _settings.pauseOnLeave, playing: p.state.playing, pausedByUs: _pausedByLeave)) {
+      case LeaveAction.pause:
+        _pausedByLeave = true;
+        p.pause();
+      case LeaveAction.resume:
+        _pausedByLeave = false;
+        p.play();
+      case LeaveAction.none:
+        break;
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     Screensaver.busy.value--;
     _savePosition(notify: true);
     for (final s in _subs) {
@@ -214,6 +237,7 @@ class _WatchScreenState extends State<WatchScreen> {
       _cur = it;
       _upNext = null;
       _error = null;
+      _quality = const [];
       _pos = startAt ?? Duration.zero;
       _dur = Duration.zero;
       _season = null;
@@ -642,6 +666,7 @@ class _WatchScreenState extends State<WatchScreen> {
                   ),
                 ),
               ),
+              if (_quality.isNotEmpty) _qualityMenu(),
               icon(_volume <= 0 ? Icons.volume_off : Icons.volume_up,
                   _volume <= 0 ? tr('Unmute') : tr('Mute'), _toggleMute),
               icon(Icons.fullscreen, tr('Full player'), _fullScreen),
@@ -651,6 +676,26 @@ class _WatchScreenState extends State<WatchScreen> {
       ),
     );
   }
+
+  Widget _qualityMenu() => PopupMenuButton<QualityChoice>(
+        tooltip: tr('Quality'),
+        icon: const Icon(Icons.settings, color: Colors.white),
+        iconSize: 22,
+        padding: EdgeInsets.zero,
+        onOpened: _showControls,
+        onSelected: (c) {
+          _player?.setVideoTrack(c.track ?? VideoTrack.auto());
+          _showControls();
+        },
+        itemBuilder: (_) => [
+          for (final c in _quality)
+            CheckedPopupMenuItem(
+              value: c,
+              checked: qualityIsCurrent(c, _track),
+              child: Text(c.track == null ? tr('Auto') : c.label),
+            ),
+        ],
+      );
 
   void _openDetails() {
     if (!NavGuard.allow()) return;

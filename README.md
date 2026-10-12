@@ -139,7 +139,7 @@ every release. The first build signed with your key has to be installed after un
 - Xtream Codes and M3U sources, multiple saved sources, offline demo mode
 - Passwords stored in the platform keystore (flutter_secure_storage), not in plain prefs
 - Live TV, Movies, Series (with episodes), categories, search
-- A watch page for movies and episodes (web, computers, phones, tablets): the video in the page, the title, My list / Watched / Collection / other copies, the details, and a "More like this" column (the episodes of a season for a series) beside it, or under it on a narrow screen; a button opens the full-screen player on the same video. Turn it off in Settings > Playback. TVs and live channels keep the full-screen player
+- A watch page for movies and episodes (web, computers, phones, tablets): the video in the page, the title, My list / Watched / Collection / other copies, the details, and a "More like this" column (the episodes of a season for a series) beside it, or under it on a narrow screen; a button opens the full-screen player on the same video; a quality menu appears when the stream offers several sizes. Turn it off in Settings > Playback. TVs and live channels keep the full-screen player
 - Home shelves: Continue watching, My List (long-press to favorite; on TV use the button on the movie page)
 - Android TV / Google TV: a "Continue watching" row on the system home screen (Watch Next) that resumes the title where you stopped
 - Voice search: a microphone button in the search fields (phones, Macs, Android TV with a voice remote)

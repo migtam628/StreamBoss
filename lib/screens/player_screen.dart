@@ -15,6 +15,7 @@ import '../services/next_episode.dart';
 import '../services/cast_service.dart';
 import '../services/mini_player.dart';
 import '../services/skip_memory.dart';
+import '../services/watch_logic.dart';
 import '../services/pip.dart';
 import '../services/provider_url.dart';
 import '../services/xtream_client.dart';
@@ -125,6 +126,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   bool _canPip = false;
   String? _error;
   bool _reportedPlaying = false;
+  bool _pausedByLeave = false; // paused because the tab or window was hidden, so coming back plays again
   bool _handedOff = false; // the player now belongs to the mini window, so it must not be disposed here
 
   // How far behind the live picture this is. The live edge is where the first picture was, moving on
@@ -372,6 +374,18 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // An app the system ends while it is in the background is not a playback crash.
     if (state == AppLifecycleState.paused) CrashGuard.mark('background');
+    // Pause when the tab or window is hidden (Settings > Playback), for films and episodes; live would fall behind.
+    if (_live) return;
+    switch (leaveAction(state: state, enabled: _settings.pauseOnLeave, playing: _playing, pausedByUs: _pausedByLeave)) {
+      case LeaveAction.pause:
+        _pausedByLeave = true;
+        _player.pause();
+      case LeaveAction.resume:
+        _pausedByLeave = false;
+        _player.play();
+      case LeaveAction.none:
+        break;
+    }
   }
 
   // Shaders run in libmpv's GPU renderer, which the surface output bypasses.

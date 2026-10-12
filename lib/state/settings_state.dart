@@ -21,6 +21,7 @@ class SettingsState extends ChangeNotifier {
     'bufferSecs': 20, // low 5 / normal 20 / high 60 (native only)
     'speed': 1.0,
     'autoResume': true,
+    'pauseOnLeave': false, // pause when the tab or window is hidden, carry on when it is back
     'watchPage': true, // movies and episodes play in a page with details and More like this (not on a TV)
     'autoplayNext': true, // start the next episode when one ends
     'creditsNext': true, // offer the next episode when the credits start, not only when the file ends
@@ -186,6 +187,7 @@ class SettingsState extends ChangeNotifier {
   double get speed => _g('speed');
   bool get autoResume => _g('autoResume');
   bool get watchPage => _g('watchPage');
+  bool get pauseOnLeave => _g('pauseOnLeave');
   bool get autoplayNext => _g('autoplayNext');
   bool get creditsNext => _g('creditsNext');
   String get animePage => _g('animePage');

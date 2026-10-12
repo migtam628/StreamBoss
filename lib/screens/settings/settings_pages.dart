@@ -343,6 +343,13 @@ class PlaybackPage extends StatelessWidget {
         value: st.watchPage,
         onChanged: (v) => st.set('watchPage', v),
       ),
+      SwitchRow(
+        icon: Icons.pause_circle_outline,
+        title: tr('Pause when you leave'),
+        subtitle: tr('A movie or episode pauses when the tab or window is hidden or the app goes to the background, and carries on when you come back. One you paused yourself stays paused.'),
+        value: st.pauseOnLeave,
+        onChanged: (v) => st.set('pauseOnLeave', v),
+      ),
       ChoiceRow<String>(
         icon: Icons.aspect_ratio,
         title: tr('Picture shape'),
