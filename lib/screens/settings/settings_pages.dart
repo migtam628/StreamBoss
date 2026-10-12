@@ -44,6 +44,7 @@ import '../shader_screen.dart';
 import 'settings_widgets.dart';
 import '../../widgets/tv_text_field.dart';
 import '../../l10n/l10n.dart';
+import '../../services/moobee.dart';
 
 class SettingsSection {
   final String title;
@@ -699,8 +700,48 @@ class AppearancePage extends StatelessWidget {
         options: const [('auto', 'Auto'), ('on', 'Always'), ('off', 'Hidden')],
         onChanged: (v) => st.set('animePage', v),
       ),
+      SwitchRow(
+        icon: Icons.explore_outlined,
+        title: tr('MooBee tab'),
+        subtitle: tr('MooBee, for finding movies and shows to watch, in the menus. Not shown on a TV.'),
+        value: st.moobeeTab,
+        onChanged: (v) => st.set('moobeeTab', v),
+      ),
+      if (st.moobeeTab)
+        ActionRow(
+          icon: Icons.link,
+          title: tr('MooBee address'),
+          subtitle: st.moobeeUrl.isEmpty ? tr('The project\'s own MooBee') : st.moobeeUrl,
+          onTap: () => _moobeeAddress(context, st),
+        ),
     ]);
   }
+}
+
+/// Asks for the address of the MooBee to show; empty means the project's own.
+Future<void> _moobeeAddress(BuildContext context, SettingsState st) async {
+  final c = TextEditingController(text: st.moobeeUrl);
+  final v = await showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(tr('MooBee address')),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        TvTextField(controller: c, autofocus: true),
+        const SizedBox(height: 8),
+        Text(tr('Leave empty for the project\'s own. It must start with https://.'), style: const TextStyle(fontSize: 12)),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: Text(tr('Save'))),
+      ],
+    ),
+  );
+  if (v == null) return;
+  if (v.isNotEmpty && moobeeAddress(v) == null) {
+    if (context.mounted) toast(context, tr('That is not a usable address. Use https://...'));
+    return;
+  }
+  st.set('moobeeUrl', v);
 }
 
 // ---------------------------------------------------------------------------------------

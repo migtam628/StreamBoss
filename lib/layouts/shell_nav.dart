@@ -9,7 +9,7 @@ import 'ui_layout.dart';
 import '../l10n/l10n.dart';
 
 /// A main screen of the app, in the order the rest of the code indexes them
-/// (0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings).
+/// (0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings, 7 Anime, 8 MooBee).
 class Dest {
   final IconData icon, selectedIcon;
   final String label;
@@ -25,6 +25,7 @@ const kDests = [
   Dest(Icons.search, Icons.search, 'Search'),
   Dest(Icons.settings_outlined, Icons.settings, 'Settings'),
   Dest(Icons.auto_awesome_outlined, Icons.auto_awesome, 'Anime'),
+  Dest(Icons.explore_outlined, Icons.explore, 'MooBee'),
 ];
 
 /// Lets a page below the shell switch tabs (for example a search field that opens Search).
@@ -89,19 +90,25 @@ IconData destIcon(UiLayout l, int i, {bool selected = false}) =>
     };
 
 /// The tabs of a top navigation bar, in order (settings has its own button).
-List<int> topTabs(UiLayout l, {bool anime = true}) => [
+List<int> topTabs(UiLayout l, {bool anime = true, bool moobee = false}) => [
       for (final i in switch (l) {
-        UiLayout.prime => [0, 1, 3, 4, 7, 5],
-        _ => [0, 1, 2, 3, 4, 7, 5],
+        UiLayout.prime => [0, 1, 3, 4, 7, 5, 8],
+        _ => [0, 1, 2, 3, 4, 7, 5, 8],
       })
-        if (anime || i != 7) i
+        if ((anime || i != 7) && (moobee || i != 8)) i
     ];
 
 /// The five items of the phone's bottom bar for each layout, then what "More" holds.
-({List<int> bar, List<int> more}) phoneTabs(UiLayout l, {bool anime = true}) {
+({List<int> bar, List<int> more}) phoneTabs(UiLayout l, {bool anime = true, bool moobee = false}) {
   final t = _phoneTabs(l);
-  if (anime) return t;
-  return (bar: [for (final i in t.bar) if (i != 7) i], more: [for (final i in t.more) if (i != 7) i]);
+  // MooBee goes in the More sheet, before Settings, of the layouts that have one (the simple layouts have no menu).
+  final more = [
+    for (final i in t.more) ...[
+      if (i == 6 && moobee) 8,
+      if (anime || i != 7) i,
+    ],
+  ];
+  return (bar: [for (final i in t.bar) if (anime || i != 7) i], more: more);
 }
 
 ({List<int> bar, List<int> more}) _phoneTabs(UiLayout l) => switch (l) {
@@ -143,7 +150,9 @@ class PhoneNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = phoneTabs(layout, anime: context.select<AppState?, bool>((a) => a?.animeVisible ?? true));
+    final tabs = phoneTabs(layout,
+        anime: context.select<AppState?, bool>((a) => a?.animeVisible ?? true),
+        moobee: context.select<AppState?, bool>((a) => a?.moobeeVisible ?? false));
     final inBar = tabs.bar.indexOf(index);
     final hasMore = tabs.more.isNotEmpty;
     return NavigationBar(
@@ -297,7 +306,9 @@ class TopNav extends StatelessWidget {
     final pill = centered || soft;
     final flat = layout == UiLayout.bento;
     final tabs = [
-      for (final i in topTabs(layout, anime: context.select<AppState?, bool>((a) => a?.animeVisible ?? true)))
+      for (final i in topTabs(layout,
+          anime: context.select<AppState?, bool>((a) => a?.animeVisible ?? true),
+          moobee: context.select<AppState?, bool>((a) => a?.moobeeVisible ?? false)))
         NavTab(
             label: destLabel(layout, i),
             selected: i == index,

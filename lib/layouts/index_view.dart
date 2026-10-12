@@ -44,6 +44,7 @@ class _IndexHomeState extends State<IndexHome> {
       _Entry('Movies', c.movies.length, 3),
       _Entry('Series', c.series.length, 4),
       if (s.animeVisible) _Entry('Anime', s.animeCount, 7),
+      if (s.moobeeVisible) const _Entry('MooBee', null, 8),
       const _Entry('Guide', null, 2),
       const _Entry('Settings', null, 6),
     ];

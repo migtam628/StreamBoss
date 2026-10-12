@@ -22,6 +22,8 @@ class SettingsState extends ChangeNotifier {
     'speed': 1.0,
     'autoResume': true,
     'pauseOnLeave': false, // pause when the tab or window is hidden, carry on when it is back
+    'moobeeTab': true, // a MooBee tab (movie and TV discovery) in the menus; not on a TV
+    'moobeeUrl': '', // '' = the project's own MooBee (kMoobeeUrl); set it to use your own
     'watchPage': true, // movies and episodes play in a page with details and More like this (not on a TV)
     'autoplayNext': true, // start the next episode when one ends
     'creditsNext': true, // offer the next episode when the credits start, not only when the file ends
@@ -187,6 +189,8 @@ class SettingsState extends ChangeNotifier {
   double get speed => _g('speed');
   bool get autoResume => _g('autoResume');
   bool get watchPage => _g('watchPage');
+  bool get moobeeTab => _g('moobeeTab');
+  String get moobeeUrl => _g('moobeeUrl');
   bool get pauseOnLeave => _g('pauseOnLeave');
   bool get autoplayNext => _g('autoplayNext');
   bool get creditsNext => _g('creditsNext');

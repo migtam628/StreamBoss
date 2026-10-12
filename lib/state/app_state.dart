@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/media.dart';
+import '../services/moobee.dart';
 import '../services/combine_sources.dart';
 import '../services/demo_catalog.dart';
 import '../services/library_view.dart';
@@ -1215,6 +1216,10 @@ class AppState extends ChangeNotifier {
         'off' => false,
         _ => animeCount > 0,
       };
+
+  /// Whether the MooBee tab is in the menus (Settings > Appearance, and never on a TV).
+  bool get moobeeVisible => moobeeTabVisible(
+      enabled: _settings?.moobeeTab ?? true, isTv: _settings?.isTv ?? false, address: _settings?.moobeeUrl ?? '');
 
   // --- Edited channels ------------------------------------------------------------------------
 

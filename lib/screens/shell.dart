@@ -14,6 +14,7 @@ import 'browse_screen.dart';
 import 'anime_screen.dart';
 import 'crash_notice.dart';
 import 'guide_screen.dart';
+import 'moobee_screen.dart';
 import 'home_screen.dart';
 import 'open_item.dart';
 import 'search_screen.dart';
@@ -28,7 +29,7 @@ class Shell extends StatefulWidget {
 
 class _ShellState extends State<Shell> {
   /// The rail lists Anime after Series (when it is shown); Settings stays last.
-  static List<int> _railOrder(bool anime) => [0, 1, 2, 3, 4, if (anime) 7, 5, 6];
+  static List<int> _railOrder(bool anime, bool moobee) => [0, 1, 2, 3, 4, if (anime) 7, 5, if (moobee) 8, 6];
 
   late int _i;
   // Tabs are built on first visit only, so e.g. the guide isn't downloaded at login.
@@ -37,11 +38,12 @@ class _ShellState extends State<Shell> {
   @override
   void initState() {
     super.initState();
-    // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings, 7 Anime
+    // 0 Home, 1 Live, 2 Guide, 3 Movies, 4 Series, 5 Search, 6 Settings, 7 Anime, 8 MooBee
     final st = context.read<SettingsState>();
     final resume = st.startTab < 0;
     _i = (resume ? st.lastTab : st.startTab).clamp(0, kDests.length - 1);
     if (_i == 7 && !context.read<AppState>().animeVisible) _i = 0;
+    if (_i == 8 && !context.read<AppState>().moobeeVisible) _i = 0;
     _visited.add(_i);
     if (resume && st.lastLiveOpen && st.lastLive.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _resumeLive(st.lastLive));
@@ -116,6 +118,7 @@ class _ShellState extends State<Shell> {
       const SearchScreen(),
       const SettingsScreen(),
       const AnimeScreen(),
+      const MooBeeScreen(),
     ];
     final tv = TvScope.of(context);
     final wide = tv || MediaQuery.sizeOf(context).width >= 800;
@@ -142,11 +145,11 @@ class _ShellState extends State<Shell> {
       if (layout == UiLayout.marquee) {
         chrome = Row(children: [
           NavigationRail(
-            selectedIndex: _railOrder(s.animeVisible).indexOf(_i).clamp(0, 99).toInt(),
-            onDestinationSelected: (v) => select(_railOrder(s.animeVisible)[v]),
+            selectedIndex: _railOrder(s.animeVisible, s.moobeeVisible).indexOf(_i).clamp(0, 99).toInt(),
+            onDestinationSelected: (v) => select(_railOrder(s.animeVisible, s.moobeeVisible)[v]),
             labelType: tv ? NavigationRailLabelType.selected : NavigationRailLabelType.all,
             destinations: [
-              for (final i in _railOrder(s.animeVisible))
+              for (final i in _railOrder(s.animeVisible, s.moobeeVisible))
                 NavigationRailDestination(
                     icon: Icon(kDests[i].icon), selectedIcon: Icon(kDests[i].selectedIcon), label: Text(tr(kDests[i].label))),
             ],

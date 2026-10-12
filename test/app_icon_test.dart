@@ -86,7 +86,7 @@ void main() {
       final st = await pump(t);
       await t.scrollUntilVisible(find.text('APP ICON'), 400, scrollable: find.byType(Scrollable).first);
       expect(find.text('APP ICON'), findsOneWidget);
-      await t.drag(find.byType(Scrollable).first, const Offset(0, -250));
+      await t.ensureVisible(find.text(AppIcon.values.last.label)); // the rows below the icons make the page longer
       await t.pumpAndSettle();
       for (final i in AppIcon.values) {
         expect(find.text(i.label), findsOneWidget, reason: i.label);
@@ -94,7 +94,7 @@ void main() {
       // The launcher said Bold B is active, so the setting follows it.
       expect(st.appIcon, 'bold');
 
-      await t.drag(find.byType(Scrollable).first, const Offset(0, -150)); // clear the bottom edge
+      await t.ensureVisible(find.text('Signal'));
       await t.pumpAndSettle();
       await t.tap(find.text('Signal'));
       await t.pumpAndSettle();
@@ -111,7 +111,7 @@ void main() {
           .setMockMethodCallHandler(_channel, (c) async => c.method == 'current' ? 'crown' : false);
       final st = await pump(t);
       await t.scrollUntilVisible(find.text('Screen'), 400, scrollable: find.byType(Scrollable).first);
-      await t.drag(find.byType(Scrollable).first, const Offset(0, -150));
+      await t.ensureVisible(find.text('Screen'));
       await t.pumpAndSettle();
       await t.tap(find.text('Screen'));
       await t.pumpAndSettle();

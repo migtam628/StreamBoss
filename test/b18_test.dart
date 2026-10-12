@@ -397,7 +397,8 @@ void main() {
     for (final n in ['madlib', 'matchday', 'easy', 'wall']) {
       expect(UiLayout.fromKey(n).name, n);
     }
-    expect(kDests.last.label, 'Anime');
-    expect(kDests.length, 8);
+    expect(kDests[7].label, 'Anime');
+    expect(kDests.last.label, 'MooBee');
+    expect(kDests.length, 9);
   });
 }

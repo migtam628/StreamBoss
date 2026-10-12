@@ -464,6 +464,7 @@ void main() {
       await pumpApp(t, st, app, const Size(1280, 720));
       for (final d in kDests) {
         if (d.label == 'Anime') continue; // not in the dock while the library has no anime
+        if (d.label == 'MooBee') continue; // never on a TV
         expect(find.text(d.label), findsWidgets, reason: d.label);
       }
       expect(find.text('Play'), findsOneWidget);

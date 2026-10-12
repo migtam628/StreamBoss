@@ -4,6 +4,9 @@ const kSiteUrl = 'https://streamboss.site';
 const kReleasesFeed = '$kSiteUrl/releases.json';
 const kReleasesUrl = '$kSiteUrl/downloads/';
 
+/// MooBee, the movie and TV discovery site that the app can show in its own tab.
+const kMoobeeUrl = 'https://moobee.streamboss.site';
+
 /// Where "Report a problem" goes.
 const kSupportUrl = kSiteUrl;
 
