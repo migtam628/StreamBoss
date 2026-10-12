@@ -438,7 +438,7 @@ class RokuException implements Exception {
 bool looksLikeZip(List<int> bytes) =>
     bytes.length > 4 && bytes[0] == 0x50 && bytes[1] == 0x4b;
 
-/// The address and name of the newest `*-roku.zip` among the releases in [releasesJson] (GitHub's list, newest first).
+/// The address and name of the newest `*-roku.zip` among the releases in [releasesJson] (the release list, newest first).
 ({String url, String name, String tag})? pickRokuAsset(String releasesJson) {
   final list = jsonDecode(releasesJson);
   if (list is! List) return null;
@@ -457,9 +457,9 @@ bool looksLikeZip(List<int> bytes) =>
   return null;
 }
 
-/// Downloads the newest channel file from the project's releases.
+/// Downloads the newest channel file from the project's release list on the website.
 Future<({List<int> bytes, String name, String tag})> downloadLatest(
-    {String repo = 'migtam628/StreamBoss', HttpClient? client}) async {
+    {String feed = 'https://streamboss.site/releases.json', HttpClient? client}) async {
   final http = client ?? HttpClient();
   try {
     Future<List<int>> get(String url) async {
@@ -472,7 +472,7 @@ Future<({List<int> bytes, String name, String tag})> downloadLatest(
     }
 
     final pick = pickRokuAsset(utf8.decode(
-        await get('https://api.github.com/repos/$repo/releases?per_page=15')));
+        await get(feed)));
     if (pick == null)
       throw const RokuException('No release has a Roku channel file yet.');
     final bytes = await get(pick.url);

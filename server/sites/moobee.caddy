@@ -1,0 +1,9 @@
+# MooBee, on its own name. Only used with docker-compose.moobee.yml (see README, "Run MooBee on the same machine").
+{$MOOBEE_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	reverse_proxy moobee:8787
+}

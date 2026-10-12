@@ -1,0 +1,24 @@
+# Adds MooBee (https://github.com/migtam628/moobee) next to the sync server, behind the same Caddy, on its own name.
+#   1. Point a DNS name (an A record, e.g. moobee.streamboss.site) at this machine.
+#   2. Put MOOBEE_DOMAIN in .env, and your TMDB token in moobee.env (cp moobee.env.example moobee.env).
+#   3. docker compose -f docker-compose.yml -f docker-compose.moobee.yml up -d --build
+# The sync server keeps working exactly as before; leave this file out and nothing changes.
+services:
+  moobee:
+    build:
+      context: https://github.com/migtam628/moobee.git#main
+      args:
+        # Only if you run your own video player for MooBee (see its README, "Playback status"). Compiled into the site.
+        PLAYBACK_BASE_URL: ${MOOBEE_PLAYBACK_BASE_URL:-}
+    restart: unless-stopped
+    env_file: ./moobee.env
+    expose:
+      - "8787"
+
+  caddy:
+    depends_on:
+      - moobee
+    environment:
+      MOOBEE_DOMAIN: ${MOOBEE_DOMAIN:?Put the MooBee name in .env (MOOBEE_DOMAIN=moobee.example.com)}
+    volumes:
+      - ./sites/moobee.caddy:/etc/caddy/sites/moobee.caddy:ro

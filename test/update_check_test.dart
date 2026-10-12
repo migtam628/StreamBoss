@@ -36,15 +36,12 @@ void main() {
     final seen = <Uri>[];
     final client = MockClient((r) async {
       seen.add(r.url);
-      // /releases/latest only ever returns the newest stable release
-      return r.url.path.endsWith('/latest')
-          ? http.Response(jsonEncode({'tag_name': 'v0.2.3', 'html_url': 'http://r/0.2.3'}), 200)
-          : http.Response(list, 200);
+      return http.Response(list, 200);
     });
 
     final stable = await checkForUpdate('0.2.2', client: client);
     expect((stable.latest, stable.newer), ('0.2.3', true));
-    expect(seen.last.path, endsWith('/releases/latest'));
+    expect(seen.last.path, endsWith('/releases.json'));
 
     final onB1 = await checkForUpdate('0.3.0b1', client: client);
     expect((onB1.latest, onB1.newer, onB1.url), ('0.3.0b2', true, 'http://r/b2'));

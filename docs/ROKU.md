@@ -19,7 +19,7 @@ Instead of the browser steps below, run the **StreamBoss Roku installer**. It fi
 newest channel, sends it to the Roku and starts it, so there is no zip to handle and no upload page.
 
 1. Download the installer for your computer from the
-   [Releases page](https://github.com/migtam628/StreamBoss/releases) (Assets):
+   [downloads page](https://streamboss.site/downloads/) (open the newest version):
    `StreamBoss-<version>-roku-installer-windows.exe`, `...-macos.zip` (Apple silicon) or `...-linux.tar.gz`.
    - **Windows:** double-click it. If Windows SmartScreen warns, choose *More info* then *Run anyway* (the file
      is not code-signed).
@@ -72,7 +72,7 @@ The channel is not in the Roku Channel Store, so it is installed through the Rok
 ### 1. Get the channel file
 
 Download `StreamBoss-<version>-roku.zip` from the
-[Releases page](https://github.com/migtam628/StreamBoss/releases) (under the newest version's Assets).
+[downloads page](https://streamboss.site/downloads/) (open the newest version).
 Do not unzip it. (Building from source instead: see [For developers](#for-developers).)
 
 ### 2. Turn on developer mode on the Roku

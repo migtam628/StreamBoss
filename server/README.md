@@ -19,7 +19,7 @@ You need a machine on the internet with Docker, a name for it (for example `sync
 record pointing at the machine), and ports 80 and 443 open.
 
 ```sh
-git clone https://github.com/migtam628/StreamBoss.git
+git clone https://github.com/migtam628/StreamBoss.git     # a private repository: sign in with a token or an SSH key
 cd StreamBoss/server
 cp .env.example .env        # put your name in SYNC_DOMAIN
 docker compose up -d
@@ -48,6 +48,81 @@ Change it and run `docker compose up -d` again.
 `docker compose -f docker-compose.yml -f docker-compose.lan.yml up -d sync` publishes port 8080 without HTTPS; use
 `http://<the machine's address>:8080` as the server. Only do this on a network you trust, and never expose that
 port to the internet: the password and the token would travel in the clear.
+
+## Host the website and the downloads
+
+The repository is private, so GitHub Pages and public GitHub Releases are not available. The same machine serves the
+website (https://streamboss.site) and the downloads instead, behind the same Caddy:
+
+- `https://streamboss.site/` is the one-page website (`site/`).
+- `https://streamboss.site/releases.json` lists the newest releases in the shape of GitHub's releases list. The app's
+  **Check for updates**, the Roku installer and the website's download buttons read it.
+- `https://streamboss.site/downloads/` lists each release's files; `downloads/latest/` has the newest build under
+  a name without the version (`StreamBoss-android-arm64-v8a.apk`), for short links such as a Fire TV Downloader code.
+
+CI sends the files with `rsync` over SSH when you tag a release (`release.yml`) and when `site/` changes on `main`
+(`site.yml`).
+
+**1. Point the name at the machine.** At your DNS provider, `streamboss.site`: `A` records to the machine's address
+(delete the old GitHub Pages ones, and any `AAAA` that are not this machine's), and `www` as a `CNAME` to `streamboss.site`.
+
+**2. Make the folder and a restricted key.** On the machine, as the user that will receive the files:
+
+```sh
+sudo mkdir -p /srv/streamboss/web/downloads && sudo chown -R "$USER": /srv/streamboss/web
+ssh-keygen -t ed25519 -f streamboss-deploy -N "" -C streamboss-ci     # creates streamboss-deploy and .pub
+```
+
+Add the public key to `~/.ssh/authorized_keys` on one line, so it can only copy files into that folder (`rrsync` comes
+with the `rsync` package; on some systems it is `/usr/bin/rrsync`, check `which rrsync`):
+
+```
+restrict,command="rrsync /srv/streamboss/web" ssh-ed25519 AAAA...the contents of streamboss-deploy.pub... streamboss-ci
+```
+
+**3. Give CI the key.** In the private repository: Settings > Secrets and variables > Actions > New repository secret:
+
+| Secret | Value |
+|---|---|
+| `VPS_HOST` | the machine's address or name |
+| `VPS_USER` | the user from step 2 |
+| `VPS_SSH_KEY` | the whole contents of `streamboss-deploy` (the private key), then delete that file |
+| `VPS_KNOWN_HOSTS` | the output of `ssh-keyscan -p 22 <the machine's address>` run from your own computer |
+| `VPS_PORT` | only if SSH is not on port 22 |
+
+A release run fails loudly (red) if these are missing, so a release is never silently left off the website.
+
+**4. Start serving it.** In `.env` on the machine: `WEB_DOMAIN=streamboss.site` (and `WEB_ROOT` if you used another
+folder), then:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.web.yml up -d
+```
+
+Caddy gets the certificates for `streamboss.site` and `www.streamboss.site` by itself. Run **Actions > Website >
+Run workflow** once to put the page there. The first tagged release creates `releases.json` and the downloads.
+
+**Housekeeping.** `releases.json` keeps the newest 12 releases; remove older folders from the machine now and then
+(`downloads/latest` and the 12 newest stay):
+
+```sh
+cd /srv/streamboss/web/downloads && ls -d v* | sort -V | head -n -12 | xargs -r rm -rf
+```
+
+## Run MooBee on the same machine
+
+[MooBee](https://github.com/migtam628/moobee) (a movie and TV discovery site) can run next to the sync server, behind the same
+Caddy, on its own name such as `moobee.streamboss.site`. It builds from its repository's `Dockerfile`.
+
+```sh
+cp moobee.env.example moobee.env      # put your TMDB read token in it
+# in .env: MOOBEE_DOMAIN=moobee.streamboss.site   (its DNS A record must point at this machine)
+docker compose -f docker-compose.yml -f docker-compose.moobee.yml up -d --build
+```
+
+All the extra files at once: set `COMPOSE_FILE=docker-compose.yml:docker-compose.web.yml:docker-compose.moobee.yml` in
+`.env` and run `docker compose up -d --build`. To update MooBee later: `docker compose up -d --build moobee`.
+The TMDB token is read from `moobee.env` on the machine only; it is never in an image or a repository.
 
 ### Backups and updates
 

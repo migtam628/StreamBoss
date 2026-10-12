@@ -1434,7 +1434,7 @@ class _AboutPageState extends State<AboutPage> {
           ActionRow(
             icon: _checking ? Icons.hourglass_top : Icons.system_update_alt,
             title: tr('Check for updates'),
-            subtitle: tr('Looks for a newer release on GitHub'),
+            subtitle: tr('Looks for a newer release on the StreamBoss website'),
             onTap: (_checking || i == null) ? null : () => _check(version),
           ),
           ActionRow(
@@ -1454,8 +1454,8 @@ class _AboutPageState extends State<AboutPage> {
           ActionRow(
             icon: Icons.bug_report_outlined,
             title: tr('Report a problem'),
-            subtitle: tr('Opens GitHub issues. Tip: copy diagnostics first and paste them in.'),
-            onTap: () => launchUrl(Uri.parse(kIssuesUrl), mode: LaunchMode.externalApplication),
+            subtitle: tr('Opens the StreamBoss website. Tip: copy diagnostics first and paste them in.'),
+            onTap: () => launchUrl(Uri.parse(kSupportUrl), mode: LaunchMode.externalApplication),
           ),
           if (!kIsWeb)
             ActionRow(

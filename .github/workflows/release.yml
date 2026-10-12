@@ -7,6 +7,8 @@ name: Release
 # The tag must have a "## <version>" section in CHANGELOG.md, which becomes the release notes.
 # Dry run: Actions > Release > Run workflow, leave "publish" unchecked. It builds and
 # packages everything and attaches the files to the run, but creates no release.
+# The repository is private, so people download from the website: a published release is also sent to the website
+# server (secrets VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_KNOWN_HOSTS, optional VPS_PORT; see server/README.md).
 on:
   push:
     tags: ["v*"]
@@ -121,3 +123,41 @@ jobs:
           else
             gh release create "$TAG" artifacts/* "${flags[@]}" -R "${{ github.repository }}"
           fi
+      - name: Publish to the website server
+        if: needs.meta.outputs.publish == 'true'
+        env:
+          TAG: ${{ needs.meta.outputs.tag }}
+          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ] || [ -z "$VPS_KNOWN_HOSTS" ]; then
+            echo "::error::The website server secrets are not set (VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_KNOWN_HOSTS), so $TAG was NOT published to the website. See server/README.md."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          SSH="ssh -i $HOME/.ssh/deploy_key -p ${VPS_PORT:-22} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          DEST="$VPS_USER@$VPS_HOST"
+          # The list as it is now. Only "not found" means a first release; any other failure stops here, so the
+          # history is never replaced by an empty list.
+          code="$(curl -sS -o feed.json -w '%{http_code}' --retry 3 https://streamboss.site/releases.json || true)"
+          case "$code" in
+            200) ;;
+            404) echo '[]' > feed.json ;;
+            *) echo "::error::Could not read the current releases.json (HTTP $code)"; exit 1 ;;
+          esac
+          python3 tool/make_manifest.py --tag "$TAG" --artifacts artifacts --notes notes.md \
+            --prerelease "$PRERELEASE" --feed feed.json --out releases.json --latest-dir latest
+          # Files first, the list last: nobody is pointed at a file that is not there yet.
+          RS=(rsync -a --chmod=D755,F644 -e "$SSH")
+          "${RS[@]}" artifacts/ "$DEST:downloads/$TAG/"
+          "${RS[@]}" --delete latest/ "$DEST:downloads/latest/"
+          "${RS[@]}" releases.json "$DEST:releases.json"
+          echo "Published $TAG to the website server." | tee -a "$GITHUB_STEP_SUMMARY"

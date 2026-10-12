@@ -41,7 +41,7 @@ void main() {
   });
 
   group('release parsing', () {
-    test('notes and assets come through, with the checksum when GitHub gives one', () async {
+    test('notes and assets come through, with the checksum when the list gives one', () async {
       final client = MockClient((_) async => http.Response(
           jsonEncode({
             'tag_name': 'v0.3.0b21',
@@ -54,7 +54,7 @@ void main() {
             ],
           }),
           200));
-      final u = await checkForUpdate('0.2.0', client: client);
+      final u = await checkForUpdate('0.3.0b20', client: client);
       expect(u.newer, isTrue);
       expect(u.notes, '- **New** thing');
       expect(u.assets.length, 2);

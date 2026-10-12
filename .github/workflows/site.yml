@@ -1,0 +1,50 @@
+name: Website
+
+# Publishes the landing page (site/) to the website server whenever it changes on main. The repository is private,
+# so this replaces GitHub Pages. Secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_KNOWN_HOSTS, optional VPS_PORT
+# (see server/README.md, "Host the website and the downloads").
+on:
+  push:
+    branches: [main]
+    paths: ["site/index.html", "site/assets/**", "LICENSE", ".github/workflows/site.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_PORT: ${{ secrets.VPS_PORT }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Only the page and its pictures (not the design concepts)
+        run: |
+          mkdir _site
+          cp site/index.html _site/
+          cp -r site/assets _site/assets
+          cp LICENSE _site/LICENSE.txt
+      - name: Send it to the server
+        run: |
+          set -euo pipefail
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ] || [ -z "$VPS_KNOWN_HOSTS" ]; then
+            echo "::error::The website server secrets are not set (VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_KNOWN_HOSTS). See server/README.md."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          SSH="ssh -i $HOME/.ssh/deploy_key -p ${VPS_PORT:-22} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          # downloads/ and releases.json belong to the Release workflow: never touched here.
+          rsync -a --delete --chmod=D755,F644 --exclude '/downloads/' --exclude '/releases.json' -e "$SSH" \
+            _site/ "$VPS_USER@$VPS_HOST:./"

@@ -3,7 +3,8 @@
 A cross-platform IPTV player for the Xtream or M3U service **you already have**. It ships with
 no content. Inspired by apps like Lumen, with its own UI.
 
-The website (a one-page install guide for every device) lives in [`site/`](site/) and is published with GitHub Pages.
+The website (a one-page install guide for every device) lives in [`site/`](site/). This repository is private: the website and
+the downloads are served from a machine of your own, see [Releases](#releases).
 
 ## Screenshots
 
@@ -66,15 +67,19 @@ Order is `0.3.0b1` < `0.3.0b2` < `0.3.0-rc1` < `0.3.0` < `0.3.1b1`. For each ver
 
 ## Releases
 
-Tagged versions are published automatically to the repo's **Releases** page by
-`.github/workflows/release.yml`:
+Tagged versions are built and published automatically by `.github/workflows/release.yml`. The repository is private, so
+the files are also sent to the website server (https://streamboss.site/downloads/), which also serves `releases.json`:
+the list the app's update check, the Roku installer and the website's download buttons read. Setup (one time):
+[server/README.md](server/README.md#host-the-website-and-the-downloads).
 
 ```sh
 git tag v0.2.3 && git push origin v0.2.3      # or v0.3.0b2 for a beta
 ```
 
-Each release attaches Android APKs (per CPU type), Windows, Linux and macOS archives, the web build,
-the Roku channel zip, and `SHA256SUMS.txt`. The notes are that version's `CHANGELOG.md` section.
+Each release has Android APKs (per CPU type), Windows, Linux and macOS archives, the web build,
+the Roku channel zip, and `SHA256SUMS.txt`. The notes are that version's `CHANGELOG.md` section. `downloads/latest/` always has the newest build under a name
+without the version (for example `StreamBoss-android-arm64-v8a.apk`), which is what a short link such as a Fire TV
+Downloader code should point at. The website keeps the newest 12 releases.
 To rehearse without publishing, run **Actions > Release > Run workflow** with "publish" unchecked:
 it builds and packages everything and attaches the files to the run.
 
@@ -267,6 +272,6 @@ intro/outro detection (skip-intro is a fixed +90s jump).
 
 ## License
 
-All rights reserved (see [LICENSE](LICENSE)). The source is public so it can be read; copying, changing or
-redistributing it needs written permission. You may download the released apps and run them for your own
+All rights reserved (see [LICENSE](LICENSE)). The source code is private; copying, changing or redistributing any
+part of it needs written permission. You may download the released apps from the website and run them for your own
 personal use.

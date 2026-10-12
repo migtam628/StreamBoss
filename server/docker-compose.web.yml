@@ -1,0 +1,11 @@
+# Serves the StreamBoss website and the downloads from this machine, behind the same Caddy, on its own name.
+#   1. Point streamboss.site (and www) at this machine: A records (and AAAA if it has IPv6).
+#   2. Put WEB_DOMAIN in .env. Make the folder the files go in (see README, "Host the website and the downloads").
+#   3. docker compose -f docker-compose.yml -f docker-compose.web.yml up -d
+services:
+  caddy:
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN:?Put the website name in .env (WEB_DOMAIN=streamboss.site)}
+    volumes:
+      - ./sites/web.caddy:/etc/caddy/sites/web.caddy:ro
+      - ${WEB_ROOT:-/srv/streamboss/web}:/srv/web:ro

@@ -1,0 +1,31 @@
+# The StreamBoss website and downloads, from /srv/web (docker-compose.web.yml). Files arrive by rsync from CI
+# (see README, "Host the website and the downloads").
+{$WEB_DOMAIN} {
+	root * /srv/web
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	# The release list is read by the app, the Roku installer and the page itself: always fresh, readable anywhere.
+	@feed path /releases.json
+	header @feed {
+		Cache-Control "no-cache"
+		Access-Control-Allow-Origin "*"
+	}
+	@pictures path /assets/*
+	header @pictures Cache-Control "public, max-age=86400"
+	# /downloads/ lists the releases and their files.
+	handle /downloads/* {
+		file_server browse
+	}
+	handle {
+		file_server
+	}
+}
+
+www.{$WEB_DOMAIN} {
+	redir https://{$WEB_DOMAIN}{uri} permanent
+}

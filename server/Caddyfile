@@ -6,3 +6,6 @@
 	}
 	reverse_proxy sync:8080
 }
+
+# More names on the same machine (docker-compose.moobee.yml adds sites/moobee.caddy). No files there is fine.
+import sites/*

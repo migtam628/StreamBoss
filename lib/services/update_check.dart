@@ -47,7 +47,7 @@ class UpdateAsset {
   final String name, url;
   final int size;
 
-  /// The hex SHA-256 GitHub reports for the file, when it does.
+  /// The hex SHA-256 the release list gives for the file, when it does.
   final String? sha256;
   const UpdateAsset(this.name, this.url, this.size, [this.sha256]);
 
@@ -71,21 +71,23 @@ class UpdateInfo {
   const UpdateInfo(this.latest, this.url, this.newer, {this.notes = '', this.assets = const []});
 }
 
-/// Asks GitHub for a newer release than [current]. Stable builds only look at stable releases;
+/// Asks the website's release list for a newer release than [current]. Stable builds only look at stable releases;
 /// a beta build also sees newer betas, so beta testers keep getting beta updates.
 Future<UpdateInfo> checkForUpdate(String current, {http.Client? client}) async {
   final c = client ?? http.Client();
   final beta = isPrerelease(current);
-  final uri = Uri.parse('https://api.github.com/repos/$kRepoSlug/releases${beta ? '?per_page=30' : '/latest'}');
-  final res = await c.get(uri, headers: {'Accept': 'application/vnd.github+json'}).timeout(const Duration(seconds: 15));
+  final res = await c.get(Uri.parse(kReleasesFeed), headers: {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));
   if (res.statusCode == 404) throw Exception('No releases have been published yet.');
-  if (res.statusCode != 200) throw Exception('GitHub answered ${res.statusCode}.');
+  if (res.statusCode != 200) throw Exception('The update server answered ${res.statusCode}.');
 
   final body = jsonDecode(res.body);
-  final releases = (body is List ? body : [body]).whereType<Map<String, dynamic>>().where((j) => j['draft'] != true).toList();
+  String tagOf(Map<String, dynamic> j) => (j['tag_name'] as String? ?? '').replaceFirst(RegExp(r'^[vV]'), '');
+  final releases = (body is List ? body : [body])
+      .whereType<Map<String, dynamic>>()
+      .where((j) => j['draft'] != true && (beta || (j['prerelease'] != true && !isPrerelease(tagOf(j)))))
+      .toList();
   if (releases.isEmpty) throw Exception('No releases have been published yet.');
 
-  String tagOf(Map<String, dynamic> j) => (j['tag_name'] as String? ?? '').replaceFirst(RegExp(r'^[vV]'), '');
   releases.sort((a, b) => compareVersions(tagOf(b), tagOf(a)));
   final best = releases.first;
   final tag = tagOf(best);
