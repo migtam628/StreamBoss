@@ -22,12 +22,70 @@ function regReadJson(key as String, fallback as Object) as Object
     return parsed
 end function
 
+' ---- language ---------------------------------------------------------------
+' The channel's own texts come in English, Spanish, Italian and Portuguese. L("English text") gives the text in the
+' chosen language: the Settings choice, else the Roku's own language, else English. The translations are in
+' roku/i18n/strings.json, compiled into Strings.brs by tool/roku_i18n.py (CI checks they are complete).
+
+function langPref() as String
+    p = regRead("lang")
+    if p = "en" or p = "es" or p = "it" or p = "pt" then return p
+    return ""
+end function
+
+function currentLang() as String
+    if m.langCode <> invalid then return m.langCode
+    code = langPref()
+    if code = "" then
+        code = "en"
+        info = CreateObject("roDeviceInfo")
+        if info <> invalid then
+            loc = LCase(Left(info.GetCurrentLocale(), 2))
+            if loc = "es" or loc = "it" or loc = "pt" then code = loc
+        end if
+    end if
+    m.langCode = code
+    return code
+end function
+
+sub useLang(code as String)
+    m.langCode = code
+    m.langTable = invalid
+end sub
+
+sub setLang(code as String)
+    regWrite("lang", code)
+    m.langCode = invalid
+    m.langTable = invalid
+    currentLang()
+end sub
+
+function L(text as String) as String
+    code = currentLang()
+    if code = "en" then return text
+    if m.langTable = invalid then m.langTable = stringsFor(code)
+    hit = m.langTable[text]
+    if hit <> invalid then return hit
+    return text
+end function
+
+function LF(text as String, values as Object) as String
+    s = L(text)   ' i18n:dynamic (the text was checked where LF() was called)
+    for each key in values
+        s = s.Replace("{" + key + "}", toStr(values[key]))
+    end for
+    return s
+end function
+
 ' ---- small utils -----------------------------------------------------------
 
 function toStr(v as Dynamic) as String
     if v = invalid then return ""
-    if type(v) = "roString" or type(v) = "String" then return v
-    if type(v) = "roInt" or type(v) = "Integer" or type(v) = "roFloat" or type(v) = "Float" or type(v) = "Double" or type(v) = "roDouble" or type(v) = "LongInteger" then return v.ToStr()
+    ' type() says "Integer" for a plain number and "roInt" for one read back out of a list or array, so look at the name only
+    t = LCase(type(v))
+    if Left(t, 2) = "ro" then t = Mid(t, 3)
+    if t = "string" then return v
+    if t = "int" or t = "integer" or t = "longinteger" or t = "float" or t = "double" then return v.ToStr()
     return ""
 end function
 
@@ -67,7 +125,7 @@ function httpGet(url as String, timeoutMs as Integer) as Object
     xfer.InitClientCertificates()
     xfer.EnableEncodings(true)
     xfer.SetUrl(url)
-    if not xfer.AsyncGetToString() then return { ok: false, body: "", error: "request failed" }
+    if not xfer.AsyncGetToString() then return { ok: false, body: "", error: L("request failed") }
     msg = wait(timeoutMs, port)
     if type(msg) = "roUrlEvent" then
         code = msg.GetResponseCode()
@@ -75,7 +133,7 @@ function httpGet(url as String, timeoutMs as Integer) as Object
         return { ok: false, body: "", error: "HTTP " + code.ToStr() }
     end if
     xfer.AsyncCancel()
-    return { ok: false, body: "", error: "timed out" }
+    return { ok: false, body: "", error: L("timed out") }
 end function
 
 ' ---- M3U -------------------------------------------------------------------
@@ -114,12 +172,9 @@ function parseM3u(body as String) as Object
             end for
             name = ""
             if comma > 0 then name = Mid(line, comma + 1).Trim()
-            if name = "" then
-                number = n + 1
-                name = "Channel " + number.ToStr()
-            end if
+            if name = "" then name = LF("Channel {n}", { n: n + 1 })
         else if Left(line, 1) <> "#" then
-            group = "Other"
+            group = L("Other")
             if attrs["group-title"] <> invalid and attrs["group-title"] <> "" then group = attrs["group-title"]
             isVod = Instr(1, line, "/movie/") > 0 or Instr(1, line, "/series/") > 0
             item = { id: n.ToStr(), name: name, kind: "live", url: line, poster: "", cat: group, plot: "" }
@@ -183,9 +238,9 @@ function loadXtream(cfg as Object) as Object
     base = trimSlash(cfg.url)
     auth = xtreamGet(cfg, "")
     if auth = invalid or type(auth) <> "roAssociativeArray" or auth.user_info = invalid then
-        return { ok: false, error: "Could not reach server" }
+        return { ok: false, error: L("Could not reach server") }
     end if
-    if toStr(auth.user_info.auth) <> "1" then return { ok: false, error: "Invalid credentials" }
+    if toStr(auth.user_info.auth) <> "1" then return { ok: false, error: L("Invalid credentials") }
 
     liveCats = xtreamCats(xtreamGet(cfg, "get_live_categories"))
     vodCats = xtreamCats(xtreamGet(cfg, "get_vod_categories"))
@@ -237,8 +292,8 @@ function loadEpisodes(cfg as Object, seriesId as String) as Object
                 if ext = "" then ext = "mp4"
                 eid = toStr(e.id)
                 title = toStr(e.title)
-                if title = "" then title = "Episode " + toStr(e.episode_num)
-                out.push({ id: "ep" + eid, name: "S" + sn + " E" + toStr(e.episode_num) + "  " + title, kind: "movie", url: base + "/series/" + cfg.user + "/" + cfg.pass + "/" + eid + "." + ext, poster: "", cat: "", plot: "" })
+                if title = "" then title = LF("Episode {n}", { n: toStr(e.episode_num) })
+                out.push({ id: "ep" + eid, name: LF("S{season} E{episode}  {title}", { season: sn, episode: toStr(e.episode_num), title: title }), kind: "movie", url: base + "/series/" + cfg.user + "/" + cfg.pass + "/" + eid + "." + ext, poster: "", cat: "", plot: "" })
             end for
         end for
     end if
@@ -249,12 +304,12 @@ end function
 
 function demoLibrary() as Object
     live = [
-        { id: "l1", name: "Demo Channel 1", kind: "live", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", poster: "", cat: "demo", plot: "" },
-        { id: "l2", name: "Demo Channel 2", kind: "live", url: "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8", poster: "", cat: "demo", plot: "" }
+        { id: "l1", name: L("Demo Channel 1"), kind: "live", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", poster: "", cat: "demo", plot: "" },
+        { id: "l2", name: L("Demo Channel 2"), kind: "live", url: "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8", poster: "", cat: "demo", plot: "" }
     ]
     movies = [
         { id: "m1", name: "Big Buck Bunny", kind: "movie", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", poster: "", cat: "demo", plot: "" },
         { id: "m2", name: "Sintel", kind: "movie", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4", poster: "", cat: "demo", plot: "" }
     ]
-    return { ok: true, live: live, movies: movies, series: [], liveCats: [{ id: "demo", name: "Demo Channels" }], movieCats: [{ id: "demo", name: "Open Movies" }], seriesCats: [] }
+    return { ok: true, live: live, movies: movies, series: [], liveCats: [{ id: "demo", name: L("Demo Channels") }], movieCats: [{ id: "demo", name: L("Open Movies") }], seriesCats: [] }
 end function

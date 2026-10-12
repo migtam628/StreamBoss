@@ -49,7 +49,7 @@ struct BrowseView: View {
 
     @ViewBuilder
     private func favButton(_ item: MediaItem) -> some View {
-        Button(model.isFavorite(item) ? "Remove from My List" : "Add to My List") {
+        Button(model.isFavorite(item) ? LocalizedStringKey("Remove from My List") : LocalizedStringKey("Add to My List")) {
             model.toggleFavorite(item)
         }
     }

@@ -1,0 +1,177 @@
+{
+ "Bring your own provider. We just play it.": {
+  "es": "Trae tu propio proveedor. Nosotros solo lo reproducimos.",
+  "it": "Porta il tuo fornitore. Noi lo riproduciamo e basta.",
+  "pt": "Traga seu próprio provedor. Nós apenas reproduzimos."
+ },
+ "Source": {
+  "es": "Fuente",
+  "it": "Sorgente",
+  "pt": "Fonte"
+ },
+ "Playlist URL": {
+  "es": "URL de la lista",
+  "it": "URL della playlist",
+  "pt": "URL da lista"
+ },
+ "Server URL (http://host:port)": {
+  "es": "URL del servidor (http://host:puerto)",
+  "it": "URL del server (http://host:porta)",
+  "pt": "URL do servidor (http://host:porta)"
+ },
+ "Username": {
+  "es": "Usuario",
+  "it": "Nome utente",
+  "pt": "Usuário"
+ },
+ "Password": {
+  "es": "Contraseña",
+  "it": "Password",
+  "pt": "Senha"
+ },
+ "Connect": {
+  "es": "Conectar",
+  "it": "Connetti",
+  "pt": "Conectar"
+ },
+ "Try demo": {
+  "es": "Probar demo",
+  "it": "Prova la demo",
+  "pt": "Testar demo"
+ },
+ "All": {
+  "es": "Todo",
+  "it": "Tutti",
+  "pt": "Todos"
+ },
+ "Remove from My List": {
+  "es": "Quitar de Mi lista",
+  "it": "Rimuovi dalla lista",
+  "pt": "Remover da lista"
+ },
+ "Add to My List": {
+  "es": "Añadir a Mi lista",
+  "it": "Aggiungi alla lista",
+  "pt": "Adicionar à lista"
+ },
+ "Long-press an item and choose Add to My List.": {
+  "es": "Mantén pulsado un elemento y elige Añadir a Mi lista.",
+  "it": "Tieni premuto un elemento e scegli Aggiungi alla lista.",
+  "pt": "Mantenha pressionado um item e escolha Adicionar à lista."
+ },
+ "No episodes found": {
+  "es": "No se encontraron episodios",
+  "it": "Nessun episodio trovato",
+  "pt": "Nenhum episódio encontrado"
+ },
+ "S%lld · E%lld  %@": {
+  "es": "T%lld · E%lld  %@",
+  "it": "S%lld · E%lld  %@",
+  "pt": "T%lld · E%lld  %@"
+ },
+ "Source: %@": {
+  "es": "Fuente: %@",
+  "it": "Sorgente: %@",
+  "pt": "Fonte: %@"
+ },
+ "%lld channels · %lld movies · %lld series": {
+  "es": "%lld canales · %lld películas · %lld series",
+  "it": "%lld canali · %lld film · %lld serie",
+  "pt": "%lld canais · %lld filmes · %lld séries"
+ },
+ "Reload library": {
+  "es": "Recargar biblioteca",
+  "it": "Ricarica libreria",
+  "pt": "Recarregar biblioteca"
+ },
+ "Switch source": {
+  "es": "Cambiar de fuente",
+  "it": "Cambia sorgente",
+  "pt": "Trocar de fonte"
+ },
+ "StreamBoss is a player only. No content is included.": {
+  "es": "StreamBoss es solo un reproductor. No incluye contenido.",
+  "it": "StreamBoss è solo un lettore. Non include contenuti.",
+  "pt": "O StreamBoss é apenas um player. Nenhum conteúdo está incluído."
+ },
+ "Loading your library…": {
+  "es": "Cargando tu biblioteca…",
+  "it": "Caricamento della libreria…",
+  "pt": "Carregando sua biblioteca…"
+ },
+ "Live": {
+  "es": "En vivo",
+  "it": "In diretta",
+  "pt": "Ao vivo"
+ },
+ "Movies": {
+  "es": "Películas",
+  "it": "Film",
+  "pt": "Filmes"
+ },
+ "Series": {
+  "es": "Series",
+  "it": "Serie",
+  "pt": "Séries"
+ },
+ "My List": {
+  "es": "Mi lista",
+  "it": "La mia lista",
+  "pt": "Minha lista"
+ },
+ "Settings": {
+  "es": "Ajustes",
+  "it": "Impostazioni",
+  "pt": "Configurações"
+ },
+ "Other": {
+  "es": "Otros",
+  "it": "Altro",
+  "pt": "Outros"
+ },
+ "Channel %lld": {
+  "es": "Canal %lld",
+  "it": "Canale %lld",
+  "pt": "Canal %lld"
+ },
+ "Invalid credentials": {
+  "es": "Credenciales no válidas",
+  "it": "Credenziali non valide",
+  "pt": "Credenciais inválidas"
+ },
+ "Channel": {
+  "es": "Canal",
+  "it": "Canale",
+  "pt": "Canal"
+ },
+ "Movie": {
+  "es": "Película",
+  "it": "Film",
+  "pt": "Filme"
+ },
+ "Episode %lld": {
+  "es": "Episodio %lld",
+  "it": "Episodio %lld",
+  "pt": "Episódio %lld"
+ },
+ "Demo Channels": {
+  "es": "Canales de demostración",
+  "it": "Canali demo",
+  "pt": "Canais de demonstração"
+ },
+ "Open Movies": {
+  "es": "Películas libres",
+  "it": "Film liberi",
+  "pt": "Filmes livres"
+ },
+ "Demo Channel 1": {
+  "es": "Canal de demostración 1",
+  "it": "Canale demo 1",
+  "pt": "Canal de demonstração 1"
+ },
+ "Demo Channel 2": {
+  "es": "Canal de demostración 2",
+  "it": "Canale demo 2",
+  "pt": "Canal de demonstração 2"
+ }
+}

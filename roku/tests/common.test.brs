@@ -1,8 +1,9 @@
-' Run with:  brs-cli components/lib/Common.brs tests/common.test.brs
+' Run with:  brs-cli components/lib/Common.brs components/lib/Strings.brs tests/common.test.brs
 ' (brs-node interpreter; no Roku device needed)
 
 sub Main()
     failures = 0
+    useLang("en")
 
     body = "#EXTM3U" + chr(10)
     body = body + "#EXTINF:-1 tvg-id=""a.b"" tvg-logo=""http://x/l.png"" group-title=""News"",Channel One" + chr(10)
@@ -30,6 +31,29 @@ sub Main()
     failures = failures + check("toStr str", toStr("x"), "x")
     failures = failures + check("toStr invalid", toStr(invalid), "")
     failures = failures + check("itemKey", itemKey({ kind: "movie", id: "7" }), "movie:7")
+
+    ' ---- languages: English text is the key, the table gives the others, anything unknown stays English
+    failures = failures + check("en keeps the text", L("Live"), "Live")
+    failures = failures + check("en placeholders", LF("Channel {n}", { n: 5 }), "Channel 5")
+    useLang("es")
+    failures = failures + check("es text", L("Movies"), "Películas")
+    failures = failures + check("es placeholders", LF("Channel {n}", { n: 5 }), "Canal 5")
+    failures = failures + check("es two placeholders", LF("S{season} E{episode}  {title}", { season: "1", episode: "2", title: "Piloto" }), "T1 E2  Piloto")
+    failures = failures + check("es quotes", LF("{n} results for ""{q}""", { n: 3, q: "x" }), "3 resultados para ""x""")
+    failures = failures + check("es unknown text stays English", L("Not in the table"), "Not in the table")
+    useLang("it")
+    failures = failures + check("it text", L("Cancel"), "Annulla")
+    useLang("pt")
+    failures = failures + check("pt text", L("Settings"), "Configurações")
+    failures = failures + check("pt accents survive", L("Episode {n}"), "Episódio {n}")
+    r = parseM3u("#EXTM3U" + chr(10) + "#EXTINF:-1,Uno" + chr(10) + "http://h/live/1.m3u8" + chr(10))
+    failures = failures + check("pt default group", r.liveCats[0].id, "Outros")
+    useLang("es")
+    r = parseM3u("#EXTM3U" + chr(10) + "#EXTINF:-1,Uno" + chr(10) + "http://h/live/1.m3u8" + chr(10))
+    failures = failures + check("es default group", r.liveCats[0].id, "Otros")
+    failures = failures + check("demo names follow the language", demoLibrary().live[0].name, "Canal de demostración 1")
+    useLang("en")
+    failures = failures + check("back to English", demoLibrary().live[0].name, "Demo Channel 1")
 
     if failures = 0 then
         print "ALL PASSED"

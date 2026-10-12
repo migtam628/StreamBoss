@@ -2,6 +2,7 @@
 <component name="MainScene" extends="Scene">
   <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
   <script type="text/brightscript" uri="pkg:/components/lib/Common.brs" />
+  <script type="text/brightscript" uri="pkg:/components/lib/Strings.brs" />
   <children>
     <Rectangle id="bg" width="1280" height="720" color="0x0B0B12" />
     <Label id="brand" text="STREAMBOSS" translation="[40,22]" color="0xFF3D71" font="font:MediumBoldSystemFont" />
@@ -12,8 +13,8 @@
     <LabelList id="items" translation="[580,80]" itemSize="[670,40]" numRows="14" />
 
     <LabelList id="setup" translation="[340,150]" itemSize="[600,48]" numRows="8" visible="false" />
-    <Label id="setupTitle" text="Connect your provider" translation="[340,100]" visible="false" font="font:MediumBoldSystemFont" />
-    <Label id="hint" translation="[40,676]" width="1200" color="0x8C8CA1" text="OK select   *  add to My List   Left/Right switch columns" />
+    <Label id="setupTitle" translation="[340,100]" visible="false" font="font:MediumBoldSystemFont" />
+    <Label id="hint" translation="[40,676]" width="1200" color="0x8C8CA1" />
 
     <Video id="video" visible="false" translation="[0,0]" width="1280" height="720" />
     <Label id="osd" visible="false" translation="[40,30]" width="1200" color="0xFFFFFF" font="font:MediumBoldSystemFont" />

@@ -18,9 +18,13 @@ swift test                         # Core logic tests (works on Linux too)
 ## Features
 Xtream / M3U sources (password in the keychain), Live / Movies / Series with episodes,
 categories, My List (long-press), resume position, demo mode, native Siri Remote player with
-audio + subtitle menus.
+audio + subtitle menus. The app speaks English, Spanish, Italian and Portuguese and follows the Apple TV's
+language (Settings > General > Language). The texts are in `i18n/strings.json`; `python3 tool/tvos_i18n.py` turns
+them into the `App/Resources/<lang>.lproj/Localizable.strings` files and CI checks that every text has all three
+translations. In code, SwiftUI's `Text("...")` / `Button("...")` translate by themselves; for a plain string in
+`Core/` use `tr("...")` or `trf("... %lld ...", n)`.
 
 ## Limits
 - AVPlayer plays HLS and MP4 only. MKV and raw MPEG-TS streams will not play on Apple TV.
 - No TMDB metadata, EPG, search, channel zapping or shaders yet.
-- The SwiftUI layer has not been compiled yet (the Core logic has, on Linux). The first macOS CI run is the real check.
+- The SwiftUI layer is built in CI for the tvOS simulator and the Core logic is tested on Linux, but nobody has run it on an Apple TV yet.

@@ -5,7 +5,7 @@ struct SetupView: View {
 
     var body: some View {
         VStack(spacing: 28) {
-            Text("STREAMBOSS")
+            Text(verbatim: "STREAMBOSS")
                 .font(.system(size: 64, weight: .black))
                 .foregroundStyle(Color(red: 1, green: 0.24, blue: 0.44))
             Text("Bring your own provider. We just play it.")
@@ -16,14 +16,14 @@ struct SetupView: View {
             }
 
             Picker("Source", selection: $model.source.type) {
-                Text("Xtream").tag(SourceType.xtream)
-                Text("M3U").tag(SourceType.m3u)
+                Text(verbatim: "Xtream").tag(SourceType.xtream)
+                Text(verbatim: "M3U").tag(SourceType.m3u)
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: 700)
 
             VStack(spacing: 16) {
-                TextField(model.source.type == .m3u ? "Playlist URL" : "Server URL (http://host:port)",
+                TextField(model.source.type == .m3u ? LocalizedStringKey("Playlist URL") : LocalizedStringKey("Server URL (http://host:port)"),
                           text: $model.source.url)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()

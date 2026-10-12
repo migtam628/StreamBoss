@@ -4,7 +4,7 @@ end sub
 
 sub execute()
     req = m.top.request
-    res = { ok: false, error: "Bad request" }
+    res = { ok: false, error: L("Bad request") }
 
     if req.kind = "xtream" then
         res = loadXtream(req.cfg)

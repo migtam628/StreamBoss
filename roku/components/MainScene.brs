@@ -13,7 +13,6 @@ sub init()
     m.fetch = m.top.findNode("fetch")
 
     m.lib = { live: [], movies: [], series: [], liveCats: [], movieCats: [], seriesCats: [] }
-    m.tabNames = ["Live", "Movies", "Series", "My List", "Search", "Settings"]
     m.tabIdx = 0
     m.curCats = []
     m.curItems = []
@@ -27,6 +26,7 @@ sub init()
     m.cfg = regReadJson("cfg", { kind: "", url: "", user: "", pass: "" })
 
     buildTabs()
+    applyStaticText()
     m.tabs.observeField("itemFocused", "onTabFocus")
     m.tabs.observeField("itemSelected", "onTabSelect")
     m.cats.observeField("itemFocused", "onCatFocus")
@@ -61,7 +61,40 @@ sub setStatus(text as String)
 end sub
 
 sub buildTabs()
-    m.tabs.content = makeList(m.tabNames)
+    m.tabs.content = makeList([L("Live"), L("Movies"), L("Series"), L("My List"), L("Search"), L("Settings")])
+end sub
+
+sub applyStaticText()
+    m.setupTitle.text = L("Connect your provider")
+    m.top.findNode("hint").text = L("OK select   *  add to My List   Left/Right switch columns")
+end sub
+
+function languageName() as String
+    pref = langPref()
+    if pref = "en" then return "English"
+    if pref = "es" then return "Español"
+    if pref = "it" then return "Italiano"
+    if pref = "pt" then return "Português"
+    return L("Device language")
+end function
+
+' Settings > Language: Device language, English, Spanish, Italian, Portuguese, round again. Shown at once.
+sub cycleLanguage()
+    order = ["", "en", "es", "it", "pt"]
+    cur = langPref()
+    nextIdx = 0
+    for i = 0 to order.count() - 1
+        if order[i] = cur then nextIdx = (i + 1) mod order.count()
+    end for
+    setLang(order[nextIdx])
+    saved = m.tabIdx
+    m.keepCursor = 4
+    buildTabs()
+    applyStaticText()
+    m.tabs.jumpToItem = saved
+    showTab(saved)
+    if m.connected then setStatus(librarySummary()) else setStatus("")
+    m.items.setFocus(true)
 end sub
 
 ' ---- setup screen ----------------------------------------------------------
@@ -87,42 +120,49 @@ sub hideSetup()
 end sub
 
 sub refreshSetup()
-    typeName = "Xtream"
-    if m.cfg.kind = "m3u" then typeName = "M3U playlist"
-    rows = ["Source type: " + typeName]
+    typeName = L("Xtream")
+    if m.cfg.kind = "m3u" then typeName = L("M3U playlist")
+    rows = [LF("Source type: {name}", { name: typeName })]
+    ids = ["type"]
     if m.cfg.kind = "m3u" then
-        rows.push("Playlist URL: " + m.cfg.url)
+        rows.push(LF("Playlist URL: {url}", { url: m.cfg.url }))
+        ids.push("url")
     else
-        rows.push("Server URL: " + m.cfg.url)
-        rows.push("Username: " + m.cfg.user)
+        rows.push(LF("Server URL: {url}", { url: m.cfg.url }))
+        ids.push("url")
+        rows.push(LF("Username: {name}", { name: m.cfg.user }))
+        ids.push("user")
         stars = ""
         for i = 1 to Len(m.cfg.pass)
             stars = stars + "*"
         end for
-        rows.push("Password: " + stars)
+        rows.push(LF("Password: {pass}", { pass: stars }))
+        ids.push("pass")
     end if
-    rows.push("Connect")
-    rows.push("Try demo mode")
-    m.setupRows = rows
+    rows.push(L("Connect"))
+    ids.push("connect")
+    rows.push(L("Try demo mode"))
+    ids.push("demo")
+    m.setupIds = ids
     m.setup.content = makeList(rows)
 end sub
 
 sub onSetupSelect()
-    row = m.setupRows[m.setup.itemSelected]
-    if Left(row, 11) = "Source type" then
+    id = m.setupIds[m.setup.itemSelected]
+    if id = "type" then
         if m.cfg.kind = "m3u" then m.cfg.kind = "xtream" else m.cfg.kind = "m3u"
         refreshSetup()
-    else if Left(row, 12) = "Playlist URL" or Left(row, 10) = "Server URL" then
-        askText("URL", "url", false)
-    else if Left(row, 8) = "Username" then
-        askText("Username", "user", false)
-    else if Left(row, 8) = "Password" then
-        askText("Password", "pass", true)
-    else if row = "Connect" then
+    else if id = "url" then
+        askText(L("URL"), "url", false)
+    else if id = "user" then
+        askText(L("Username"), "user", false)
+    else if id = "pass" then
+        askText(L("Password"), "pass", true)
+    else if id = "connect" then
         if m.cfg.kind = "" then m.cfg.kind = "xtream"
         regWrite("cfg", FormatJson(m.cfg))
         connect()
-    else if row = "Try demo mode" then
+    else if id = "demo" then
         m.cfg = { kind: "demo", url: "", user: "", pass: "" }
         connect()
     end if
@@ -135,7 +175,7 @@ sub askText(title as String, field as String, secret as Boolean)
     dlg.title = title
     if field <> "" and m.cfg[field] <> invalid then dlg.text = m.cfg[field]
     dlg.textEditBox.secureMode = secret
-    dlg.buttons = ["OK", "Cancel"]
+    dlg.buttons = [L("OK"), L("Cancel")]
     dlg.observeFieldScoped("buttonSelected", "onKeyboardButton")
     m.kbDialog = dlg
     m.top.dialog = dlg
@@ -163,7 +203,7 @@ end sub
 
 sub connect()
     hideSetup()
-    setStatus("Loading your library...")
+    setStatus(L("Loading your library..."))
     if m.cfg.kind = "demo" then
         applyLibrary(demoLibrary())
         return
@@ -177,14 +217,14 @@ sub onFetchResult()
     if res = invalid then return
 
     if res.kind = "episodes" then
-        if res.ok then showEpisodes(res.episodes) else setStatus("Episodes failed: " + res.error)
+        if res.ok then showEpisodes(res.episodes) else setStatus(LF("Episodes failed: {error}", { error: res.error }))
         return
     end if
 
     if res.ok then
         applyLibrary(res)
     else
-        setStatus("Could not connect: " + res.error)
+        setStatus(LF("Could not connect: {error}", { error: res.error }))
         showSetup()
     end if
 end sub
@@ -192,15 +232,19 @@ end sub
 sub applyLibrary(res as Object)
     m.lib = res
     m.connected = true
-    srcName = "Demo"
-    if m.cfg.kind <> "demo" then srcName = m.cfg.url
-    setStatus(srcName + "   " + m.lib.live.count().ToStr() + " channels, " + m.lib.movies.count().ToStr() + " movies, " + m.lib.series.count().ToStr() + " series")
+    setStatus(librarySummary())
     m.tabs.jumpToItem = 0
     showTab(0)
     m.tabs.setFocus(true)
 end sub
 
 ' ---- tabs / categories / items --------------------------------------------
+
+function librarySummary() as String
+    srcName = L("Demo")
+    if m.cfg.kind <> "demo" then srcName = m.cfg.url
+    return LF("{src}   {live} channels, {movies} movies, {series} series", { src: srcName, live: m.lib.live.count(), movies: m.lib.movies.count(), series: m.lib.series.count() })
+end function
 
 sub onTabFocus()
     showTab(m.tabs.itemFocused)
@@ -232,7 +276,7 @@ sub showTab(idx as Integer)
     else if idx = 4 then
         setCats([])
         setItems([])
-        setStatus("Press OK to search")
+        setStatus(L("Press OK to search"))
     else
         setCats([])
         showSettingsItems()
@@ -240,7 +284,7 @@ sub showTab(idx as Integer)
 end sub
 
 sub setCats(cats as Object)
-    m.curCats = [{ id: "", name: "All" }]
+    m.curCats = [{ id: "", name: L("All") }]
     for each c in cats
         m.curCats.push(c)
     end for
@@ -295,7 +339,12 @@ end sub
 
 sub showSettingsItems()
     m.curItems = []
-    m.items.content = makeList(["Reload library", "Change source", "Clear My List", "Clear resume history", "About StreamBoss"])
+    m.settingIds = ["reload", "source", "clearlist", "clearresume", "language", "about"]
+    m.items.content = makeList([L("Reload library"), L("Change source"), L("Clear My List"), L("Clear resume history"), LF("Language: {name}", { name: languageName() }), L("About StreamBoss")])
+    if m.keepCursor <> invalid then
+        m.items.jumpToItem = m.keepCursor
+        m.keepCursor = invalid
+    end if
     m.settingsMode = true
 end sub
 
@@ -315,20 +364,23 @@ sub onItemSelect()
 end sub
 
 sub runSetting(idx as Integer)
-    if idx = 0 then
+    id = m.settingIds[idx]
+    if id = "reload" then
         connect()
-    else if idx = 1 then
+    else if id = "source" then
         showSetup()
-    else if idx = 2 then
+    else if id = "clearlist" then
         m.favs = []
         regWrite("fav", "[]")
-        setStatus("My List cleared")
-    else if idx = 3 then
+        setStatus(L("My List cleared"))
+    else if id = "clearresume" then
         m.resume = {}
         regWrite("pos", "{}")
-        setStatus("Resume history cleared")
+        setStatus(L("Resume history cleared"))
+    else if id = "language" then
+        cycleLanguage()
     else
-        setStatus("StreamBoss: a player only. Bring your own licensed provider.")
+        setStatus(L("StreamBoss: a player only. Bring your own licensed provider."))
     end if
 end sub
 
@@ -338,8 +390,8 @@ sub askSearch()
     m.kbField = ""
     m.kbMode = "search"
     dlg = CreateObject("roSGNode", "StandardKeyboardDialog")
-    dlg.title = "Search"
-    dlg.buttons = ["Search", "Cancel"]
+    dlg.title = L("Search")
+    dlg.buttons = [L("Search"), L("Cancel")]
     dlg.observeFieldScoped("buttonSelected", "onKeyboardButton")
     m.kbDialog = dlg
     m.top.dialog = dlg
@@ -358,7 +410,7 @@ sub runSearch(q as String)
         end for
     end for
     setItems(found)
-    setStatus(found.count().ToStr() + " results for """ + q + """")
+    setStatus(LF("{n} results for ""{q}""", { n: found.count(), q: q }))
     m.items.setFocus(true)
 end sub
 
@@ -366,19 +418,19 @@ end sub
 
 sub openSeries(item as Object)
     if m.cfg.kind <> "xtream" then
-        setStatus("Series are only available on Xtream sources")
+        setStatus(L("Series are only available on Xtream sources"))
         return
     end if
     m.savedItems = m.curItems
     m.seriesTitle = item.name
-    setStatus("Loading episodes...")
+    setStatus(L("Loading episodes..."))
     m.fetch.request = { kind: "episodes", cfg: m.cfg, seriesId: item.id }
     m.fetch.control = "RUN"
 end sub
 
 sub showEpisodes(eps as Object)
     setItems(eps)
-    setStatus(m.seriesTitle + ": " + eps.count().ToStr() + " episodes   (Back returns)")
+    setStatus(LF("{title}: {n} episodes   (Back returns)", { title: m.seriesTitle, n: eps.count() }))
     m.items.setFocus(true)
 end sub
 
@@ -410,7 +462,7 @@ sub toggleFavorite(item as Object)
     end if
     m.favs = kept
     regWrite("fav", FormatJson(kept))
-    if removed then setStatus("Removed from My List") else setStatus("Added to My List")
+    if removed then setStatus(L("Removed from My List")) else setStatus(L("Added to My List"))
     if m.tabIdx = 3 then setItems(m.favs)
 end sub
 
@@ -477,7 +529,7 @@ sub onVideoState()
         regWrite("pos", FormatJson(m.resume))
         closeVideo()
     else if state = "error" then
-        setStatus("Playback error: " + m.video.errorMsg)
+        setStatus(LF("Playback error: {error}", { error: m.video.errorMsg }))
         closeVideo()
     end if
 end sub

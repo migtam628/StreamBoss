@@ -47,7 +47,7 @@ struct XtreamClient {
         let j = try await get(nil)
         let info = (j as? [String: Any])?["user_info"] as? [String: Any]
         guard XtreamClient.str(info?["auth"]) == "1" else {
-            throw NSError(domain: "StreamBoss", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid credentials"])
+            throw NSError(domain: "StreamBoss", code: 1, userInfo: [NSLocalizedDescriptionKey: tr("Invalid credentials")])
         }
     }
 
@@ -73,7 +73,7 @@ struct XtreamClient {
         lib.seriesCategories = cats(serCats)
         lib.live = (live as? [[String: Any]] ?? []).compactMap {
             guard let id = XtreamClient.str($0["stream_id"]) else { return nil }
-            return MediaItem(id: id, name: XtreamClient.str($0["name"]) ?? "Channel", kind: .live,
+            return MediaItem(id: id, name: XtreamClient.str($0["name"]) ?? tr("Channel"), kind: .live,
                              url: "\(base)/live/\(user)/\(pass)/\(id).m3u8",
                              poster: XtreamClient.str($0["stream_icon"]),
                              categoryId: XtreamClient.str($0["category_id"]) ?? "")
@@ -81,14 +81,14 @@ struct XtreamClient {
         lib.movies = (vod as? [[String: Any]] ?? []).compactMap {
             guard let id = XtreamClient.str($0["stream_id"]) else { return nil }
             let ext = XtreamClient.str($0["container_extension"]) ?? "mp4"
-            return MediaItem(id: id, name: XtreamClient.str($0["name"]) ?? "Movie", kind: .movie,
+            return MediaItem(id: id, name: XtreamClient.str($0["name"]) ?? tr("Movie"), kind: .movie,
                              url: "\(base)/movie/\(user)/\(pass)/\(id).\(ext)",
                              poster: XtreamClient.str($0["stream_icon"]),
                              categoryId: XtreamClient.str($0["category_id"]) ?? "")
         }
         lib.series = (ser as? [[String: Any]] ?? []).compactMap {
             guard let id = XtreamClient.str($0["series_id"]) else { return nil }
-            return MediaItem(id: id, name: XtreamClient.str($0["name"]) ?? "Series", kind: .series,
+            return MediaItem(id: id, name: XtreamClient.str($0["name"]) ?? tr("Series"), kind: .series,
                              poster: XtreamClient.str($0["cover"]),
                              categoryId: XtreamClient.str($0["category_id"]) ?? "",
                              plot: XtreamClient.str($0["plot"]))
@@ -106,7 +106,7 @@ struct XtreamClient {
                 let ext = XtreamClient.str(e["container_extension"]) ?? "mp4"
                 let num = Int(XtreamClient.str(e["episode_num"]) ?? "") ?? 0
                 out.append(Episode(id: id,
-                                   title: XtreamClient.str(e["title"]) ?? "Episode \(num)",
+                                   title: XtreamClient.str(e["title"]) ?? trf("Episode %lld", num),
                                    season: Int(season) ?? 0, number: num,
                                    url: "\(base)/series/\(user)/\(pass)/\(id).\(ext)"))
             }

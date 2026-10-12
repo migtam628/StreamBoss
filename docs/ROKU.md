@@ -56,6 +56,14 @@ file and line.
 > The installer is tested against a stand-in for a Roku's developer web server, not against a real Roku. If it
 > does not work on yours, use the browser steps below and tell me what it printed.
 
+## Language
+
+The channel speaks English, Spanish, Italian and Portuguese. It follows the language of the Roku (Settings > System >
+Language) when that is one of the four, and otherwise uses English. To pick one yourself: **Settings tab > Language**,
+press OK to go round: Device language, English, Español, Italiano, Português. The change shows at once. What stays as
+it is: channel and title names (they come from your provider) and the Roku's own system dialogs, such as the
+keyboard, which follow the Roku's language.
+
 ## Install by hand (browser)
 
 

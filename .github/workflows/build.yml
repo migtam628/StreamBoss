@@ -170,7 +170,8 @@ jobs:
       - run: npm i -g brighterscript brs-node
       - run: python3 ../tool/roku_lint.py .   # what the Roku's own compiler rejects but bsc lets through
       - run: bsc --project bsconfig.json --copyToStaging=false --createPackage=false
-      - run: brs-cli components/lib/Common.brs tests/common.test.brs | tee /tmp/roku-test.txt && grep -q "ALL PASSED" /tmp/roku-test.txt
+      - run: python3 ../tool/roku_i18n.py --check   # every text has es, it and pt, and Strings.brs is up to date
+      - run: brs-cli components/lib/Common.brs components/lib/Strings.brs tests/common.test.brs | tee /tmp/roku-test.txt && grep -q "ALL PASSED" /tmp/roku-test.txt
       - run: zip -r "../StreamBoss-${{ inputs.version || 'dev' }}-roku.zip" manifest source components images
       - uses: actions/upload-artifact@v4
         with: { name: streamboss-roku, path: StreamBoss-*-roku.zip, if-no-files-found: error }
@@ -229,6 +230,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
         with: { swift-version: "6.0" }
+      - run: python3 ../tool/tvos_i18n.py --check   # every text has es, it and pt, and the .strings files are up to date
       - run: swift test
 
   tvos-app:

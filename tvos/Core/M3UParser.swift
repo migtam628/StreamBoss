@@ -22,9 +22,9 @@ enum M3UParser {
                 } else {
                     name = ""
                 }
-                if name.isEmpty { name = attrs["tvg-name"] ?? "Channel \(n + 1)" }
+                if name.isEmpty { name = attrs["tvg-name"] ?? trf("Channel %lld", n + 1) }
             } else if !line.hasPrefix("#") {
-                let group = (attrs["group-title"]?.trimmingCharacters(in: .whitespaces)).flatMap { $0.isEmpty ? nil : $0 } ?? "Other"
+                let group = (attrs["group-title"]?.trimmingCharacters(in: .whitespaces)).flatMap { $0.isEmpty ? nil : $0 } ?? tr("Other")
                 let isVod = line.contains("/movie/") || line.contains("/series/")
                 let item = MediaItem(
                     id: String(n),

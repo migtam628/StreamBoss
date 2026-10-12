@@ -11,6 +11,10 @@ It is a player only: you supply your own Xtream or M3U provider.
 - `*` (Options button) adds/removes My List entries
 - Resume position for movies/episodes; Up/Down zap channels while watching live TV
 - Demo mode with public test streams
+- English, Spanish, Italian and Portuguese: it follows the Roku's language, or choose one in Settings > Language
+  (Device language, English, Español, Italiano, Português). Texts are in `i18n/strings.json`;
+  `python3 tool/roku_i18n.py` compiles them into `components/lib/Strings.brs` and CI checks every text has all three
+  translations. In code write `L("English text")`, or `LF("{n} results", { n: 3 })` when it holds a value.
 
 ## Limits (compared with the Flutter app)
 - No TMDB metadata, EPG guide, subtitle styling or shaders

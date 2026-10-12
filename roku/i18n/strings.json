@@ -1,0 +1,297 @@
+{
+ "Live": {
+  "es": "En vivo",
+  "it": "In diretta",
+  "pt": "Ao vivo"
+ },
+ "Movies": {
+  "es": "Películas",
+  "it": "Film",
+  "pt": "Filmes"
+ },
+ "Series": {
+  "es": "Series",
+  "it": "Serie",
+  "pt": "Séries"
+ },
+ "My List": {
+  "es": "Mi lista",
+  "it": "La mia lista",
+  "pt": "Minha lista"
+ },
+ "Search": {
+  "es": "Buscar",
+  "it": "Cerca",
+  "pt": "Buscar"
+ },
+ "Settings": {
+  "es": "Ajustes",
+  "it": "Impostazioni",
+  "pt": "Configurações"
+ },
+ "Connect your provider": {
+  "es": "Conecta tu proveedor",
+  "it": "Collega il tuo fornitore",
+  "pt": "Conecte seu provedor"
+ },
+ "OK select   *  add to My List   Left/Right switch columns": {
+  "es": "OK elegir   *  añadir a Mi lista   Izq./Der. cambiar de columna",
+  "it": "OK seleziona   *  aggiungi alla lista   Sinistra/Destra cambia colonna",
+  "pt": "OK selecionar   *  adicionar à lista   Esq./Dir. mudar de coluna"
+ },
+ "Source type: {name}": {
+  "es": "Tipo de fuente: {name}",
+  "it": "Tipo di sorgente: {name}",
+  "pt": "Tipo de fonte: {name}"
+ },
+ "Xtream": {
+  "es": "Xtream",
+  "it": "Xtream",
+  "pt": "Xtream"
+ },
+ "M3U playlist": {
+  "es": "Lista M3U",
+  "it": "Playlist M3U",
+  "pt": "Lista M3U"
+ },
+ "Playlist URL: {url}": {
+  "es": "URL de la lista: {url}",
+  "it": "URL della playlist: {url}",
+  "pt": "URL da lista: {url}"
+ },
+ "Server URL: {url}": {
+  "es": "URL del servidor: {url}",
+  "it": "URL del server: {url}",
+  "pt": "URL do servidor: {url}"
+ },
+ "Username: {name}": {
+  "es": "Usuario: {name}",
+  "it": "Nome utente: {name}",
+  "pt": "Usuário: {name}"
+ },
+ "Password: {pass}": {
+  "es": "Contraseña: {pass}",
+  "it": "Password: {pass}",
+  "pt": "Senha: {pass}"
+ },
+ "Connect": {
+  "es": "Conectar",
+  "it": "Connetti",
+  "pt": "Conectar"
+ },
+ "Try demo mode": {
+  "es": "Probar el modo demo",
+  "it": "Prova la modalità demo",
+  "pt": "Testar o modo demo"
+ },
+ "URL": {
+  "es": "URL",
+  "it": "URL",
+  "pt": "URL"
+ },
+ "Username": {
+  "es": "Usuario",
+  "it": "Nome utente",
+  "pt": "Usuário"
+ },
+ "Password": {
+  "es": "Contraseña",
+  "it": "Password",
+  "pt": "Senha"
+ },
+ "OK": {
+  "es": "OK",
+  "it": "OK",
+  "pt": "OK"
+ },
+ "Cancel": {
+  "es": "Cancelar",
+  "it": "Annulla",
+  "pt": "Cancelar"
+ },
+ "Loading your library...": {
+  "es": "Cargando tu biblioteca...",
+  "it": "Caricamento della libreria...",
+  "pt": "Carregando sua biblioteca..."
+ },
+ "Could not connect: {error}": {
+  "es": "No se pudo conectar: {error}",
+  "it": "Impossibile connettersi: {error}",
+  "pt": "Não foi possível conectar: {error}"
+ },
+ "Episodes failed: {error}": {
+  "es": "No se pudieron cargar los episodios: {error}",
+  "it": "Impossibile caricare gli episodi: {error}",
+  "pt": "Não foi possível carregar os episódios: {error}"
+ },
+ "Demo": {
+  "es": "Demo",
+  "it": "Demo",
+  "pt": "Demo"
+ },
+ "{src}   {live} channels, {movies} movies, {series} series": {
+  "es": "{src}   {live} canales, {movies} películas, {series} series",
+  "it": "{src}   {live} canali, {movies} film, {series} serie",
+  "pt": "{src}   {live} canais, {movies} filmes, {series} séries"
+ },
+ "Press OK to search": {
+  "es": "Pulsa OK para buscar",
+  "it": "Premi OK per cercare",
+  "pt": "Pressione OK para buscar"
+ },
+ "My List cleared": {
+  "es": "Mi lista vaciada",
+  "it": "Lista svuotata",
+  "pt": "Lista limpa"
+ },
+ "Resume history cleared": {
+  "es": "Historial de reanudación borrado",
+  "it": "Cronologia di ripresa cancellata",
+  "pt": "Histórico de retomada apagado"
+ },
+ "StreamBoss: a player only. Bring your own licensed provider.": {
+  "es": "StreamBoss: solo un reproductor. Trae tu propio proveedor con licencia.",
+  "it": "StreamBoss: solo un lettore. Porta il tuo fornitore con licenza.",
+  "pt": "StreamBoss: apenas um player. Traga seu próprio provedor licenciado."
+ },
+ "{n} results for \"{q}\"": {
+  "es": "{n} resultados para \"{q}\"",
+  "it": "{n} risultati per \"{q}\"",
+  "pt": "{n} resultados para \"{q}\""
+ },
+ "Series are only available on Xtream sources": {
+  "es": "Las series solo están disponibles en fuentes Xtream",
+  "it": "Le serie sono disponibili solo con sorgenti Xtream",
+  "pt": "As séries só estão disponíveis em fontes Xtream"
+ },
+ "Loading episodes...": {
+  "es": "Cargando episodios...",
+  "it": "Caricamento degli episodi...",
+  "pt": "Carregando episódios..."
+ },
+ "{title}: {n} episodes   (Back returns)": {
+  "es": "{title}: {n} episodios   (Atrás vuelve)",
+  "it": "{title}: {n} episodi   (Indietro per tornare)",
+  "pt": "{title}: {n} episódios   (Voltar retorna)"
+ },
+ "Removed from My List": {
+  "es": "Quitado de Mi lista",
+  "it": "Rimosso dalla lista",
+  "pt": "Removido da lista"
+ },
+ "Added to My List": {
+  "es": "Añadido a Mi lista",
+  "it": "Aggiunto alla lista",
+  "pt": "Adicionado à lista"
+ },
+ "Playback error: {error}": {
+  "es": "Error de reproducción: {error}",
+  "it": "Errore di riproduzione: {error}",
+  "pt": "Erro de reprodução: {error}"
+ },
+ "All": {
+  "es": "Todo",
+  "it": "Tutti",
+  "pt": "Todos"
+ },
+ "Reload library": {
+  "es": "Recargar biblioteca",
+  "it": "Ricarica libreria",
+  "pt": "Recarregar biblioteca"
+ },
+ "Change source": {
+  "es": "Cambiar fuente",
+  "it": "Cambia sorgente",
+  "pt": "Trocar fonte"
+ },
+ "Clear My List": {
+  "es": "Vaciar Mi lista",
+  "it": "Svuota la lista",
+  "pt": "Limpar minha lista"
+ },
+ "Clear resume history": {
+  "es": "Borrar historial de reanudación",
+  "it": "Cancella cronologia di ripresa",
+  "pt": "Apagar histórico de retomada"
+ },
+ "About StreamBoss": {
+  "es": "Acerca de StreamBoss",
+  "it": "Informazioni su StreamBoss",
+  "pt": "Sobre o StreamBoss"
+ },
+ "Language: {name}": {
+  "es": "Idioma: {name}",
+  "it": "Lingua: {name}",
+  "pt": "Idioma: {name}"
+ },
+ "Device language": {
+  "es": "Idioma del dispositivo",
+  "it": "Lingua del dispositivo",
+  "pt": "Idioma do dispositivo"
+ },
+ "request failed": {
+  "es": "la solicitud falló",
+  "it": "richiesta non riuscita",
+  "pt": "falha na solicitação"
+ },
+ "timed out": {
+  "es": "se agotó el tiempo",
+  "it": "tempo scaduto",
+  "pt": "tempo esgotado"
+ },
+ "Could not reach server": {
+  "es": "No se pudo acceder al servidor",
+  "it": "Impossibile raggiungere il server",
+  "pt": "Não foi possível acessar o servidor"
+ },
+ "Invalid credentials": {
+  "es": "Credenciales no válidas",
+  "it": "Credenziali non valide",
+  "pt": "Credenciais inválidas"
+ },
+ "Bad request": {
+  "es": "Solicitud no válida",
+  "it": "Richiesta non valida",
+  "pt": "Solicitação inválida"
+ },
+ "Channel {n}": {
+  "es": "Canal {n}",
+  "it": "Canale {n}",
+  "pt": "Canal {n}"
+ },
+ "Other": {
+  "es": "Otros",
+  "it": "Altro",
+  "pt": "Outros"
+ },
+ "Episode {n}": {
+  "es": "Episodio {n}",
+  "it": "Episodio {n}",
+  "pt": "Episódio {n}"
+ },
+ "S{season} E{episode}  {title}": {
+  "es": "T{season} E{episode}  {title}",
+  "it": "S{season} E{episode}  {title}",
+  "pt": "T{season} E{episode}  {title}"
+ },
+ "Demo Channel 1": {
+  "es": "Canal de demostración 1",
+  "it": "Canale demo 1",
+  "pt": "Canal de demonstração 1"
+ },
+ "Demo Channel 2": {
+  "es": "Canal de demostración 2",
+  "it": "Canale demo 2",
+  "pt": "Canal de demonstração 2"
+ },
+ "Demo Channels": {
+  "es": "Canales de demostración",
+  "it": "Canali demo",
+  "pt": "Canais de demonstração"
+ },
+ "Open Movies": {
+  "es": "Películas libres",
+  "it": "Film liberi",
+  "pt": "Filmes livres"
+ }
+}

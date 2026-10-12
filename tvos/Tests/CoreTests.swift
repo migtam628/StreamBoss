@@ -37,6 +37,17 @@ final class CoreTests: XCTestCase {
         XCTAssertNil(XtreamClient.str(""))
     }
 
+    func testTextsStayEnglishWhereThereIsNoTranslation() {
+        // Without a translation file (here, on Linux) tr() gives back the English text it was asked for.
+        XCTAssertEqual(tr("Other"), "Other")
+        XCTAssertEqual(trf("Channel %lld", 3), "Channel 3")
+        let lib = M3UParser.parse("#EXTINF:-1,\nhttp://h/live/1.m3u8\n")
+        XCTAssertEqual(lib.live.first?.name, "Channel 1")
+        XCTAssertEqual(lib.liveCategories.map(\.id), ["Other"])
+        XCTAssertEqual(Demo.library.live.first?.name, "Demo Channel 1")
+        XCTAssertEqual(Demo.library.liveCategories.first?.name, "Demo Channels")
+    }
+
     func testMediaKeyIsKindScoped() {
         let a = MediaItem(id: "1", name: "A", kind: .live)
         let b = MediaItem(id: "1", name: "B", kind: .movie)

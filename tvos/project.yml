@@ -16,6 +16,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: StreamBoss
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, es, it, pt]   # the app follows the Apple TV's language; texts in i18n/strings.json
         UILaunchScreen: {}
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true   # many IPTV servers are plain http
