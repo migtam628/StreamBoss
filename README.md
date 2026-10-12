@@ -263,3 +263,9 @@ Linux desktop needs `libmpv-dev libsecret-1-dev` installed.
 Not done yet: tvOS and Roku are leaner than the Flutter app (no TMDB, EPG or shaders; see their READMEs),
 iOS picture-in-picture, shader file import,
 intro/outro detection (skip-intro is a fixed +90s jump).
+
+## License
+
+All rights reserved (see [LICENSE](LICENSE)). The source is public so it can be read; copying, changing or
+redistributing it needs written permission. You may download the released apps and run them for your own
+personal use.

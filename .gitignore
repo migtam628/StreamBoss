@@ -19,3 +19,7 @@ pubspec.lock
 /tvos/.build/
 /tvos/*.xcodeproj/
 /roku/build/
+
+# Python bytecode from the helper scripts in tool/
+__pycache__/
+*.pyc
