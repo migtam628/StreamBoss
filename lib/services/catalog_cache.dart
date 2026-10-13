@@ -95,8 +95,12 @@ class CatalogCache {
 /// isolate costs a few milliseconds; parsing 100,000 titles on the UI thread costs seconds and freezes
 /// every animation and key press meanwhile).
 Future<T> parseAway<T>(String name, int bytes, T Function() job) {
-  return PerfLog.time(name, () => bytes < 200 * 1024 ? Future.value(job()) : Isolate.run(job));
+  return PerfLog.time(name, () => useIsolateFor(bytes, web: kIsWeb) ? Isolate.run(job) : Future.value(job()));
 }
+
+/// Whether a parse of [bytes] goes to a background isolate: only for a big answer, and never in a browser (the
+/// web app has no isolates: starting one fails with "Unsupported operation: new RawReceivePort").
+bool useIsolateFor(int bytes, {required bool web}) => !web && bytes >= 200 * 1024;
 
 // ---- file format: "SBL1", kind, count, then each blob as (length, bytes), all gzipped ----------------
 

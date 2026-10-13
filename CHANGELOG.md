@@ -4,6 +4,10 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b50 - 2026-10-13
+- **Fix: the web app could not load a library.** After the provider answered (every request returned 200) the web app stopped with "Unsupported operation: new RawReceivePort" and showed the sign-in form again. Since b25 a large answer (over 200 KB, which is any real library) was parsed in a background isolate, and a browser has no isolates. The web app now parses on the page's own thread (the other apps keep the background isolate). Phones, tablets and computers were not affected.
+  - **Checked:** which parses go to an isolate (and that the web app never does) is covered by tests. **Run in a browser here:** the web build loaded a 4,000-title library from a stand-in provider and showed Home. Please hard-refresh your web app and connect your own provider; a big library now parses on the page's own thread, so the page may pause for a moment while it does.
+
 ## 0.3.0b49 - 2026-10-12
 - **Roku sync.** The Roku channel can now sign in to your sync server (**Settings > Sign in to sync** or **Create a sync account**; or **Use my sync account** on the first screen) and keep **My List** and **where you stopped watching** in step with your other devices, both ways, with the same rules as the other apps: what one device adds and another removes both stay applied, and finishing a video clears its resume point everywhere. It syncs when the channel opens, about fifteen seconds after you change My List or stop a video, and with **Settings > Sync now**; **Sign out of sync** forgets the account on the Roku.
   - **Sources:** the first screen lists the sources your other devices saved as **From sync: name**. Choosing one fills in the address and login name (never the password); type the password and Connect.
