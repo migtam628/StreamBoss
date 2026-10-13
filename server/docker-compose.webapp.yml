@@ -1,0 +1,12 @@
+# Serves StreamBoss on the web (the browser version of the app) from this machine, behind the same Caddy, on its own name.
+#   1. Point the name (for example web.streamboss.site) at this machine: an A record (and AAAA if it has IPv6).
+#   2. Put WEBAPP_DOMAIN in .env. Make the folder the files go in (see README, "StreamBoss on the web").
+#   3. docker compose -f docker-compose.yml -f docker-compose.webapp.yml up -d
+#      (add -f docker-compose.web.yml and -f docker-compose.moobee.yml if you run those too)
+services:
+  caddy:
+    environment:
+      WEBAPP_DOMAIN: ${WEBAPP_DOMAIN:?Put the web app name in .env (WEBAPP_DOMAIN=web.streamboss.site)}
+    volumes:
+      - ./sites/webapp.caddy:/etc/caddy/sites/webapp.caddy:ro
+      - ${WEB_ROOT:-/srv/streamboss/web}/webapp:/srv/webapp:ro

@@ -1579,7 +1579,7 @@ class AppState extends ChangeNotifier {
       }
     }
     if (parts.isEmpty) {
-      guideError = firstError.toString().replaceFirst('Exception: ', '');
+      guideError = firstError == null ? null : friendlyError(firstError);
     } else {
       guide = mergeXmltv(parts);
       _guideLoaded = true;

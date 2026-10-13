@@ -113,6 +113,39 @@ internet). Run **Actions > Website > Run workflow** once to put the page there. 
 cd /srv/streamboss/web/downloads && ls -d v* | sort -V | head -n -12 | xargs -r rm -rf
 ```
 
+## StreamBoss on the web
+
+The browser version of StreamBoss can be served from the same machine, on its own name such as `web.streamboss.site`, for
+people who would rather not install the app. Every tagged release sends its web build there with the downloads
+(`tool/publish_site.sh`, into `webapp/` inside the website folder, with the same restricted key: nothing new to set up in
+GitHub).
+
+**1. DNS.** An A record for `web.streamboss.site` pointing at this machine (and AAAA if it has IPv6).
+
+**2. The folder** (the deploy user must own it, like `downloads/`):
+
+```sh
+sudo mkdir -p /srv/streamboss/web/webapp && sudo chown -R deploy:deploy /srv/streamboss/web/webapp
+```
+
+**3. Serve it.** In `.env`: `WEBAPP_DOMAIN=web.streamboss.site` and add `docker-compose.webapp.yml` to `COMPOSE_FILE`
+(for example `COMPOSE_FILE=docker-compose.yml:docker-compose.web.yml:docker-compose.webapp.yml`), then
+`docker compose up -d`. Caddy gets the certificate by itself.
+
+**4. Put the app there.** The next tagged release does it. For a release that is already out, run **Actions > Publish
+downloads > Run workflow** with that release's build run (it sends the web build too).
+
+If you use the sync server from the web app, set `ALLOWED_ORIGINS=https://web.streamboss.site` in `.env` (the default `*`
+works too).
+
+**What a browser cannot do** (the apps can). The page is served over https, and a browser then refuses:
+- a provider or a guide at a plain **http://** address (mixed content), and
+- any server that does not tell websites they may read it (CORS), which most IPTV servers and guide files do not.
+
+So the web app suits providers with an https address that allows websites; for the others people need the app. StreamBoss
+says which of the two it was when a request is blocked. There is no proxy for this on purpose: one that fetched any address
+for anyone would be an open relay for your machine.
+
 ## Run MooBee on the same machine
 
 [MooBee](https://github.com/migtam628/moobee) (a movie and TV discovery site) can run next to the website, behind the same

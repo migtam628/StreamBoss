@@ -33,12 +33,12 @@ On a phone:
 | Windows, macOS, Linux | Flutter desktop |
 | Android, Android TV, Google TV, Fire TV | Flutter Android (D-pad focus supported) |
 | iOS | Flutter iOS |
-| Web | Flutter web (see note) |
+| Web | Flutter web, hosted at https://web.streamboss.site (see note) |
 | Apple TV (tvOS) | Separate native SwiftUI app in [`tvos/`](tvos/) (Flutter doesn't support tvOS) |
 | Roku | Separate native channel in [`roku/`](roku/) (Roku can't run Flutter). Install and use: [docs/ROKU.md](docs/ROKU.md) |
 
 Note: browsers block mixed-content (http) streams and most IPTV servers lack CORS headers,
-so web works best with https + CORS-enabled providers.
+so web works best with https + CORS-enabled providers. StreamBoss says which of the two blocked a request. To host it yourself: `server/README.md`, "StreamBoss on the web".
 
 Web playback uses the browser's own decoders (hls.js is bundled for HLS), so what plays depends on
 the browser; decoder, network-buffer and shader settings are hidden on web because they only affect

@@ -45,4 +45,19 @@ RS=(rsync -a --chmod=D755,F644 -e "$SSH")
 "${RS[@]}" artifacts/ "$DEST:downloads/$TAG/"
 "${RS[@]}" --delete latest/ "$DEST:downloads/latest/"
 "${RS[@]}" releases.json "$DEST:releases.json"
+
+# StreamBoss on the web (https://web.streamboss.site): the web build of this release replaces the one there. It goes
+# to webapp/ inside the same folder, so the same restricted key is enough. A release without a web build leaves it alone.
+WEBZIP="$(ls artifacts/StreamBoss-*-web.zip 2>/dev/null | head -n 1 || true)"
+if [ -n "$WEBZIP" ]; then
+  rm -rf webapp && mkdir webapp && unzip -q "$WEBZIP" -d webapp
+  if [ ! -f webapp/index.html ]; then
+    echo "::error::$WEBZIP has no index.html, so the web app was NOT updated."
+    exit 1
+  fi
+  "${RS[@]}" --delete webapp/ "$DEST:webapp/"
+  echo "Updated the web app to $TAG."
+else
+  echo "No web build in this release; the web app was left as it is."
+fi
 echo "Published $TAG to the website server."

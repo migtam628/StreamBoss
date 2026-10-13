@@ -1,0 +1,21 @@
+# StreamBoss on the web (the Flutter web build), from /srv/webapp (docker-compose.webapp.yml). Files arrive by rsync from
+# CI with every tagged release (see README, "StreamBoss on the web").
+{$WEBAPP_DOMAIN} {
+	root * /srv/webapp
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	# The files that start the app (and the one that updates it) are checked again each time, so a new release is
+	# picked up at once; the big engine and picture files may be kept for a day.
+	@shell path / /index.html /flutter_bootstrap.js /flutter_service_worker.js /main.dart.js /version.json /manifest.json
+	header @shell Cache-Control "no-cache"
+	@heavy path /canvaskit/* /assets/*
+	header @heavy Cache-Control "public, max-age=86400"
+	# Any address that is not a file is the app itself (it draws its own screens).
+	try_files {path} /index.html
+	file_server
+}

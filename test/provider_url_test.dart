@@ -40,4 +40,33 @@ void main() {
     expect(m, contains("can't reach 'cf.host.test'"));
     expect(m, isNot(contains('password')));
   });
+
+  group('what a browser blocks', () {
+    const guide = 'ClientException: Failed to fetch, uri=https://worker.example.com/guide.xml.gz';
+    const plain = 'ClientException: Failed to fetch, uri=http://cf.host.test/player_api.php?username=u&password=p';
+
+    test('a server that does not allow websites is named, with what to do', () {
+      final m = friendlyError(Exception(guide), web: true, secure: true);
+      expect(m, contains("'worker.example.com'"));
+      expect(m, contains('does not allow websites'));
+      expect(m, contains('StreamBoss app'));
+    });
+
+    test('a plain http address on a secure page is said to be that', () {
+      final m = friendlyError(Exception(plain), web: true, secure: true);
+      expect(m, contains("'cf.host.test'"));
+      expect(m, contains('plain http'));
+      expect(m, isNot(contains('password')));
+    });
+
+    test('the same address on a page that is not secure is not called blocked for http', () {
+      final m = friendlyError(Exception(plain), web: true, secure: false);
+      expect(m, isNot(contains('plain http')));
+    });
+
+    test('outside a browser the text is left as it was', () {
+      final m = friendlyError(Exception(guide), web: false);
+      expect(m, isNot(contains('browser')));
+    });
+  });
 }

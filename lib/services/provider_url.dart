@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 /// Helpers for the "paste whatever your provider gave you" case.
 class ProviderLogin {
   final String server; // http://host[:port]
@@ -31,8 +33,11 @@ String redactSecrets(String s) =>
     s.replaceAllMapped(_secret, (m) => '${m[1]}=***');
 
 /// Turns low-level exceptions into something a person can act on.
-String friendlyError(Object e) {
+String friendlyError(Object e, {bool web = kIsWeb, bool secure = false}) {
   final raw = e.toString().replaceFirst('Exception: ', '');
+  if (web && RegExp(r'Failed to fetch|NetworkError when attempting to fetch|Load failed').hasMatch(raw)) {
+    return webBlockedMessage(raw, secure: secure || Uri.base.scheme == 'https');
+  }
   final host = RegExp(r"host lookup: '([^']+)'").firstMatch(raw)?[1];
   if (host != null) {
     return "Couldn't look up '$host'. Check the address and your internet connection.";
@@ -51,6 +56,21 @@ String friendlyError(Object e) {
     return "The server didn't answer. Check the address, port and your connection.";
   }
   return redactSecrets(raw);
+}
+
+/// A browser refuses some requests the apps make: a plain http address from a page opened over https (mixed content)
+/// and any server that does not say websites may read it (CORS). The browser hides which one it was, so this says
+/// what is likely and what to do.
+String webBlockedMessage(String raw, {required bool secure}) {
+  final plainHttp = secure && RegExp(r'uri=http://', caseSensitive: false).hasMatch(raw);
+  final at = RegExp(r'uri=https?://([^/\s?)]+)', caseSensitive: false).firstMatch(raw)?[1];
+  final where = at == null ? 'that server' : "'$at'";
+  if (plainHttp) {
+    return "The browser blocked $where: it is a plain http address and this page is secure (https). "
+        'Use an https address if your provider has one, or use the StreamBoss app for your device, which has no such limit.';
+  }
+  return "The browser could not read $where. Either it is offline, or it does not allow websites to read it "
+      '(a browser rule that the StreamBoss apps do not have). Use the StreamBoss app for your device, or ask the provider for an https address that allows it.';
 }
 
 /// What the player (libmpv) reported, in words a person can act on. Returns the message and
