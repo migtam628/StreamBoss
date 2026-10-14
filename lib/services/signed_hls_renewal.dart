@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:media_kit/media_kit.dart';
 import 'http_client.dart';
 import 'net_config.dart';
+import 'crash_guard.dart';
 import '../models/media.dart';
 
 /// Opt-in renewal of MooBee's four-hour signed-HLS VOD URLs.
@@ -96,5 +97,7 @@ Future<bool> renewSignedHlsMedia(
   if (rate != 1.0) {
     await player.setRate(rate);
   }
+  // Deliberately no URL, username, password or bearer value in diagnostics.
+  CrashGuard.log('Signed HLS lease refreshed');
   return true;
 }
