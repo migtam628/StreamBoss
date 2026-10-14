@@ -6,8 +6,8 @@ void main() {
       'a failed DNS lookup is explained, names the host and does not suggest the decoder',
       () {
     final f = friendlyPlayerError(
-        'tcp: Failed to resolve hostname cf.mytv-online.me: No address associated with hostname');
-    expect(f.message, contains("'cf.mytv-online.me'"));
+        'tcp: Failed to resolve hostname cf.host.test: No address associated with hostname');
+    expect(f.message, contains("'cf.host.test'"));
     expect(f.message, contains('Private DNS'));
     expect(f.decoderAdvice, false);
   });

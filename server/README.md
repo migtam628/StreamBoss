@@ -19,7 +19,7 @@ You need a machine on the internet with Docker, a name for it (for example `sync
 record pointing at the machine), and ports 80 and 443 open.
 
 ```sh
-git clone https://github.com/migtam628/StreamBoss.git     # a private repository: sign in with a token or an SSH key
+git clone https://github.com/migtam628/StreamBoss.git     # a public repository, no sign-in needed
 cd StreamBoss/server
 cp .env.example .env        # put your name in SYNC_DOMAIN
 docker compose up -d

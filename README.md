@@ -3,8 +3,7 @@
 A cross-platform IPTV player for the Xtream or M3U service **you already have**. It ships with
 no content. Inspired by apps like Lumen, with its own UI.
 
-The website (a one-page install guide for every device) lives in [`site/`](site/). This repository is private: the website and
-the downloads are served from a machine of your own, see [Releases](#releases).
+The website (a one-page install guide for every device) lives in [`site/`](site/). The website and the downloads are served from a machine of your own, see [Releases](#releases).
 
 ## Screenshots
 
@@ -67,8 +66,7 @@ Order is `0.3.0b1` < `0.3.0b2` < `0.3.0-rc1` < `0.3.0` < `0.3.1b1`. For each ver
 
 ## Releases
 
-Tagged versions are built and published automatically by `.github/workflows/release.yml`. The repository is private, so
-the files are also sent to the website server (https://streamboss.site/downloads/), which also serves `releases.json`:
+Tagged versions are built and published automatically by `.github/workflows/release.yml`. The files are also sent to the website server (https://streamboss.site/downloads/), which also serves `releases.json`:
 the list the app's update check, the Roku installer and the website's download buttons read. Setup (one time):
 [server/README.md](server/README.md#host-the-website-and-the-downloads).
 
@@ -274,6 +272,6 @@ intro/outro detection (skip-intro is a fixed +90s jump).
 
 ## License
 
-All rights reserved (see [LICENSE](LICENSE)). The source code is private; copying, changing or redistributing any
+All rights reserved (see [LICENSE](LICENSE)). The source code is public so that it can be read, which is not a licence: copying, changing or redistributing any
 part of it needs written permission. You may download the released apps from the website and run them for your own
 personal use.
