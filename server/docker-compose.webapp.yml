@@ -9,4 +9,6 @@ services:
       WEBAPP_DOMAIN: ${WEBAPP_DOMAIN:?Put the web app name in .env (WEBAPP_DOMAIN=web.streamboss.site)}
     volumes:
       - ./sites/webapp.caddy:/etc/caddy/sites/webapp.caddy:ro
-      - ${WEB_ROOT:-/srv/streamboss/web}/webapp:/srv/webapp:ro
+      # The whole website folder, not webapp/ alone: a bind mount of a folder that is deleted and made again (a publish
+      # does that) keeps pointing at the old one and serves 404 until Caddy is restarted. This one never goes away.
+      - ${WEB_ROOT:-/srv/streamboss/web}:/srv/web:ro

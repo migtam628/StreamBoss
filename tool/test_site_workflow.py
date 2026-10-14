@@ -18,6 +18,14 @@ class SiteWorkflowTest(unittest.TestCase):
         for name in RELEASE_OWNED:
             self.assertIn(name.rstrip('/'), script, f'publish_site.sh no longer writes {name}: update the exclude list')
 
+    def test_the_web_app_is_served_from_the_whole_website_folder(self):
+        # A bind mount of webapp/ alone goes stale (404 until Caddy restarts) when a publish deletes and remakes it.
+        overlay = (ROOT / 'server/docker-compose.webapp.yml').read_text(encoding='utf-8')
+        caddy = (ROOT / 'server/sites/webapp.caddy').read_text(encoding='utf-8')
+        self.assertNotIn('/webapp:/', overlay)
+        self.assertIn(':/srv/web:ro', overlay)
+        self.assertIn('root * /srv/web/webapp', caddy)
+
 
 if __name__ == '__main__':
     unittest.main()

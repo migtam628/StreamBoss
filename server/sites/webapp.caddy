@@ -1,7 +1,7 @@
-# StreamBoss on the web (the Flutter web build), from /srv/webapp (docker-compose.webapp.yml). Files arrive by rsync from
+# StreamBoss on the web (the Flutter web build), from /srv/web/webapp (docker-compose.webapp.yml). Files arrive by rsync from
 # CI with every tagged release (see README, "StreamBoss on the web").
 {$WEBAPP_DOMAIN} {
-	root * /srv/webapp
+	root * /srv/web/webapp
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000"
