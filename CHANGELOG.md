@@ -4,6 +4,11 @@ Every feature or fix gets its own version, newest first. The heading is the git 
 (`## 0.2.3` is tag `v0.2.3`) and its section becomes that release's notes. Betas look like `0.3.0b2`
 and sort before their final release. See "Versioning" in README.md.
 
+## 0.3.0b53 - 2026-10-14
+- **Fix: publishing the website page deleted the web app.** The Website workflow copies `site/` into the website folder on your server with `rsync --delete`, and it only left `downloads/` and `releases.json` alone, so when b52's page change reached `main` it also removed `webapp/` (https://web.streamboss.site then answered 404 for everything). It now leaves `webapp/` alone too. A test (`tool/test_site_workflow.py`) fails if the Website workflow ever stops excluding anything the Release workflow writes there (`downloads/`, `releases.json`, `webapp/`), and checks that the release script still writes where the exclude list says.
+  - **If you hit it before this fix:** put the web app back with the published zip: download `https://streamboss.site/downloads/latest/StreamBoss-web.zip` on the server, unzip it and `rsync -a --delete` it into `/srv/streamboss/web/webapp/` (the steps are in the b52 notes). The next tagged release does the same by itself.
+  - **Checked:** the new test fails on the old workflow and passes on the new one. The workflow itself only runs on `main`, so the next change to the page is its real test.
+
 ## 0.3.0b52 - 2026-10-14
 - **The website links to the web app.** https://streamboss.site now has an **Open in your browser** button next to the first call to action, an **Open in browser** link in the top menu, and the **Web** tile in "Pick your screen" opens StreamBoss at https://web.streamboss.site (the zip to host it yourself stays below it). Its note says plainly what a browser cannot do (plain `http://` providers and servers without CORS), and a new question, "Can I use it in a browser?", answers the same. The eyebrow line lists Web too.
   - **Checked:** the page was opened in a browser here: the hero button, the menu link, the Web tile with its button and the new question are there and there are no script errors. The website itself updates when this reaches `main` (the Website workflow publishes `site/`).

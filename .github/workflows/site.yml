@@ -45,6 +45,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
           SSH="ssh -i $HOME/.ssh/deploy_key -p ${VPS_PORT:-22} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
-          # downloads/ and releases.json belong to the Release workflow: never touched here.
-          rsync -a --delete --chmod=D755,F644 --exclude '/downloads/' --exclude '/releases.json' -e "$SSH" \
+          # downloads/, releases.json and webapp/ belong to the Release workflow: never touched here (--delete would
+          # otherwise remove them, the web app included).
+          rsync -a --delete --chmod=D755,F644 --exclude '/downloads/' --exclude '/releases.json' --exclude '/webapp/' -e "$SSH" \
             _site/ "$VPS_USER@$VPS_HOST:./"
