@@ -31,7 +31,7 @@ Duration? signedHlsRefreshInterval(MediaItem item, int? hintSeconds,
   const testSeconds = int.fromEnvironment(
       'MOOBEE_TEST_HLS_REFRESH_SECONDS', defaultValue: 0);
   if (kDebugMode && testSeconds >= 30 && testSeconds <= 300) {
-    return Duration(seconds: testSeconds);
+    return const Duration(seconds: testSeconds);
   }
   return Duration(seconds: hintSeconds);
 }
