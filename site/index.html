@@ -141,7 +141,7 @@ nav.links{align-items:center}
 <header class="top">
   <a class="logo" href="#top"><i>B</i>STREAMBOSS</a>
   <nav class="links" aria-label="Sections">
-    <a href="#install">Install</a><a href="#features">What it does</a><a href="#player-only">Player only</a><a href="#faq">Questions</a>
+    <a href="#install">Install</a><a href="https://web.streamboss.site" rel="noopener">Open in browser</a><a href="#features">What it does</a><a href="#player-only">Player only</a><a href="#faq">Questions</a>
     <button class="theme" id="theme" type="button">Theme</button>
   </nav>
 </header>
@@ -149,11 +149,12 @@ nav.links{align-items:center}
 <main id="top">
 <div class="hero">
   <div>
-    <div class="eyebrow">Fire TV · Android TV · Roku · Apple TV · Windows · macOS · Linux</div>
+    <div class="eyebrow">Fire TV · Android TV · Roku · Apple TV · Windows · macOS · Linux · Web</div>
     <h1 style="margin-top:16px">Bring your own <span style="white-space:nowrap">provider.</span> <em>We just play it.</em></h1>
     <p class="lede">StreamBoss is a TV player for the Xtream or M3U service you already pay for. Pick a layout, point it at your provider, and watch live channels, movies and series from the couch.</p>
     <div class="cta">
       <a class="btn primary" href="#install">Get it on your screen</a>
+      <a class="btn ghost" href="https://web.streamboss.site" rel="noopener">Open in your browser</a>
       <a class="btn ghost" href="#features">See what it does</a>
     </div>
     <div class="vbadge" hidden>Newest version <b id="ver"></b></div>
@@ -251,6 +252,7 @@ nav.links{align-items:center}
   <details><summary>Do I need an account with you?</summary><p>No. Sync between devices is optional and goes through a small server that you host. Provider passwords never leave a device.</p></details>
   <details><summary>Will it work on my Roku?</summary><p>Yes, as a separate native channel. A small installer program opens a page in your browser, finds your Roku and puts the channel on it, so you do not have to use the Roku's upload page.</p></details>
   <details><summary>What does it send over the internet?</summary><p>Your login goes to your provider and nowhere else. If you use them, it also contacts TMDB (posters and details, with your own key), OpenSubtitles (subtitles, with your own account), a public list of free channels, this website (to look for a new version) and a sync server you run yourself. There is no analytics or advertising code in it.</p></details>
+  <details><summary>Can I use it in a browser?</summary><p>Yes: <a href="https://web.streamboss.site" rel="noopener">web.streamboss.site</a>. Nothing to install. A browser has two limits the apps do not: it refuses a plain <b>http://</b> provider on a secure page, and any server that does not allow websites to read it. StreamBoss tells you which one it was. If your provider is blocked, use the app for your device.</p></details>
   <details><summary>How do I update?</summary><p>In the app: Settings, About, Check for updates. It downloads and installs inside the app.</p></details>
 </div></section>
 
@@ -297,8 +299,9 @@ const DEVICES=[
  {id:'android',name:'Phone / tablet',sub:'Android APK',icon:'phone',title:'Android phones and tablets',
   steps:['Download the APK (arm64-v8a for almost every phone made in the last few years).','Open it and allow installs from this source.'],note:'iPhone and iPad: not packaged yet. They can be built from source with Xcode.',
   files:[{label:'Android APK',re:/android-arm64-v8a\.apk$/},{label:'Older phones',re:/android-armeabi-v7a\.apk$/}],side:[]},
- {id:'web',name:'Web',sub:'Browser build',icon:'globe',title:'In a browser',
-  steps:['Download the web archive and host it on any static web server.'],note:'Browsers block http streams and most providers send no CORS headers, so the web build suits https providers.',files:[{label:'Web build (zip)',re:/web\.zip$/}],side:[]}
+ {id:'web',name:'Web',sub:'Nothing to install',icon:'globe',title:'In a browser',
+  open:{label:'Open StreamBoss in your browser',href:'https://web.streamboss.site'},
+  steps:['Press the button below. StreamBoss opens in this browser, nothing to install.','Enter your provider, just like in the app. Your login stays in this browser and goes to your provider only.','Prefer to run it yourself? Download the web archive below and host it on any static web server.'],note:'A browser blocks plain <b>http://</b> providers on a secure page, and any server that does not allow websites to read it, which is most IPTV services. If yours is blocked, StreamBoss says so; the apps for your devices have no such limit. Use the web version with an <b>https</b> provider.',files:[{label:'Web build (zip)',re:/web\.zip$/}],side:['<b>Which one?</b> The apps are the best choice on a TV or phone. The web version is for a computer you do not want to install anything on.']}
 ];
 let release=null; // the newest release from /releases.json, once it has loaded
 const tiles=document.getElementById('tiles'),panel=document.getElementById('panel');
@@ -309,6 +312,9 @@ DEVICES.forEach(d=>{
   tiles.appendChild(li);
 });
 let current='firetv';
+function openButton(d){
+  return d.open?`<div class="dls"><a class="btn primary dl" href="${d.open.href}" rel="noopener">${d.open.label}<small>${d.open.href.replace('https://','')}</small></a></div>`:'';
+}
 function fileButtons(d){
   if(!d.files)return '';
   const assets=release?release.assets:[];
@@ -318,7 +324,7 @@ function fileButtons(d){
 function show(id,focus){
   const d=DEVICES.find(x=>x.id===id)||DEVICES[0];current=d.id;
   tiles.querySelectorAll('.tile').forEach(b=>{const on=b.dataset.id===d.id;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;if(on&&focus)b.focus()});
-  panel.innerHTML=`<div><div class="eyebrow">Install</div><h3>${d.title}</h3><ol>${d.steps.map(s=>`<li><div>${s}</div></li>`).join('')}</ol>${fileButtons(d)}${d.note?`<p class="note">${d.note}</p>`:''}</div>
+  panel.innerHTML=`<div><div class="eyebrow">Install</div><h3>${d.title}</h3><ol>${d.steps.map(s=>`<li><div>${s}</div></li>`).join('')}</ol>${openButton(d)}${fileButtons(d)}${d.note?`<p class="note">${d.note}</p>`:''}</div>
   <div class="side"><div class="box"><b>${release?'Newest version: '+release.tag_name:'All downloads'}</b><a href="${REL}">streamboss.site/downloads</a></div>${d.side.map(s=>`<div class="box">${s}</div>`).join('')}</div>`;
 }
 tiles.addEventListener('click',e=>{const b=e.target.closest('.tile');if(b)show(b.dataset.id)});
