@@ -19,6 +19,7 @@ import '../services/watch_logic.dart';
 import '../services/pip.dart';
 import '../services/provider_url.dart';
 import '../services/xtream_client.dart';
+import '../services/signed_hls_renewal.dart';
 import '../state/app_state.dart';
 import '../services/time_format.dart';
 import 'open_item.dart';
@@ -120,6 +121,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   bool _stats = false;
   bool _playing = true;
   bool _buffering = true;
+  bool _renewingSignedHls = false;
   Duration _dur = Duration.zero;
   double _rate = 1;
   List<EpgEntry> _epg = const [];
@@ -226,7 +228,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _subs.add(Pip.changes.listen((inPip) {
       if (inPip) _hideControls();
     }));
-    _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) => _savePosition());
+    _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _savePosition();
+      unawaited(_maybeRenewSignedHls());
+    });
     // The "behind live" figure moves with the clock, so redraw it while the controls are showing.
     _lagTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _live && _controls) setState(() {});
@@ -245,6 +250,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _pos.value = st.position;
       _reportedPlaying = true;
       CrashGuard.mark('playing');
+      SignedHlsLeaseClock.ensure(_player);
       _loadChapters();
       _onChannelChanged();
       return;
@@ -271,6 +277,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         await _player.open(Media(widget.url, start: widget.startAt, httpHeaders: _vod.headers));
       }
       CrashGuard.mark('opened');
+      if (!_live && !widget.catchUp) SignedHlsLeaseClock.opened(_player);
       _armStall();
       _loadChapters();
       final speed = widget.choices?.speed ?? _settings.speed;
@@ -413,6 +420,35 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void _savePosition({bool notify = false}) {
     if (!_live && !widget.catchUp) {
       _app.savePosition(_vod, _player.state.position, _player.state.duration, notify: notify);
+    }
+  }
+
+  /// Native-only renewal from the original authenticated Xtream VOD entry.
+  /// Resume at the current position before the four-hour bearer token expires.
+  Future<void> _maybeRenewSignedHls() async {
+    final item = _vod;
+    if (!mounted || _live || widget.catchUp || _renewingSignedHls) return;
+    final interval = signedHlsRefreshInterval(
+        item, _app.hlsRefreshAfterSeconds(item), isWeb: kIsWeb);
+    if (interval == null || !SignedHlsLeaseClock.due(_player, interval)) return;
+    _renewingSignedHls = true;
+    try {
+      final renewed = await renewSignedHlsMedia(_player, item,
+          isCurrent: () => mounted && _queue == null &&
+              _vod.key == item.key);
+      if (mounted && _vod.key == item.key) {
+        if (renewed) {
+          SignedHlsLeaseClock.opened(_player);
+          if (_error != null) setState(() => _error = null);
+        } else {
+          SignedHlsLeaseClock.retryLater(_player);
+        }
+      }
+    } catch (_) {
+      SignedHlsLeaseClock.retryLater(_player);
+      CrashGuard.log('Signed HLS refresh failed; will retry');
+    } finally {
+      _renewingSignedHls = false;
     }
   }
 
@@ -789,6 +825,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     });
     try {
       await _player.open(Media(n.streamUrl!, httpHeaders: n.headers));
+      SignedHlsLeaseClock.opened(_player);
       _onChannelChanged();
       _loadChapters();
     } catch (e) {

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
@@ -20,6 +20,7 @@ import '../services/play_choices.dart';
 import '../services/provider_url.dart';
 import '../services/tmdb.dart';
 import '../services/xtream_client.dart' show EpgEntry;
+import '../services/signed_hls_renewal.dart';
 import '../services/watch_logic.dart';
 import '../state/app_state.dart';
 import '../state/settings_state.dart';
@@ -110,6 +111,7 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
   final _altTried = <String, int>{};
   final _zap = Zap();
   Timer? _zapTimer, _stallTimer, _epgTimer, _toastTimer;
+  bool _renewingSignedHls = false;
   bool _gotPicture = false;
   String? _toast;
   int _epgTick = 0;
@@ -191,8 +193,10 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
         if (done && !_full && !_live && mounted) _offerNext();
       }),
     ]);
-    _saveTimer =
-        Timer.periodic(const Duration(seconds: 5), (_) => _savePosition());
+    _saveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _savePosition();
+      unawaited(_maybeRenewSignedHls());
+    });
     _start();
     _scheduleHide();
     if (_live) {
@@ -228,6 +232,7 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
       final src = _live ? (_override[_cur.key] ?? _cur) : _cur;
       await p.open(Media(src.streamUrl!,
           start: _live ? null : widget.startAt, httpHeaders: src.headers));
+      if (!_live) SignedHlsLeaseClock.opened(p);
       if (_live) _armStall();
       final speed = widget.choices?.speed ?? _settings.speed;
       if (!_live && speed != 1) await p.setRate(speed);
@@ -288,6 +293,37 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
     final p = _player;
     if (p == null || _live) return;
     _app.savePosition(_cur, p.state.position, p.state.duration, notify: notify);
+  }
+
+  /// Proactive, opt-in renewal; no access token or subscriber URL is logged.
+  /// The watch page yields this responsibility to the fullscreen player while
+  /// its media_kit Player is lent to that screen.
+  Future<void> _maybeRenewSignedHls() async {
+    final player = _player;
+    final item = _cur;
+    if (!mounted || _full || player == null || _live || _renewingSignedHls) return;
+    final interval = signedHlsRefreshInterval(
+        item, _app.hlsRefreshAfterSeconds(item), isWeb: kIsWeb);
+    if (interval == null || !SignedHlsLeaseClock.due(player, interval)) return;
+    _renewingSignedHls = true;
+    try {
+      final renewed = await renewSignedHlsMedia(player, item,
+          isCurrent: () => mounted && !_full && _cur.key == item.key);
+      if (mounted && !_full && _cur.key == item.key) {
+        if (renewed) {
+          SignedHlsLeaseClock.opened(player);
+          _set(() => _error = null);
+        } else {
+          SignedHlsLeaseClock.retryLater(player);
+        }
+      }
+    } catch (_) {
+      // Credential-bearing URLs must never reach logs.
+      SignedHlsLeaseClock.retryLater(player);
+      CrashGuard.log('Signed HLS refresh failed; will retry');
+    } finally {
+      _renewingSignedHls = false;
+    }
   }
 
   // --- Live -----------------------------------------------------------------------------------------------
@@ -410,6 +446,7 @@ class _WatchScreenState extends State<WatchScreen> with WidgetsBindingObserver {
     try {
       await p
           .open(Media(it.streamUrl!, start: startAt, httpHeaders: it.headers));
+      SignedHlsLeaseClock.opened(p);
     } catch (e) {
       CrashGuard.log('exception ${redactUrls('$e')}');
       _set(() => _error = redactUrls('$e'));

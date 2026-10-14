@@ -35,11 +35,17 @@ class AccountInfo {
   final DateTime? expires;
   final int? maxConnections, activeConnections;
   final bool trial;
-  const AccountInfo({required this.status, this.expires, this.maxConnections, this.activeConnections, this.trial = false});
+  // MooBee-specific, opt-in client hint. Other Xtream providers do not set it.
+  final int? hlsRefreshAfterSeconds;
+  const AccountInfo({required this.status, this.expires, this.maxConnections,
+    this.activeConnections, this.trial = false, this.hlsRefreshAfterSeconds});
 
   static AccountInfo fromUserInfo(Map info) {
     int? i(dynamic v) => int.tryParse('$v');
     final exp = i(info['exp_date']);
+    final candidate = i(info['moobee_hls_refresh_after_seconds']);
+    final refresh = candidate != null && candidate >= 300 && candidate <= 12600
+        ? candidate : null;
     return AccountInfo(
       status: '${info['status'] ?? 'Active'}',
       // Providers send unix seconds; 0 or missing means no expiry.
@@ -47,6 +53,7 @@ class AccountInfo {
       maxConnections: i(info['max_connections']),
       activeConnections: i(info['active_cons']),
       trial: '${info['is_trial']}' == '1',
+      hlsRefreshAfterSeconds: refresh,
     );
   }
 
