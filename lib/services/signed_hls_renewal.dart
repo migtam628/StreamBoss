@@ -75,7 +75,9 @@ Future<bool> renewSignedHlsMedia(
       .get(Uri.parse(address), headers: {...NetConfig.headers, ...?item.headers})
       .timeout(const Duration(seconds: 20));
   if (response.statusCode != 200 ||
-      !response.body.startsWith('#EXTM3U')) return false;
+      !response.body.startsWith('#EXTM3U')) {
+    return false;
+  }
   if (isCurrent != null && !isCurrent()) return false;
 
   final pos = player.state.position;
