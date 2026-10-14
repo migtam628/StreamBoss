@@ -64,6 +64,23 @@ void main() {
       expect(m, isNot(contains('plain http')));
     });
 
+    test('a server on this computer is a CORS matter, not plain http', () {
+      for (final host in ['127.0.0.1:18001', 'localhost:8080', '[::1]:9']) {
+        final m = friendlyError(Exception('ClientException: Failed to fetch, uri=http://$host/player_api.php?username=u&password=p'),
+            web: true, secure: true);
+        expect(m, contains('a server on this computer'), reason: host);
+        expect(m, contains('Access-Control-Allow-Origin'), reason: host);
+        expect(m, isNot(contains('plain http')), reason: host);
+        expect(m, isNot(contains('password')), reason: host);
+      }
+    });
+
+    test('an address on the home network is still plain http', () {
+      final m = friendlyError(Exception('ClientException: Failed to fetch, uri=http://192.168.1.5:8080/x'), web: true, secure: true);
+      expect(m, contains('plain http'));
+      expect(m, contains("'192.168.1.5'"));
+    });
+
     test('outside a browser the text is left as it was', () {
       final m = friendlyError(Exception(guide), web: false);
       expect(m, isNot(contains('browser')));

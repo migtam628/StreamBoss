@@ -62,15 +62,27 @@ String friendlyError(Object e, {bool web = kIsWeb, bool secure = false}) {
 /// and any server that does not say websites may read it (CORS). The browser hides which one it was, so this says
 /// what is likely and what to do.
 String webBlockedMessage(String raw, {required bool secure}) {
-  final plainHttp = secure && RegExp(r'uri=http://', caseSensitive: false).hasMatch(raw);
-  final at = RegExp(r'uri=https?://([^/\s?)]+)', caseSensitive: false).firstMatch(raw)?[1];
+  final at = RegExp(r'uri=https?://(\[[^\]]+\]|[^/:\s?)]+)', caseSensitive: false).firstMatch(raw)?[1];
   final where = at == null ? 'that server' : "'$at'";
+  final plainHttp = secure && RegExp(r'uri=http://', caseSensitive: false).hasMatch(raw);
+  // A server on this very computer is not blocked as plain http (browsers let a secure page reach it): what stops the
+  // page is that the server does not say websites may read it.
+  if (at != null && _isLoopback(at)) {
+    return "The browser blocked $where, a server on this computer. A web page may not read it unless that server allows it "
+        '(it has to send an Access-Control-Allow-Origin header, and for a page on the internet, Access-Control-Allow-Private-Network too). '
+        'Use the StreamBoss app for your device, or run the web app from this computer, or let that server allow websites.';
+  }
   if (plainHttp) {
     return "The browser blocked $where: it is a plain http address and this page is secure (https). "
         'Use an https address if your provider has one, or use the StreamBoss app for your device, which has no such limit.';
   }
   return "The browser could not read $where. Either it is offline, or it does not allow websites to read it "
       '(a browser rule that the StreamBoss apps do not have). Use the StreamBoss app for your device, or ask the provider for an https address that allows it.';
+}
+
+bool _isLoopback(String host) {
+  final h = host.toLowerCase().replaceAll(RegExp(r'^\[|\]$'), '');
+  return h == 'localhost' || h == '::1' || RegExp(r'^127(\.\d{1,3}){3}$').hasMatch(h);
 }
 
 /// What the player (libmpv) reported, in words a person can act on. Returns the message and
