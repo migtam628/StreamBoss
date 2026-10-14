@@ -598,6 +598,11 @@ class AppState extends ChangeNotifier {
   /// The Xtream client that serves [i]: the main source's, or the one of the source it came from.
   XtreamClient? _clientOf(MediaItem i) => i.src == null ? _xtream : _clients[i.src];
 
+  /// Renewal applies only to VOD from a provider advertising MooBee's
+  /// authenticated signed-HLS lease hint. Ordinary Xtream remains unchanged.
+  int? hlsRefreshAfterSeconds(MediaItem item) =>
+      _clientOf(item)?.account?.hlsRefreshAfterSeconds;
+
   void signOut() {
     active = null;
     error = null;
