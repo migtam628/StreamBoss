@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:media_kit/media_kit.dart';
 import 'http_client.dart';
 import 'net_config.dart';
@@ -24,6 +25,13 @@ Duration? signedHlsRefreshInterval(MediaItem item, int? hintSeconds,
       !RegExp(r'^/(?:movie|series)/[^/]+/[^/]+/[1-9][0-9]*\.m3u8$')
           .hasMatch(uri.path)) {
     return null;
+  }
+  // Explicit debug-only opt-in. Production builds always use the server hint.
+  // Flutter run example: --dart-define=MOOBEE_TEST_HLS_REFRESH_SECONDS=45
+  const testSeconds = int.fromEnvironment(
+      'MOOBEE_TEST_HLS_REFRESH_SECONDS', defaultValue: 0);
+  if (kDebugMode && testSeconds >= 30 && testSeconds <= 300) {
+    return Duration(seconds: testSeconds);
   }
   return Duration(seconds: hintSeconds);
 }
