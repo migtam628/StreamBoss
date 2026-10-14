@@ -13,14 +13,18 @@ Duration? signedHlsRefreshInterval(MediaItem item, int? hintSeconds,
     {required bool isWeb}) {
   if (isWeb || hintSeconds == null ||
       hintSeconds < 300 || hintSeconds > 12600 ||
-      item.kind == MediaKind.live) return null;
+      item.kind == MediaKind.live) {
+    return null;
+  }
   final url = item.streamUrl;
   if (url == null) return null;
   final uri = Uri.tryParse(url);
   if (uri == null || !uri.hasAuthority ||
       (uri.scheme != 'http' && uri.scheme != 'https') ||
       !RegExp(r'^/(?:movie|series)/[^/]+/[^/]+/[1-9][0-9]*\.m3u8$')
-          .hasMatch(uri.path)) return null;
+          .hasMatch(uri.path)) {
+    return null;
+  }
   return Duration(seconds: hintSeconds);
 }
 
@@ -79,6 +83,8 @@ Future<bool> renewSignedHlsMedia(
   final rate = player.state.rate;
   await player.open(Media(address, start: pos, httpHeaders: item.headers),
       play: playing);
-  if (rate != 1.0) await player.setRate(rate);
+  if (rate != 1.0) {
+    await player.setRate(rate);
+  }
   return true;
 }
