@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'package:media_kit/media_kit.dart';
+import 'http_client.dart';
+import 'net_config.dart';
 import '../models/media.dart';
 
 /// Opt-in renewal of MooBee's four-hour signed-HLS VOD URLs.
@@ -49,4 +53,32 @@ class SignedHlsLeaseClock {
     _retryNotBefore[player] =
         (at ?? DateTime.now()).add(const Duration(minutes: 2));
   }
+}
+
+/// Obtain a fresh *authenticated initial playlist* before replacing media_kit's
+/// playlist. If the server rejects auth or cannot be reached, leave the
+/// currently playing media alone; the caller retries before original expiry.
+/// Returns false when the preflight response is not an HLS manifest.
+/// Throws only on network/player errors; callers must redact error details.
+Future<bool> renewSignedHlsMedia(
+    Player player,
+    MediaItem item, {
+    bool Function()? isCurrent,
+  }) async {
+  final address = item.streamUrl;
+  if (address == null) return false;
+  final response = await appHttp
+      .get(Uri.parse(address), headers: {...NetConfig.headers, ...?item.headers})
+      .timeout(const Duration(seconds: 20));
+  if (response.statusCode != 200 ||
+      !response.body.startsWith('#EXTM3U')) return false;
+  if (isCurrent != null && !isCurrent()) return false;
+
+  final pos = player.state.position;
+  final playing = player.state.playing;
+  final rate = player.state.rate;
+  await player.open(Media(address, start: pos, httpHeaders: item.headers),
+      play: playing);
+  if (rate != 1.0) await player.setRate(rate);
+  return true;
 }
