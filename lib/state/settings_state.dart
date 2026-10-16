@@ -68,6 +68,7 @@ class SettingsState extends ChangeNotifier {
     'hideDead': false, // hide live channels that failed a check
     'livePreview': true, // show a live picture in the Cable Box and Mosaic layouts
     'use24h': true,
+    'guideView': 'compact', // the Guide's player: compact | large | theater | off
     // network & metadata
     'userAgent': '',
     'tmdbKey': '',
@@ -265,6 +266,7 @@ class SettingsState extends ChangeNotifier {
   bool get mergeDuplicates => _g('mergeDuplicates');
   bool get livePreview => _g('livePreview');
   bool get use24h => _g('use24h');
+  String get guideView => _g('guideView');
   String get userAgent => _g('userAgent');
   String get tmdbKey => _g('tmdbKey');
   String get osKey => _g('osKey');

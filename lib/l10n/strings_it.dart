@@ -926,4 +926,10 @@ const Map<String, String> stringsIt = {
   'Popular series': 'Serie popolari',
   'Top rated movies': 'Film più votati',
   'Top rated series': 'Serie più votate',
+  'View': 'Vista',
+  'Compact': 'Compatta',
+  'Theater': 'Modalità cinema',
+  'Hide player': 'Nascondi player',
+  'Show player': 'Mostra player',
+  'Player hidden': 'Player nascosto',
 };

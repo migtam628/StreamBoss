@@ -926,4 +926,10 @@ const Map<String, String> stringsEs = {
   'Popular series': 'Series populares',
   'Top rated movies': 'Películas mejor valoradas',
   'Top rated series': 'Series mejor valoradas',
+  'View': 'Vista',
+  'Compact': 'Compacta',
+  'Theater': 'Modo cine',
+  'Hide player': 'Ocultar reproductor',
+  'Show player': 'Mostrar reproductor',
+  'Player hidden': 'Reproductor oculto',
 };

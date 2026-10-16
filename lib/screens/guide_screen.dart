@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/guide_view.dart';
 import '../services/mini_player.dart';
 import '../widgets/channel_filter_bar.dart';
 import '../widgets/live_preview.dart';
@@ -407,13 +408,15 @@ class _GuidePreview extends StatelessWidget {
     final p = LayoutPalette.of(context);
     final s = context.watch<AppState>();
     final use24h = context.select<SettingsState, bool>((st) => st.use24h);
+    final view = parseGuideView(context.select<SettingsState, String>((st) => st.guideView));
     final progs = s.programmesFor(channel);
     final now = progs.where((x) => x.isNow).firstOrNull;
     final shown = programme ?? now;
     final next = progs.where((x) => x.start.isAfter(DateTime.now())).firstOrNull;
-    final wide = MediaQuery.sizeOf(context).width >= 700;
-    final w = wide ? 220.0 : 128.0;
+    final size = MediaQuery.sizeOf(context);
+    final wide = size.width >= 700;
     String hm(DateTime d) => fmtTime(d, use24h: use24h);
+    void setView(GuideView v) => context.read<SettingsState>().set('guideView', v.name);
 
     Widget action(IconData icon, String label, VoidCallback onTap, {bool primary = false}) => FocusCard(
           radius: 20,
@@ -431,64 +434,147 @@ class _GuidePreview extends StatelessWidget {
           ),
         );
 
+    if (view == GuideView.off) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: p.line)),
+        child: Row(children: [
+          Expanded(child: Text(tr('Player hidden'), style: TextStyle(color: p.muted, fontWeight: FontWeight.w600))),
+          action(Icons.visibility, tr('Show player'), () => setView(GuideView.compact)),
+        ]),
+      );
+    }
+
+    // Everything inside the card is this wide: the screen less the card's margin and padding.
+    final inner = size.width - 24 - 16;
+    final box = guideVideoSize(view, maxWidth: inner, screenHeight: size.height);
+    final theater = view == GuideView.theater;
+
+    final picture = SizedBox(
+      width: box.width,
+      height: box.height,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(fit: StackFit.expand, children: [
+          Container(color: theater ? Colors.black : p.surfaceHi),
+          LivePreview(
+            key: ValueKey(channel.key),
+            channel: channel,
+            fit: theater ? BoxFit.contain : BoxFit.cover,
+            fallback: channel.poster == null || channel.poster!.isEmpty
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: NetImage(channel.poster!, fit: BoxFit.contain, fallback: () => const SizedBox.shrink()),
+                  ),
+          ),
+          Positioned(
+            left: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(color: const Color(0xFFE5484D), borderRadius: BorderRadius.circular(4)),
+              child: Text(tr('LIVE'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1)),
+            ),
+          ),
+        ]),
+      ),
+    );
+
+    final big = view != GuideView.compact;
+    final details = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Text(channel.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700)),
+      Text(shown?.title ?? tr('No guide data'),
+          maxLines: big ? 2 : 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: wide ? (big ? 26 : 22) : 17, fontWeight: FontWeight.w800)),
+      if (shown != null)
+        Text('${hm(shown.start)} – ${hm(shown.end)}${next != null && shown == now ? trf('   Next {time} {title}', {'time': hm(next.start), 'title': next.title}) : ''}',
+            maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 13)),
+      if (big && shown != null && (shown.desc ?? '').isNotEmpty && !theater)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(shown.desc!, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 13)),
+        ),
+    ]);
+
+    final actions = Wrap(spacing: 8, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+      action(Icons.play_arrow, tr('Watch'), () => openItem(context, channel, queue: queue), primary: true),
+      action(Icons.picture_in_picture, tr('Mini player'), () async {
+        final ok = await MiniPlayer.instance.playChannel(context.read<SettingsState>(), channel, queue: queue);
+        if (!ok && context.mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(tr('Could not start the mini player.'))));
+        }
+      }),
+      _ViewMenu(view: view, onPick: setView, button: (open) => action(Icons.view_agenda_outlined, tr('View'), open)),
+    ]);
+
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: p.line)),
-      child: Row(children: [
-        SizedBox(
-          width: w,
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Stack(fit: StackFit.expand, children: [
-                Container(color: p.surfaceHi),
-                LivePreview(
-                  key: ValueKey(channel.key),
-                  channel: channel,
-                  fallback: channel.poster == null || channel.poster!.isEmpty
-                      ? const SizedBox.shrink()
-                      : Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: NetImage(channel.poster!, fit: BoxFit.contain, fallback: () => const SizedBox.shrink()),
-                        ),
-                ),
-                Positioned(
-                  left: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(color: const Color(0xFFE5484D), borderRadius: BorderRadius.circular(4)),
-                    child: Text(tr('LIVE'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1)),
-                  ),
-                ),
-              ]),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(channel.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700)),
-            Text(shown?.title ?? tr('No guide data'),
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: wide ? 22 : 17, fontWeight: FontWeight.w800)),
-            if (shown != null)
-              Text('${hm(shown.start)} – ${hm(shown.end)}${next != null && shown == now ? trf('   Next {time} {title}', {'time': hm(next.start), 'title': next.title}) : ''}',
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 13)),
-            const SizedBox(height: 6),
-            Wrap(spacing: 8, runSpacing: 6, children: [
-              action(Icons.play_arrow, tr('Watch'), () => openItem(context, channel, queue: queue), primary: true),
-              action(Icons.picture_in_picture, tr('Mini player'), () async {
-                final ok = await MiniPlayer.instance.playChannel(context.read<SettingsState>(), channel, queue: queue);
-                if (!ok && context.mounted) {
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(tr('Could not start the mini player.'))));
-                }
-              }),
+      child: theater
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+              picture,
+              const SizedBox(height: 8),
+              wide
+                  ? Row(crossAxisAlignment: CrossAxisAlignment.end, children: [Expanded(child: details), const SizedBox(width: 12), actions])
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [details, const SizedBox(height: 6), actions]),
+            ])
+          : Row(children: [
+              picture,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  details,
+                  const SizedBox(height: 6),
+                  actions,
+                ]),
+              ),
             ]),
-          ]),
-        ),
-      ]),
     );
+  }
+}
+
+/// The view options (compact, large, theater, hidden), opened from the button next to Watch.
+class _ViewMenu extends StatelessWidget {
+  final GuideView view;
+  final ValueChanged<GuideView> onPick;
+  final Widget Function(VoidCallback open) button;
+  const _ViewMenu({required this.view, required this.onPick, required this.button});
+
+  @override
+  Widget build(BuildContext context) {
+    return Builder(builder: (context) {
+      Future<void> open() async {
+        final box = context.findRenderObject() as RenderBox;
+        final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+        final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
+        final labels = {
+          GuideView.compact: (Icons.crop_5_4, tr('Compact')),
+          GuideView.large: (Icons.crop_landscape, tr('Large')),
+          GuideView.theater: (Icons.crop_16_9, tr('Theater')),
+          GuideView.off: (Icons.visibility_off, tr('Hide player')),
+        };
+        final picked = await showMenu<GuideView>(
+          context: context,
+          position: RelativeRect.fromLTRB(origin.dx, origin.dy + box.size.height, overlay.size.width - origin.dx - box.size.width, 0),
+          items: [
+            for (final e in labels.entries)
+              PopupMenuItem(
+                value: e.key,
+                child: Row(children: [
+                  Icon(e.value.$1, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(e.value.$2)),
+                  if (e.key == view) const Icon(Icons.check, size: 18),
+                ]),
+              ),
+          ],
+        );
+        if (picked != null) onPick(picked);
+      }
+
+      return button(open);
+    });
   }
 }
