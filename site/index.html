@@ -100,6 +100,8 @@ section .sub{max-width:40em;color:var(--muted);margin:0 0 32px;font-size:18px}
 .also span{color:var(--muted);font-size:15px}
 .player-only{border-radius:26px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface));border:1px solid var(--line);padding:clamp(24px,5vw,64px);display:grid;gap:18px}
 .player-only h2{font-size:clamp(44px,8vw,110px)}
+.player-only>*{min-width:0}
+.player-only h2{overflow-wrap:anywhere}
 .player-only p{max-width:38em;margin:0;color:var(--muted);font-size:19px}
 .flow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font:700 14px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
 .flow span{padding:10px 14px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
@@ -111,6 +113,9 @@ details[open] summary::after{content:'–'}
 details p{margin:0 0 16px;color:var(--muted);max-width:44em}
 footer{padding-top:64px;color:var(--muted);font-size:15px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px}
 .theme{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 14px;font:600 13px/1 var(--body);cursor:pointer}
+
+.langsw{display:flex;gap:4px}
+.theme[aria-pressed="true"]{color:var(--fg);border-color:var(--accent)}
 
 /* narrow screens: the header wraps instead of pushing the page sideways */
 header.top{flex-wrap:wrap}
@@ -131,7 +136,7 @@ nav.links{align-items:center}
 .btn.dl small{font:500 12px/1 var(--mono);opacity:.75}
 .vbadge{display:inline-flex;gap:8px;align-items:center;margin-top:18px;font:500 13px/1 var(--mono);color:var(--muted)}
 .vbadge b{color:var(--fg)}
-@media (max-width:820px){.logo{font-size:22px;letter-spacing:.08em;gap:9px}.logo i{width:28px;height:28px;font-size:17px}header.top{padding-block:14px}.install>*,.side>*{min-width:0}.side a,.install li div{overflow-wrap:anywhere}nav.links a:not(:first-child){display:none}.hero,.install,.row{grid-template-columns:1fr}.row:nth-child(even) .copy{order:0}.hero h1{font-size:clamp(48px,14vw,88px)}.bug{display:none}}
+@media (max-width:820px){.logo{font-size:22px;letter-spacing:.08em;gap:9px}.logo i{width:28px;height:28px;font-size:17px}header.top{padding-block:14px}.install>*,.side>*{min-width:0}.side a,.install li div{overflow-wrap:anywhere}nav.links a:not(:first-child){display:none}.hero,.install,.row{grid-template-columns:1fr}.row:nth-child(even) .copy{order:0}.hero h1{font-size:clamp(48px,14vw,88px)}:lang(es) .hero h1{font-size:clamp(34px,9.5vw,88px)}.bug{display:none}}
 @media (prefers-reduced-motion:no-preference){.btn,.tile{transition:transform .15s,border-color .15s}}
 </style>
 
@@ -140,9 +145,10 @@ nav.links{align-items:center}
 <div class="wrap">
 <header class="top">
   <a class="logo" href="#top"><i>B</i>STREAMBOSS</a>
-  <nav class="links" aria-label="Sections">
-    <a href="#install">Install</a><a href="https://web.streamboss.site" rel="noopener">Open in browser</a><a href="#features">What it does</a><a href="#player-only">Player only</a><a href="#faq">Questions</a>
-    <button class="theme" id="theme" type="button">Theme</button>
+  <nav class="links" aria-label="Sections" data-t-aria-label="a_sections">
+    <a data-t="nav_install" href="#install">Install</a><a data-t="nav_web" href="https://web.streamboss.site" rel="noopener">Open in browser</a><a data-t="nav_features" href="#features">What it does</a><a data-t="nav_player" href="#player-only">Player only</a><a data-t="nav_faq" href="#faq">Questions</a>
+    <div class="langsw" role="group" aria-label="Language" data-t-aria-label="a_lang"><button class="theme" type="button" data-lang="en" lang="en" aria-pressed="true">EN</button><button class="theme" type="button" data-lang="es" lang="es" aria-pressed="false">ES</button></div>
+    <button class="theme" id="theme" type="button" data-t="theme">Theme</button>
   </nav>
 </header>
 
@@ -150,118 +156,373 @@ nav.links{align-items:center}
 <div class="hero">
   <div>
     <div class="eyebrow">Fire TV · Android TV · Roku · Apple TV · Windows · macOS · Linux · Web</div>
-    <h1 style="margin-top:16px">Bring your own <span style="white-space:nowrap">provider.</span> <em>We just play it.</em></h1>
-    <p class="lede">StreamBoss is a TV player for the Xtream or M3U service you already pay for. Pick a layout, point it at your provider, and watch live channels, movies and series from the couch.</p>
+    <h1 data-t="h1" style="margin-top:16px">Bring your own <span style="white-space:nowrap">provider.</span> <em>We just play it.</em></h1>
+    <p data-t="lede" class="lede">StreamBoss is a TV player for the Xtream or M3U service you already pay for. Pick a layout, point it at your provider, and watch live channels, movies and series from the couch.</p>
     <div class="cta">
-      <a class="btn primary" href="#install">Get it on your screen</a>
-      <a class="btn ghost" href="https://web.streamboss.site" rel="noopener">Open in your browser</a>
-      <a class="btn ghost" href="#features">See what it does</a>
+      <a data-t="cta1" class="btn primary" href="#install">Get it on your screen</a>
+      <a data-t="cta2" class="btn ghost" href="https://web.streamboss.site" rel="noopener">Open in your browser</a>
+      <a data-t="cta3" class="btn ghost" href="#features">See what it does</a>
     </div>
-    <div class="vbadge" hidden>Newest version <b id="ver"></b></div>
+    <div class="vbadge" hidden><span data-t="newest">Newest version</span> <b id="ver"></b></div>
   </div>
   <div>
     <div class="tv">
-      <img src="assets/marquee.jpg" alt="StreamBoss on a TV: a featured film and a row of live channels">
+      <img src="assets/marquee.jpg" alt="StreamBoss on a TV: a featured film and a row of live channels" data-t-alt="alt_hero">
       <div class="bug" aria-hidden="true"><b>207</b> METRO NEWS 24 <span style="color:#ff6b8f">● LIVE</span></div>
     </div>
     <div class="stand" aria-hidden="true"></div>
   </div>
 </div>
 
-<div class="facts" aria-label="At a glance">
-  <span><b>21</b> ways to lay out the app</span><span><b>4</b> languages: EN ES IT PT</span><span><b>Remote-first:</b> built for a D-pad</span><span><b>No channels included.</b> Yours only</span>
+<div class="facts" aria-label="At a glance" data-t-aria-label="a_glance">
+  <span data-t="f1"><b>21</b> ways to lay out the app</span><span data-t="f2"><b>4</b> languages: EN ES IT PT</span><span data-t="f3"><b>Remote-first:</b> built for a D-pad</span><span data-t="f4"><b>No channels included.</b> Yours only</span>
 </div>
 
 <section id="install"><div class="wrap">
-  <div class="eyebrow">Install</div>
-  <h2>Pick your screen</h2>
-  <p class="sub">Use the arrow keys or tap. Each screen shows the quickest way on.</p>
+  <div data-t="h_install" class="eyebrow">Install</div>
+  <h2 data-t="h2_install">Pick your screen</h2>
+  <p data-t="sub_install" class="sub">Use the arrow keys or tap. Each screen shows the quickest way on.</p>
   <noscript><p class="note">Turn on JavaScript to pick your device here, or open the <a href="/downloads/">downloads page</a>. Fire TV Downloader code: <b>1652077</b> (or 9055023).</p></noscript>
-  <ul class="tiles" role="tablist" aria-label="Devices" id="tiles"></ul>
+  <ul class="tiles" role="tablist" aria-label="Devices" data-t-aria-label="a_devices" id="tiles"></ul>
   <div class="install" id="panel" role="tabpanel" aria-live="polite"></div>
 </div></section>
 
 <section id="features"><div class="wrap">
-  <div class="eyebrow">What it does</div>
-  <h2>Made for the remote</h2>
+  <div data-t="h_features" class="eyebrow">What it does</div>
+  <h2 data-t="h2_features">Made for the remote</h2>
   <div class="rows" style="margin-top:36px">
     <div class="row">
-      <div class="copy"><div class="eyebrow">Layouts</div><h3>Twenty-one homes. Pick the one that fits the room.</h3>
-        <p>A poster wall, a TV guide, a cable-box channel surfer, a dial, a prompt, a deck of picks. Change it in Settings and the whole app follows, with its own colors and navigation.</p></div>
-      <div class="shot"><img src="assets/wall.jpg" alt="The Wall layout, a grid of posters" loading="lazy"></div>
+      <div class="copy"><div data-t="r1_e" class="eyebrow">Layouts</div><h3 data-t="r1_h">Twenty-one homes. Pick the one that fits the room.</h3>
+        <p data-t="r1_p">A poster wall, a TV guide, a cable-box channel surfer, a dial, a prompt, a deck of picks. Change it in Settings and the whole app follows, with its own colors and navigation.</p></div>
+      <div class="shot"><img src="assets/wall.jpg" alt="The Wall layout, a grid of posters" data-t-alt="alt_wall" loading="lazy"></div>
     </div>
     <div class="row">
-      <div class="copy"><div class="eyebrow">Live TV</div><h3>A guide that knows what is on.</h3>
-        <p>Programme guide from your provider, catch-up where the provider keeps an archive, reminders that notify you before a show starts, and a one-press way back to the last channel.</p></div>
-      <div class="shot"><img src="assets/prime.jpg" alt="The Prime Time layout, a TV guide grid" loading="lazy"></div>
+      <div class="copy"><div data-t="r2_e" class="eyebrow">Live TV</div><h3 data-t="r2_h">A guide that knows what is on.</h3>
+        <p data-t="r2_p">Programme guide from your provider, catch-up where the provider keeps an archive, reminders that notify you before a show starts, and a one-press way back to the last channel.</p></div>
+      <div class="shot"><img src="assets/prime.jpg" alt="The Prime Time layout, a TV guide grid" data-t-alt="alt_prime" loading="lazy"></div>
     </div>
     <div class="row">
-      <div class="copy"><div class="eyebrow">Phones too</div><h3>The same app in your pocket.</h3>
-        <p>Every layout has a phone version. Continue watching on Android TV's home screen, search by voice, and keep your lists and positions in step across devices through a sync server you run yourself.</p></div>
+      <div class="copy"><div data-t="r3_e" class="eyebrow">Phones too</div><h3 data-t="r3_h">The same app in your pocket.</h3>
+        <p data-t="r3_p">Every layout has a phone version. Continue watching on Android TV's home screen, search by voice, and keep your lists and positions in step across devices through a sync server you run yourself.</p></div>
       <div class="shot"><div class="phones" style="padding:18px 12px">
-        <img src="assets/phone-marquee.jpg" alt="Marquee on a phone" loading="lazy"><img src="assets/phone-tonight.jpg" alt="Tonight on a phone" loading="lazy"><img src="assets/phone-wall.jpg" alt="Wall on a phone" loading="lazy"></div></div>
+        <img src="assets/phone-marquee.jpg" alt="Marquee on a phone" data-t-alt="alt_pm" loading="lazy"><img src="assets/phone-tonight.jpg" alt="Tonight on a phone" data-t-alt="alt_pt" loading="lazy"><img src="assets/phone-wall.jpg" alt="Wall on a phone" data-t-alt="alt_pw" loading="lazy"></div></div>
     </div>
   </div>
   <div style="margin-top:56px">
-    <div class="eyebrow">More looks</div>
-    <h3 style="font-size:clamp(30px,4vw,48px);margin:10px 0 18px">Same app, very different rooms.</h3>
-    <ul class="strip" tabindex="0" aria-label="More layouts: scroll sideways">
-      <li><figure><img src="assets/console.jpg" alt="The Console layout: a prompt that finds things as you type" loading="lazy"><figcaption>Console</figcaption></figure></li>
-      <li><figure><img src="assets/globe.jpg" alt="The Globe layout: live TV by country on a dotted map" loading="lazy"><figcaption>Globe</figcaption></figure></li>
-      <li><figure><img src="assets/deck.jpg" alt="The Deck layout: a deck of picks to skip, save or play" loading="lazy"><figcaption>Deck</figcaption></figure></li>
-      <li><figure><img src="assets/lounge.jpg" alt="The Lounge layout: a live channel on top and a strip to surf" loading="lazy"><figcaption>Lounge</figcaption></figure></li>
-      <li><figure><img src="assets/matchday.jpg" alt="The Matchday layout: today's sport by kick-off" loading="lazy"><figcaption>Matchday</figcaption></figure></li>
-      <li><figure><img src="assets/mosaic.jpg" alt="The Mosaic layout: four channel tiles at once" loading="lazy"><figcaption>Mosaic</figcaption></figure></li>
-      <li><figure><img src="assets/daylight.jpg" alt="The Daylight layout: a light theme with white cards" loading="lazy"><figcaption>Daylight</figcaption></figure></li>
-      <li><figure><img src="assets/easy.jpg" alt="The Easy layout: three huge high-contrast buttons" loading="lazy"><figcaption>Easy</figcaption></figure></li>
+    <div data-t="m_e" class="eyebrow">More looks</div>
+    <h3 data-t="m_h" style="font-size:clamp(30px,4vw,48px);margin:10px 0 18px">Same app, very different rooms.</h3>
+    <ul class="strip" tabindex="0" aria-label="More layouts: scroll sideways" data-t-aria-label="a_strip">
+      <li><figure><img src="assets/console.jpg" alt="The Console layout: a prompt that finds things as you type" data-t-alt="alt_console" loading="lazy"><figcaption>Console</figcaption></figure></li>
+      <li><figure><img src="assets/globe.jpg" alt="The Globe layout: live TV by country on a dotted map" data-t-alt="alt_globe" loading="lazy"><figcaption>Globe</figcaption></figure></li>
+      <li><figure><img src="assets/deck.jpg" alt="The Deck layout: a deck of picks to skip, save or play" data-t-alt="alt_deck" loading="lazy"><figcaption>Deck</figcaption></figure></li>
+      <li><figure><img src="assets/lounge.jpg" alt="The Lounge layout: a live channel on top and a strip to surf" data-t-alt="alt_lounge" loading="lazy"><figcaption>Lounge</figcaption></figure></li>
+      <li><figure><img src="assets/matchday.jpg" alt="The Matchday layout: today's sport by kick-off" data-t-alt="alt_match" loading="lazy"><figcaption>Matchday</figcaption></figure></li>
+      <li><figure><img src="assets/mosaic.jpg" alt="The Mosaic layout: four channel tiles at once" data-t-alt="alt_mosaic" loading="lazy"><figcaption>Mosaic</figcaption></figure></li>
+      <li><figure><img src="assets/daylight.jpg" alt="The Daylight layout: a light theme with white cards" data-t-alt="alt_day" loading="lazy"><figcaption>Daylight</figcaption></figure></li>
+      <li><figure><img src="assets/easy.jpg" alt="The Easy layout: three huge high-contrast buttons" data-t-alt="alt_easy" loading="lazy"><figcaption>Easy</figcaption></figure></li>
     </ul>
   </div>
   <div class="also">
-    <div><b>Profiles and PIN</b><span>Kids profiles show child-friendly categories and lock Settings.</span></div>
-    <div><b>Four languages</b><span>English, Español, Italiano, Português. Channel names stay as sent.</span></div>
-    <div><b>Updates in the app</b><span>Download and install a new version without leaving StreamBoss.</span></div>
-    <div><b>Duplicate merge</b><span>HD, SD and backups become one channel that fails over by itself.</span></div>
+    <div data-t="al1"><b>Profiles and PIN</b><span>Kids profiles show child-friendly categories and lock Settings.</span></div>
+    <div data-t="al2"><b>Four languages</b><span>English, Español, Italiano, Português. Channel names stay as sent.</span></div>
+    <div data-t="al3"><b>Updates in the app</b><span>Download and install a new version without leaving StreamBoss.</span></div>
+    <div data-t="al4"><b>Duplicate merge</b><span>HD, SD and backups become one channel that fails over by itself.</span></div>
   </div>
 </div></section>
 
 <section id="limits"><div class="wrap">
-  <div class="eyebrow">Good to know</div>
-  <h2>What it is not</h2>
-  <p class="sub">Said plainly, so nothing surprises you after you install.</p>
+  <div data-t="l_e" class="eyebrow">Good to know</div>
+  <h2 data-t="l_h">What it is not</h2>
+  <p data-t="l_sub" class="sub">Said plainly, so nothing surprises you after you install.</p>
   <div class="good">
-    <div><b>Not a service</b><span>No channels, movies or subscriptions come with it. You need your own Xtream login or M3U playlist.</span></div>
-    <div><b>Leaner on Roku and Apple TV</b><span>Those two are separate native apps with fewer features than the main one: no poster lookups, no TV guide and no shaders.</span></div>
-    <div><b>Not in the stores yet</b><span>Roku installs as a developer channel, Apple TV is built from source, and iPhone and iPad are not packaged. Android, Windows, Mac and Linux are direct downloads.</span></div>
-    <div><b>Not code-signed</b><span>Windows and macOS ask you to confirm the first time you open it. The steps are on the install panel above.</span></div>
+    <div data-t="g1"><b>Not a service</b><span>No channels, movies or subscriptions come with it. You need your own Xtream login or M3U playlist.</span></div>
+    <div data-t="g2"><b>Leaner on Roku and Apple TV</b><span>Those two are separate native apps with fewer features than the main one: no poster lookups, no TV guide and no shaders.</span></div>
+    <div data-t="g3"><b>Not in the stores yet</b><span>Roku installs as a developer channel, Apple TV is built from source, and iPhone and iPad are not packaged. Android, Windows, Mac and Linux are direct downloads.</span></div>
+    <div data-t="g4"><b>Not code-signed</b><span>Windows and macOS ask you to confirm the first time you open it. The steps are on the install panel above.</span></div>
   </div>
 </div></section>
 
 <section id="player-only"><div class="wrap">
   <div class="player-only">
-    <div class="eyebrow">Read this first</div>
-    <h2>Player only.</h2>
-    <p>StreamBoss ships with no channels, no movies and no subscriptions. You sign in with a service you are licensed to watch, and the stream goes from your provider to your screen. There is no StreamBoss account to make.</p>
-    <div class="flow" aria-label="How a stream travels"><span class="you">Your provider</span>→<span>Your login</span>→<span class="you">StreamBoss</span>→<span>Your screen</span></div>
+    <div data-t="po_e" class="eyebrow">Read this first</div>
+    <h2 data-t="po_h">Player only.</h2>
+    <p data-t="po_p">StreamBoss ships with no channels, no movies and no subscriptions. You sign in with a service you are licensed to watch, and the stream goes from your provider to your screen. There is no StreamBoss account to make.</p>
+    <div class="flow" aria-label="How a stream travels" data-t-aria-label="a_flow"><span data-t="fl1" class="you">Your provider</span>→<span data-t="fl2">Your login</span>→<span class="you">StreamBoss</span>→<span data-t="fl4">Your screen</span></div>
   </div>
 </div></section>
 
 <section id="faq"><div class="wrap">
-  <div class="eyebrow">Questions</div>
-  <h2 style="margin-bottom:24px">Before you install</h2>
-  <details open><summary>Does it come with channels?</summary><p>No. You bring an Xtream Codes login or an M3U playlist from a service you are licensed to use. Without one you can try the demo mode, or browse public lists of free channels kept by third parties.</p></details>
-  <details><summary>Do I need an account with you?</summary><p>No. Sync between devices is optional and goes through a small server that you host. Provider passwords never leave a device.</p></details>
-  <details><summary>Will it work on my Roku?</summary><p>Yes, as a separate native channel. A small installer program opens a page in your browser, finds your Roku and puts the channel on it, so you do not have to use the Roku's upload page.</p></details>
-  <details><summary>What does it send over the internet?</summary><p>Your login goes to your provider and nowhere else. If you use them, it also contacts TMDB (posters and details, with your own key), OpenSubtitles (subtitles, with your own account), a public list of free channels, this website (to look for a new version) and a sync server you run yourself. There is no analytics or advertising code in it.</p></details>
-  <details><summary>Can I use it in a browser?</summary><p>Yes: <a href="https://web.streamboss.site" rel="noopener">web.streamboss.site</a>. Nothing to install. A browser has two limits the apps do not: it refuses a plain <b>http://</b> provider on a secure page, and any server that does not allow websites to read it. StreamBoss tells you which one it was. If your provider is blocked, use the app for your device.</p></details>
-  <details><summary>How do I update?</summary><p>In the app: Settings, About, Check for updates. It downloads and installs inside the app.</p></details>
+  <div data-t="q_e" class="eyebrow">Questions</div>
+  <h2 data-t="q_h" style="margin-bottom:24px">Before you install</h2>
+  <details open><summary data-t="fq1">Does it come with channels?</summary><p data-t="fa1">No. You bring an Xtream Codes login or an M3U playlist from a service you are licensed to use. Without one you can try the demo mode, or browse public lists of free channels kept by third parties.</p></details>
+  <details><summary data-t="fq2">Do I need an account with you?</summary><p data-t="fa2">No. Sync between devices is optional and goes through a small server that you host. Provider passwords never leave a device.</p></details>
+  <details><summary data-t="fq3">Will it work on my Roku?</summary><p data-t="fa3">Yes, as a separate native channel. A small installer program opens a page in your browser, finds your Roku and puts the channel on it, so you do not have to use the Roku's upload page.</p></details>
+  <details><summary data-t="fq4">What does it send over the internet?</summary><p data-t="fa4">Your login goes to your provider and nowhere else. If you use them, it also contacts TMDB (posters and details, with your own key), OpenSubtitles (subtitles, with your own account), a public list of free channels, this website (to look for a new version) and a sync server you run yourself. There is no analytics or advertising code in it.</p></details>
+  <details><summary data-t="fq5">Can I use it in a browser?</summary><p data-t="fa5">Yes: <a href="https://web.streamboss.site" rel="noopener">web.streamboss.site</a>. Nothing to install. A browser has two limits the apps do not: it refuses a plain <b>http://</b> provider on a secure page, and any server that does not allow websites to read it. StreamBoss tells you which one it was. If your provider is blocked, use the app for your device.</p></details>
+  <details><summary data-t="fq6">How do I update?</summary><p data-t="fa6">In the app: Settings, About, Check for updates. It downloads and installs inside the app.</p></details>
 </div></section>
 
-<footer><span>StreamBoss · for the service you already have · &copy; 2026 All rights reserved · <a href="/LICENSE.txt">License</a></span><span><a href="/downloads/">All downloads</a></span></footer>
+<footer><span data-t="foot1">StreamBoss · for the service you already have · &copy; 2026 All rights reserved · <a href="/LICENSE.txt">License</a></span><span data-t="foot2"><a href="/downloads/">All downloads</a></span></footer>
 </main>
 </div>
 
+<script id="i18n-es" type="application/json">
+{
+ "s": {
+  "nav_install": "Instalar",
+  "nav_web": "Abrir en el navegador",
+  "nav_features": "Qué hace",
+  "nav_player": "Solo reproductor",
+  "nav_faq": "Preguntas",
+  "a_sections": "Secciones",
+  "a_lang": "Idioma",
+  "theme": "Tema",
+  "h1": "Trae tu propio proveedor. <em>Nosotros solo lo reproducimos.<\/em>",
+  "lede": "StreamBoss es un reproductor de TV para el servicio Xtream o M3U que ya pagas. Elige un diseño, conecta tu proveedor y mira canales en vivo, películas y series desde el sofá.",
+  "cta1": "Instálalo en tu pantalla",
+  "cta2": "Ábrelo en tu navegador",
+  "cta3": "Mira qué hace",
+  "newest": "Versión más reciente",
+  "alt_hero": "StreamBoss en un TV: una película destacada y una fila de canales en vivo",
+  "a_glance": "De un vistazo",
+  "f1": "<b>21<\/b> diseños para la app",
+  "f2": "<b>4<\/b> idiomas: EN ES IT PT",
+  "f3": "<b>Pensada para el control remoto:<\/b> hecha para un D-pad",
+  "f4": "<b>No incluye canales.<\/b> Solo los tuyos",
+  "h_install": "Instalar",
+  "h2_install": "Elige tu pantalla",
+  "sub_install": "Usa las flechas del teclado o toca. Cada pantalla muestra la forma más rápida de instalarla.",
+  "a_devices": "Dispositivos",
+  "h_features": "Qué hace",
+  "h2_features": "Hecha para el control remoto",
+  "r1_e": "Diseños",
+  "r1_h": "Veintiún pantallas de inicio. Elige la que va con tu sala.",
+  "r1_p": "Un muro de carteles, una guía de TV, un selector de canales tipo decodificador, un dial, una consola, una baraja de sugerencias. Cámbialo en Ajustes y toda la app lo sigue, con sus propios colores y navegación.",
+  "alt_wall": "El diseño Wall: una cuadrícula de carteles",
+  "r2_e": "TV en vivo",
+  "r2_h": "Una guía que sabe qué están poniendo.",
+  "r2_p": "Guía de programación de tu proveedor, retransmisión diferida donde el proveedor guarda un archivo, recordatorios que te avisan antes de que empiece un programa y una forma de volver al último canal con un solo botón.",
+  "alt_prime": "El diseño Prime Time: una guía de TV en cuadrícula",
+  "r3_e": "También en el teléfono",
+  "r3_h": "La misma app en tu bolsillo.",
+  "r3_p": "Cada diseño tiene versión para teléfono. Sigue viendo desde la pantalla de inicio de Android TV, busca por voz y mantén tus listas y posiciones sincronizadas entre dispositivos con un servidor de sincronización que tú mismo administras.",
+  "alt_pm": "Marquee en un teléfono",
+  "alt_pt": "Tonight en un teléfono",
+  "alt_pw": "Wall en un teléfono",
+  "m_e": "Más estilos",
+  "m_h": "La misma app, salas muy distintas.",
+  "a_strip": "Más diseños: desliza hacia los lados",
+  "alt_console": "El diseño Console: una consola que encuentra cosas mientras escribes",
+  "alt_globe": "El diseño Globe: TV en vivo por país en un mapa de puntos",
+  "alt_deck": "El diseño Deck: una baraja de sugerencias para saltar, guardar o reproducir",
+  "alt_lounge": "El diseño Lounge: un canal en vivo arriba y una tira para navegar",
+  "alt_match": "El diseño Matchday: el deporte de hoy por hora de inicio",
+  "alt_mosaic": "El diseño Mosaic: cuatro canales a la vez",
+  "alt_day": "El diseño Daylight: un tema claro con tarjetas blancas",
+  "alt_easy": "El diseño Easy: tres botones enormes de alto contraste",
+  "al1": "<b>Perfiles y PIN<\/b><span>Los perfiles infantiles muestran categorías para niños y bloquean los Ajustes.<\/span>",
+  "al2": "<b>Cuatro idiomas<\/b><span>English, Español, Italiano, Português. Los nombres de los canales se muestran tal como llegan.<\/span>",
+  "al3": "<b>Actualizaciones dentro de la app<\/b><span>Descarga e instala una versión nueva sin salir de StreamBoss.<\/span>",
+  "al4": "<b>Canales duplicados, unidos<\/b><span>HD, SD y respaldos se vuelven un solo canal que cambia solo si uno falla.<\/span>",
+  "l_e": "Conviene saber",
+  "l_h": "Lo que no es",
+  "l_sub": "Dicho sin rodeos, para que nada te sorprenda después de instalar.",
+  "g1": "<b>No es un servicio<\/b><span>No vienen canales, películas ni suscripciones con la app. Necesitas tu propio acceso Xtream o una lista M3U.<\/span>",
+  "g2": "<b>Más sencilla en Roku y Apple TV<\/b><span>Son apps nativas aparte, con menos funciones que la principal: sin búsqueda de carátulas, sin guía de TV y sin shaders.<\/span>",
+  "g3": "<b>Aún no está en las tiendas<\/b><span>Roku se instala como canal de desarrollador, Apple TV se compila desde el código fuente y iPhone y iPad no están empaquetados. Android, Windows, Mac y Linux son descargas directas.<\/span>",
+  "g4": "<b>Sin firma de código<\/b><span>Windows y macOS te piden confirmar la primera vez que la abres. Los pasos están en el panel de instalación de arriba.<\/span>",
+  "po_e": "Lee esto primero",
+  "po_h": "Solo reproductor.",
+  "po_p": "StreamBoss no trae canales, películas ni suscripciones. Inicias sesión con un servicio que tienes licencia para ver, y la transmisión va de tu proveedor a tu pantalla. No hay que crear una cuenta de StreamBoss.",
+  "a_flow": "Cómo viaja una transmisión",
+  "fl1": "Tu proveedor",
+  "fl2": "Tu acceso",
+  "fl4": "Tu pantalla",
+  "q_e": "Preguntas",
+  "q_h": "Antes de instalar",
+  "fq1": "¿Trae canales?",
+  "fa1": "No. Tú traes un acceso Xtream Codes o una lista M3U de un servicio que tienes licencia para usar. Sin uno, puedes probar el modo demo o explorar listas públicas de canales gratuitos mantenidas por terceros.",
+  "fq2": "¿Necesito una cuenta con ustedes?",
+  "fa2": "No. La sincronización entre dispositivos es opcional y pasa por un servidor pequeño que tú mismo alojas. Las contraseñas del proveedor nunca salen de un dispositivo.",
+  "fq3": "¿Funcionará en mi Roku?",
+  "fa3": "Sí, como un canal nativo aparte. Un pequeño programa instalador abre una página en tu navegador, encuentra tu Roku y le instala el canal, así no tienes que usar la página de carga del Roku.",
+  "fq4": "¿Qué envía por internet?",
+  "fa4": "Tu acceso va a tu proveedor y a ningún otro lado. Si los usas, también contacta a TMDB (carátulas y detalles, con tu propia clave), OpenSubtitles (subtítulos, con tu propia cuenta), una lista pública de canales gratuitos, este sitio web (para buscar una versión nueva) y un servidor de sincronización que tú mismo administras. No lleva código de analítica ni de publicidad.",
+  "fq5": "¿Puedo usarla en un navegador?",
+  "fa5": "Sí: <a href=\"https://web.streamboss.site\" rel=\"noopener\">web.streamboss.site<\/a>. No hay nada que instalar. Un navegador tiene dos límites que las apps no tienen: rechaza un proveedor <b>http://<\/b> simple en una página segura y cualquier servidor que no permita que los sitios web lo lean. StreamBoss te dice cuál fue. Si tu proveedor está bloqueado, usa la app de tu dispositivo.",
+  "fq6": "¿Cómo actualizo?",
+  "fa6": "En la app: Ajustes, Acerca de, Buscar actualizaciones. Se descarga e instala dentro de la app.",
+  "foot1": "StreamBoss · para el servicio que ya tienes · &copy; 2026 Todos los derechos reservados · <a href=\"/LICENSE.txt\">Licencia<\/a>",
+  "foot2": "<a href=\"/downloads/\">Todas las descargas<\/a>"
+ },
+ "ui": {
+  "install": "Instalar",
+  "copy": "Copiar código",
+  "copied": "Copiado",
+  "selcopy": "Selecciona y copia",
+  "opendl": "Abrir la página de descargas",
+  "newest": "Versión más reciente",
+  "alldl": "Todas las descargas"
+ },
+ "meta": {
+  "title": "StreamBoss: un reproductor de TV para el servicio que ya tienes",
+  "desc": "StreamBoss reproduce el servicio Xtream o M3U que ya tienes en tu Fire TV, Android TV, Roku, Apple TV, teléfono y computadora. 21 diseños, guía de TV, recordatorios y sincronización que tú mismo alojas. No incluye canales.",
+  "ogt": "StreamBoss: trae tu propio proveedor. Nosotros solo lo reproducimos.",
+  "ogd": "Un reproductor pensado para el control remoto, para el servicio Xtream o M3U que ya tienes. Fire TV, Android TV, Roku, Apple TV, Windows, macOS, Linux."
+ },
+ "dev": {
+  "firetv": {
+   "name": "Fire TV",
+   "sub": "Código de Downloader",
+   "title": "Fire TV y Fire Stick",
+   "steps": [
+    "Instala la app gratuita <b>Downloader<\/b> desde la Appstore de Amazon, ábrela y permite que instale apps cuando te lo pida.",
+    "En Downloader, elige el cuadro de dirección y escribe este código:[[code:1652077]]",
+    "Pulsa <b>Go<\/b> (Ir) y luego <b>Install<\/b> (Instalar). StreamBoss aparece en tu fila de apps con su propio banner."
+   ],
+   "note": "Si ese código no funciona, prueba <b>9055023<\/b>. Ambos descargan la versión más reciente.",
+   "side": [
+    "<b>¿Solo con control remoto?<\/b>Toda la app está hecha para un D-pad. OK selecciona, Atrás sube un nivel.",
+    "<b>Actualizar<\/b>Ajustes, Acerca de, Buscar actualizaciones. Se instala dentro de la app."
+   ]
+  },
+  "androidtv": {
+   "name": "Android TV",
+   "sub": "Google TV, decodificadores",
+   "title": "Android TV y Google TV",
+   "steps": [
+    "Instala <b>Downloader<\/b> desde Google Play y permite que instale apps de orígenes desconocidos.",
+    "Escribe este código en Downloader:[[code:1652077]]",
+    "Elige <b>Install<\/b>. Android TV también muestra una fila de <b>Seguir viendo<\/b> en su pantalla de inicio."
+   ],
+   "note": "¿Prefieres una computadora? Usa <b>adb connect &lt;ip-del-tv&gt;:5555<\/b> y luego <b>adb install -r<\/b> con el APK de abajo.",
+   "files": [
+    "APK de Android (la mayoría de los TV)",
+    "TV y decodificadores antiguos"
+   ],
+   "side": [
+    "<b>¿Qué APK?<\/b>arm64-v8a sirve para la mayoría de los TV y decodificadores; armeabi-v7a, para los más antiguos."
+   ]
+  },
+  "roku": {
+   "name": "Roku",
+   "sub": "Programa instalador",
+   "title": "Roku",
+   "steps": [
+    "Descarga el <b>instalador de Roku<\/b> para tu computadora (botón de abajo).",
+    "Ejecútalo. Se abre una página en tu navegador y encuentra tu Roku en la red. Si el modo de desarrollador está apagado, te ofrece abrir <b>Developer Settings<\/b> en el TV: elige <b>Enable installer<\/b>, escoge una contraseña y deja que el Roku se reinicie.",
+    "Escribe esa contraseña en la página y pulsa <b>Install StreamBoss<\/b>. Envía el canal y lo inicia."
+   ],
+   "note": "El modo de desarrollador se activa una sola vez, en el TV. Después, actualizar es volver a ejecutar el instalador. En Mac, descomprime la descarga y haz doble clic en <b>Install StreamBoss on Roku<\/b> (la primera vez, clic derecho y elige Abrir). En Linux, descomprime el .tar.gz y ejecútalo en una terminal.",
+   "files": [
+    "Instalador para Windows",
+    "Instalador para Mac (Apple silicon)",
+    "Instalador para Linux",
+    "Solo el archivo del canal (.zip)"
+   ],
+   "side": [
+    "<b>¿Por qué no la tienda de canales?<\/b>StreamBoss aún no está en la lista, así que se instala como canal de desarrollador."
+   ]
+  },
+  "appletv": {
+   "name": "Apple TV",
+   "sub": "Compilar desde el código",
+   "title": "Apple TV",
+   "steps": [
+    "Apple TV usa una app nativa aparte, que está en la carpeta <b>tvos<\/b> del proyecto.",
+    "Ábrela en Xcode, elige tu Apple TV como destino y pulsa Run."
+   ],
+   "note": "Aún no está en la App Store.",
+   "side": [
+    "<b>Necesitas<\/b>Una Mac con Xcode y una cuenta de desarrollador de Apple."
+   ]
+  },
+  "windows": {
+   "name": "Windows",
+   "sub": "Descarga",
+   "title": "Windows",
+   "steps": [
+    "Descarga el archivo de Windows (botón de abajo).",
+    "Descomprímelo donde quieras y ejecuta <b>streamboss.exe<\/b>.",
+    "Cuando salga una versión nueva: Ajustes, Acerca de, Buscar actualizaciones."
+   ],
+   "note": "Windows puede pedirte confirmación porque la app no tiene firma de código: elige Más información y luego Ejecutar de todos modos.",
+   "files": [
+    "Windows (zip)"
+   ],
+   "side": []
+  },
+  "macos": {
+   "name": "macOS",
+   "sub": "Descarga",
+   "title": "Mac",
+   "steps": [
+    "Descarga el archivo de macOS y descomprímelo.",
+    "Arrastra la app a Aplicaciones. La primera vez, clic derecho y elige <b>Abrir<\/b>."
+   ],
+   "note": "La app no está notarizada, así que macOS te pregunta una vez. Las actualizaciones dentro de la app colocan la versión nueva en Aplicaciones.",
+   "files": [
+    "macOS (zip)"
+   ],
+   "side": []
+  },
+  "linux": {
+   "name": "Linux",
+   "sub": "Descarga",
+   "title": "Linux",
+   "steps": [
+    "Descarga el archivo y extráelo.",
+    "Ejecuta <b>streamboss<\/b>. Necesita tener <b>libmpv<\/b> instalado."
+   ],
+   "note": "",
+   "files": [
+    "Linux x64 (tar.gz)"
+   ],
+   "side": []
+  },
+  "android": {
+   "name": "Teléfono / tableta",
+   "sub": "APK de Android",
+   "title": "Teléfonos y tabletas Android",
+   "steps": [
+    "Descarga el APK (arm64-v8a para casi todos los teléfonos de los últimos años).",
+    "Ábrelo y permite instalar desde esta fuente."
+   ],
+   "note": "iPhone y iPad: aún no están empaquetados. Se pueden compilar desde el código fuente con Xcode.",
+   "files": [
+    "APK de Android",
+    "Teléfonos antiguos"
+   ],
+   "side": []
+  },
+  "web": {
+   "name": "Web",
+   "sub": "Nada que instalar",
+   "title": "En un navegador",
+   "open": "Abre StreamBoss en tu navegador",
+   "steps": [
+    "Pulsa el botón de abajo. StreamBoss se abre en este navegador, sin instalar nada.",
+    "Escribe tu proveedor, igual que en la app. Tu acceso se queda en este navegador y solo va a tu proveedor.",
+    "¿Prefieres alojarla tú? Descarga el archivo web de abajo y publícalo en cualquier servidor web estático."
+   ],
+   "note": "Un navegador bloquea los proveedores <b>http://<\/b> simples en una página segura, y cualquier servidor que no permita que los sitios web lo lean, que es la mayoría de los servicios IPTV. Si el tuyo está bloqueado, StreamBoss lo dice; las apps para tus dispositivos no tienen ese límite. Usa la versión web con un proveedor <b>https<\/b>.",
+   "files": [
+    "Build web (zip)"
+   ],
+   "side": [
+    "<b>¿Cuál elegir?<\/b> Las apps son la mejor opción en un TV o teléfono. La versión web es para una computadora en la que no quieres instalar nada."
+   ]
+  }
+ }
+}
+</script>
 <script>
 const REL='/downloads/';
+// English is the page itself; Spanish comes from the i18n-es block above. The visitor's choice (?lang=es, the EN/ES buttons, then the browser's language) decides.
+const ES=JSON.parse(document.getElementById('i18n-es').textContent);
+const EN_UI={install:'Install',copy:'Copy code',copied:'Copied',selcopy:'Select and copy',opendl:'Open the downloads page',newest:'Newest version',alldl:'All downloads'};
+let lang='en';
+const t=k=>lang==='es'?ES.ui[k]:EN_UI[k];
 const ICON={
   tv:'<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
   stick:'<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="2"/><path d="M7 12h4"/></svg>',
@@ -269,14 +530,15 @@ const ICON={
   phone:'<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg>',
   globe:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>'
 };
-const code=n=>`<div class="code"><span class="n">${n}</span><button type="button" data-copy="${n}">Copy code</button></div>`;
+const code=n=>`<div class="code"><span class="n">${n}</span><button type="button" data-copy="${n}">${t('copy')}</button></div>`;
+const withCodes=h=>h.replace(/\[\[code:(\d+)\]\]/g,(_,n)=>code(n));
 // files: asset-name patterns on the newest release; each becomes a button that goes straight to the file.
 const DEVICES=[
  {id:'firetv',name:'Fire TV',sub:'Downloader code',icon:'stick',title:'Fire TV and Fire Stick',
-  steps:['Install the free <b>Downloader</b> app from the Amazon Appstore, open it, and allow it to install apps when asked.','In Downloader, choose the address box and type this code:'+code('1652077'),'Press <b>Go</b>, then <b>Install</b>. StreamBoss appears in your apps row with its own banner.'],
+  steps:['Install the free <b>Downloader</b> app from the Amazon Appstore, open it, and allow it to install apps when asked.','In Downloader, choose the address box and type this code:[[code:1652077]]','Press <b>Go</b>, then <b>Install</b>. StreamBoss appears in your apps row with its own banner.'],
   note:'If that code does not work, try <b>9055023</b>. Both fetch the newest version.',side:['<b>Remote only?</b>The whole app is built for a D-pad. OK selects, Back goes up.','<b>Updating</b>Settings, About, Check for updates. It installs inside the app.']},
  {id:'androidtv',name:'Android TV',sub:'Google TV, boxes',icon:'tv',title:'Android TV and Google TV',
-  steps:['Install <b>Downloader</b> from the Play Store and allow it to install unknown apps.','Enter this code in Downloader:'+code('1652077'),'Choose <b>Install</b>. Android TV also shows a <b>Continue watching</b> row on its home screen.'],
+  steps:['Install <b>Downloader</b> from the Play Store and allow it to install unknown apps.','Enter this code in Downloader:[[code:1652077]]','Choose <b>Install</b>. Android TV also shows a <b>Continue watching</b> row on its home screen.'],
   note:'Prefer a computer? Use <b>adb connect &lt;tv-ip&gt;:5555</b>, then <b>adb install -r</b> the APK below.',
   files:[{label:'Android APK (most TVs)',re:/android-arm64-v8a\.apk$/},{label:'Older TVs and boxes',re:/android-armeabi-v7a\.apk$/}],
   side:['<b>Which APK?</b>arm64-v8a suits most TVs and boxes; armeabi-v7a suits older ones.']},
@@ -305,13 +567,24 @@ const DEVICES=[
 ];
 let release=null; // the newest release from /releases.json, once it has loaded
 const tiles=document.getElementById('tiles'),panel=document.getElementById('panel');
-DEVICES.forEach(d=>{
-  const li=document.createElement('li');
-  li.setAttribute('role','presentation');
-  li.innerHTML=`<button class="tile" role="tab" type="button" data-id="${d.id}" aria-controls="panel" aria-selected="false">${ICON[d.icon]}<span>${d.name}<small>${d.sub}</small></span></button>`;
-  tiles.appendChild(li);
-});
+// A device as shown in the current language: the Spanish text wins where there is some, the rest (ids, patterns, links) is shared.
+function dev(d){
+  const e=lang==='es'?ES.dev[d.id]:null;
+  if(!e)return d;
+  return {...d,...e,files:d.files&&d.files.map((f,i)=>({...f,label:(e.files&&e.files[i])||f.label})),open:d.open&&{...d.open,label:e.open||d.open.label}};
+}
 let current='firetv';
+function buildTiles(){
+  tiles.innerHTML='';
+  DEVICES.forEach(x=>{
+    const d=dev(x);
+    const li=document.createElement('li');
+    li.setAttribute('role','presentation');
+    li.innerHTML=`<button class="tile" role="tab" type="button" data-id="${d.id}" aria-controls="panel" aria-selected="false">${ICON[d.icon]}<span>${d.name}<small>${d.sub}</small></span></button>`;
+    tiles.appendChild(li);
+  });
+}
+buildTiles();
 function openButton(d){
   return d.open?`<div class="dls"><a class="btn primary dl" href="${d.open.href}" rel="noopener">${d.open.label}<small>${d.open.href.replace('https://','')}</small></a></div>`:'';
 }
@@ -319,13 +592,13 @@ function fileButtons(d){
   if(!d.files)return '';
   const assets=release?release.assets:[];
   const btns=d.files.map(f=>{const a=assets.find(x=>f.re.test(x.name));return a?`<a class="btn primary dl" href="${a.browser_download_url}">${f.label}<small>${(a.size/1048576).toFixed(0)} MB</small></a>`:''}).join('');
-  return `<div class="dls">${btns||`<a class="btn primary dl" href="${REL}">Open the downloads page</a>`}</div>`;
+  return `<div class="dls">${btns||`<a class="btn primary dl" href="${REL}">${t('opendl')}</a>`}</div>`;
 }
 function show(id,focus){
-  const d=DEVICES.find(x=>x.id===id)||DEVICES[0];current=d.id;
+  const d=dev(DEVICES.find(x=>x.id===id)||DEVICES[0]);current=d.id;
   tiles.querySelectorAll('.tile').forEach(b=>{const on=b.dataset.id===d.id;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;if(on&&focus)b.focus()});
-  panel.innerHTML=`<div><div class="eyebrow">Install</div><h3>${d.title}</h3><ol>${d.steps.map(s=>`<li><div>${s}</div></li>`).join('')}</ol>${openButton(d)}${fileButtons(d)}${d.note?`<p class="note">${d.note}</p>`:''}</div>
-  <div class="side"><div class="box"><b>${release?'Newest version: '+release.tag_name:'All downloads'}</b><a href="${REL}">streamboss.site/downloads</a></div>${d.side.map(s=>`<div class="box">${s}</div>`).join('')}</div>`;
+  panel.innerHTML=`<div><div class="eyebrow">${t('install')}</div><h3>${d.title}</h3><ol>${d.steps.map(s=>`<li><div>${withCodes(s)}</div></li>`).join('')}</ol>${openButton(d)}${fileButtons(d)}${d.note?`<p class="note">${d.note}</p>`:''}</div>
+  <div class="side"><div class="box"><b>${release?t('newest')+': '+release.tag_name:t('alldl')}</b><a href="${REL}">streamboss.site/downloads</a></div>${d.side.map(s=>`<div class="box">${s}</div>`).join('')}</div>`;
 }
 tiles.addEventListener('click',e=>{const b=e.target.closest('.tile');if(b)show(b.dataset.id)});
 tiles.addEventListener('keydown',e=>{
@@ -336,8 +609,8 @@ tiles.addEventListener('keydown',e=>{
 });
 panel.addEventListener('click',async e=>{
   const b=e.target.closest('[data-copy]');if(!b)return;
-  try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='Copied'}catch(_){const r=document.createRange();r.selectNodeContents(b.previousElementSibling);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Select and copy'}
-  setTimeout(()=>b.textContent='Copy code',1800);
+  try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent=t('copied')}catch(_){const r=document.createRange();r.selectNodeContents(b.previousElementSibling);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent=t('selcopy')}
+  setTimeout(()=>b.textContent=t('copy'),1800);
 });
 // Open on the device the visitor is probably using.
 (function(){
@@ -352,6 +625,42 @@ fetch('/releases.json',{headers:{Accept:'application/json'}})
     release=list.find(x=>!x.draft&&x.assets&&x.assets.length)||null;
     if(release){const v=document.getElementById('ver');if(v){v.textContent=release.tag_name;v.closest('.vbadge').hidden=false}show(current)}
   }).catch(()=>{});
+// Swap every marked text (data-t) and attribute (data-t-alt, data-t-aria-label) to the chosen language, and the head's texts with them.
+const ORIG=new WeakMap();
+function setLang(l,{save=false,url=false}={}){
+  lang=l==='es'?'es':'en';
+  document.documentElement.lang=lang;
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    if(!ORIG.has(el))ORIG.set(el,{html:el.innerHTML});
+    const o=ORIG.get(el);
+    el.innerHTML=lang==='es'&&ES.s[el.dataset.t]!=null?ES.s[el.dataset.t]:o.html;
+  });
+  document.querySelectorAll('*').forEach(el=>{
+    for(const a of [...el.attributes]){
+      if(!a.name.startsWith('data-t-'))continue;
+      const attr=a.name.slice(7),o=ORIG.get(el)||{};
+      if(o[attr]==null){o[attr]=el.getAttribute(attr);ORIG.set(el,o)}
+      el.setAttribute(attr,lang==='es'&&ES.s[a.value]!=null?ES.s[a.value]:o[attr]);
+    }
+  });
+  const meta=(sel,key,prop)=>{const m=document.querySelector(sel);if(!m)return;if(m.dataset.en==null)m.dataset.en=m.getAttribute(prop);m.setAttribute(prop,lang==='es'?ES.meta[key]:m.dataset.en)};
+  if(!document.documentElement.dataset.enTitle)document.documentElement.dataset.enTitle=document.title;
+  document.title=lang==='es'?ES.meta.title:document.documentElement.dataset.enTitle;
+  meta('meta[name="description"]','desc','content');
+  meta('meta[property="og:title"]','ogt','content');
+  meta('meta[property="og:description"]','ogd','content');
+  document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===lang));
+  buildTiles();show(current);
+  if(save){try{localStorage.setItem('sb-lang',lang)}catch(_){}}
+  if(url){const u=new URL(location.href);u.searchParams.set('lang',lang);history.replaceState(null,'',u)}
+}
+document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang,{save:true,url:true})));
+(function(){
+  let l=new URLSearchParams(location.search).get('lang');
+  if(l!=='en'&&l!=='es'){try{l=localStorage.getItem('sb-lang')}catch(_){l=null}}
+  if(l!=='en'&&l!=='es')l=(navigator.languages||[navigator.language||'']).some(x=>/^es\b/i.test(x))?'es':'en';
+  if(l==='es')setLang('es');
+})();
 document.getElementById('theme').addEventListener('click',()=>{
   const r=document.documentElement,cur=r.dataset.theme||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
   r.dataset.theme=cur==='dark'?'light':'dark';
